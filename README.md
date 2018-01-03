@@ -1,3 +1,5 @@
+![Dependencies](https://www.versioneye.com/user/projects/5a4ca3490fb24f05139b8d06/badge.svg?style=flat-square) ![Known Vulnerabilities](https://snyk.io/test/github/KissPeter/APIFuzzer/badge.svg)
+
 # APIFuzzer — HTTP API Testing Framework
 
 APIFuzzer reads your API description and step by step fuzzes the fields to validate 

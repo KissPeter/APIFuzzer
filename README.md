@@ -2,6 +2,8 @@
 
 # APIFuzzer — HTTP API Testing Framework
 
+[![Join the chat at https://gitter.im/API-Fuzzer/Lobby](https://badges.gitter.im/API-Fuzzer/Lobby.svg)](https://gitter.im/API-Fuzzer/Lobby?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
+
 APIFuzzer reads your API description and step by step fuzzes the fields to validate 
 if you application can cope with the fuzzed parameters. Does not require coding.
 

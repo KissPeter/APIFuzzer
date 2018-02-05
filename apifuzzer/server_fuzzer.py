@@ -39,7 +39,7 @@ class OpenApiServerFuzzer(ServerFuzzer):
 
     def _transmit(self, node):
         payload = {}
-        for key in ('url', 'method'):
+        for key in ('url', 'method', 'headers'):
              payload[key] = node.get_field_by_name(key).render().tobytes()
         fuzz_place = get_field_type_by_method(node.get_field_by_name('method')._default_value)
         payload[fuzz_place] = self._recurse_params(node.get_field_by_name(fuzz_place))

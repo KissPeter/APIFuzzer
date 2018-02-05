@@ -3,6 +3,7 @@ from __future__ import print_function
 import sys
 import argparse
 import json
+import logging
 
 if sys.version_info[:2] == (2, 7):
     from kitty.interfaces import WebInterface
@@ -11,27 +12,31 @@ if sys.version_info[:2] == (2, 7):
     from apifuzzer.swagger_template_generator import SwaggerTemplateGenerator
     from apifuzzer.fuzzer_target import FuzzerTarget
     from apifuzzer.server_fuzzer import OpenApiServerFuzzer
+    from apifuzzer.utils import set_logger
 
 
 class Fuzzer(object):
-    def __init__(self, api_resources, report_dir, test_level, alternate_url=None, test_result_dst=None):
+
+    def __init__(self, api_resources, report_dir, test_level, log_level, alternate_url=None, test_result_dst=None):
         self.api_resources = api_resources
         self.base_url = alternate_url
         self.templates = None
         self.test_level = test_level
         self.report_dir = report_dir
         self.test_result_dst = test_result_dst
+        self.logger = set_logger(log_level)
+        self.logger.info('APIFuzzer initialized')
 
     def prepare(self):
         # here we will be able to branch the template generator if we would like to support other than Swagger
-        template_generator = SwaggerTemplateGenerator(self.api_resources)
+        template_generator = SwaggerTemplateGenerator(self.api_resources, self.logger)
         template_generator.process_api_resources()
         self.templates = template_generator.templates
         if not self.base_url:
             self.base_url = template_generator.compile_base_url()
 
     def run(self):
-        target = FuzzerTarget(name='target', base_url=self.base_url, report_dir=self.report_dir)
+        target = FuzzerTarget(name='target', base_url=self.base_url, report_dir=self.report_dir, logger=self.logger)
         interface = WebInterface()
         model = GraphModel()
         for template in self.templates:
@@ -61,7 +66,7 @@ if __name__ == '__main__':
                         help='Directory where error reports will be saved, default: /tmp/',
                         dest='report_dir',
                         default='/tmp/')
-    parser.add_argument('-l', '--level',
+    parser.add_argument('--level',
                         type=int,
                         required=False,
                         help='Test deepness: [1,2], higher is the deeper !!!Not implemented!!!',
@@ -79,6 +84,13 @@ if __name__ == '__main__':
                         help='JUnit test result xml save path !!!Not implemented!!!',
                         dest='test_result_dst',
                         default=None)
+    parser.add_argument('--log',
+                        type=str,
+                        required=False,
+                        help='Use different log level than the default WARNING',
+                        dest='log_level',
+                        default='warning',
+                        choices=[level.lower() for level in logging._levelNames if isinstance(level, str)])
     args = parser.parse_args()
     api_definition_json = dict()
     try:
@@ -91,7 +103,8 @@ if __name__ == '__main__':
                   report_dir=args.report_dir,
                   test_level=args.level,
                   alternate_url=args.alternate_url,
-                  test_result_dst=args.test_result_dst
+                  test_result_dst=args.test_result_dst,
+                  log_level=args.log_level
                   )
     prog.prepare()
     prog.run()

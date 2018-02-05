@@ -1,9 +1,10 @@
 ![Dependencies](https://www.versioneye.com/user/projects/5a4ca3490fb24f05139b8d06/badge.svg?style=flat-square) ![Known Vulnerabilities](https://snyk.io/test/github/KissPeter/APIFuzzer/badge.svg)
+[![Join the chat at https://gitter.im/API-Fuzzer/Lobby](https://badges.gitter.im/API-Fuzzer/Lobby.svg)](https://gitter.im/API-Fuzzer/Lobby?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
+[![Codacy Badge](https://api.codacy.com/project/badge/Grade/eab6434d9bd742e3880d8f589a9cc0a6)](https://www.codacy.com/app/KissPeter/APIFuzzer?utm_source=github.com&utm_medium=referral&utm_content=KissPeter/APIFuzzer&utm_campaign=badger)
+[![CII Best Practices](https://bestpractices.coreinfrastructure.org/projects/1620/badge)](https://bestpractices.coreinfrastructure.org/projects/1620)
 
 # APIFuzzer — HTTP API Testing Framework
 
-[![Codacy Badge](https://api.codacy.com/project/badge/Grade/eab6434d9bd742e3880d8f589a9cc0a6)](https://www.codacy.com/app/KissPeter/APIFuzzer?utm_source=github.com&utm_medium=referral&utm_content=KissPeter/APIFuzzer&utm_campaign=badger)
-[![Join the chat at https://gitter.im/API-Fuzzer/Lobby](https://badges.gitter.im/API-Fuzzer/Lobby.svg)](https://gitter.im/API-Fuzzer/Lobby?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
 
 APIFuzzer reads your API description and step by step fuzzes the fields to validate 
 if you application can cope with the fuzzed parameters. Does not require coding.

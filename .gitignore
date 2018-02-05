@@ -102,3 +102,4 @@ ENV/
 
 .idea
 kittylogs
+swagger.json

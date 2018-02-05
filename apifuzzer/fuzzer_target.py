@@ -1,10 +1,9 @@
+import json
 import logging
 from logging import handlers
-import json
 from time import time
 
 import requests
-from urllib import urlencode
 from kitty.data.report import Report
 from kitty.targets.server import ServerTarget
 from requests.exceptions import RequestException
@@ -46,7 +45,7 @@ class FuzzerTarget(ServerTarget):
         except Exception as e:
             self.logger.error(
                 'Failed to save report "{}" to {} because: {}'
-                .format(self.report.to_dict(), self.report_dir, e)
+                    .format(self.report.to_dict(), self.report_dir, e)
             )
 
     def transmit(self, **kwargs):
@@ -54,8 +53,12 @@ class FuzzerTarget(ServerTarget):
             _req_url = list()
             for url_part in self.base_url, kwargs['url']:
                 _req_url.append(url_part.strip('/'))
-            #kwargs['url'] = urlencode('/'.join(_req_url))
+            # kwargs['url'] = urlencode('/'.join(_req_url))
             kwargs['url'] = '/'.join(_req_url)
+            # TODO implement patch variables handling
+            del kwargs['path_variables']
+            print("Request:")
+            print(kwargs)
             _return = requests.request(**kwargs)
             status_code = _return.status_code
             if status_code:

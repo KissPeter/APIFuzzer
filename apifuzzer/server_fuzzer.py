@@ -1,9 +1,10 @@
 from __future__ import print_function
+
 import json
-from kitty.fuzzers import ServerFuzzer
-from kitty.model import Container
-from utils import get_field_type_by_method
+
 from kitty.data.report import Report
+from kitty.fuzzers import ServerFuzzer
+from kitty.model import Container, KittyException
 
 
 def _flatten_dict_entry(orig_key, v):
@@ -40,9 +41,13 @@ class OpenApiServerFuzzer(ServerFuzzer):
     def _transmit(self, node):
         payload = {}
         for key in ('url', 'method'):
-             payload[key] = node.get_field_by_name(key).render().tobytes()
-        fuzz_place = get_field_type_by_method(node.get_field_by_name('method')._default_value)
-        payload[fuzz_place] = self._recurse_params(node.get_field_by_name(fuzz_place))
+            payload[key] = node.get_field_by_name(key).render().tobytes()
+        fuzz_places = {'params', 'headers', 'data', 'path_variables'}
+        for place in fuzz_places:
+            try:
+                payload[place] = self._recurse_params(node.get_field_by_name(place))
+            except KittyException:
+                pass
         self._last_payload = payload
         try:
             return self.target.transmit(**payload)
@@ -75,7 +80,10 @@ class OpenApiServerFuzzer(ServerFuzzer):
         if payload is not None:
             data_report = Report('payload')
             data_report.add('raw', payload)
-            data_report.add('hex', json.dumps(payload).encode('hex'))
+            try:
+                data_report.add('hex', json.dumps(payload).encode('hex'))
+            except UnicodeDecodeError:
+                print('cant serialize payload: %', payload)
             data_report.add('length', len(payload))
             report.add('payload', data_report)
         else:

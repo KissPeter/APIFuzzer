@@ -55,7 +55,7 @@ class FuzzerTarget(ServerTarget):
                 _req_url.append(url_part.strip('/'))
             # kwargs['url'] = urlencode('/'.join(_req_url))
             kwargs['url'] = '/'.join(_req_url)
-            # TODO implement patch variables handling
+            kwargs['url'] = self.expand_path_variables(kwargs['path_variables'], kwargs['url'])
             del kwargs['path_variables']
             print("Request:")
             print(kwargs)
@@ -81,3 +81,37 @@ class FuzzerTarget(ServerTarget):
         super(FuzzerTarget, self).post_test(test_num)
         if self.report.get('status') != Report.PASSED:
             self.save_report_to_disc()
+
+    def expand_path_variables(self, params, url_chars):
+        """
+        Expands path variables:
+        Example:
+        http://localhost:8080/ingest/v1/catalog/{catalogid}/layer/{layerid}, {layerid: 11, catalogid:12} ->
+        http://localhost:8080/ingest/v1/catalog/11/layer/12
+
+        :param params: url variables, headers, request body from a swagger.json (
+        :param url_chars: URL string without expanded path variables
+        :returns URL string with expanded path variables
+        """
+        url_chars = list(url_chars)
+        cleaned_url = []
+        counter = 0
+        while counter < len(url_chars):
+            char = url_chars[counter]
+            if char == '{':
+                logging.debug("found match to { on index" + str(counter))
+                # iterate until a closing parentheses
+                counter = counter + 1
+                placeholder = []
+                while url_chars[counter] != '}':
+                    placeholder.append(url_chars[counter])
+                    logging.debug("skip character: " + str(url_chars[counter]))
+                    counter = counter + 1
+                # find a value for a placeholder
+                value = params[''.join(placeholder).decode('utf-8')]
+                cleaned_url.append(value)
+            else:
+                cleaned_url.append(char)
+            counter = counter + 1
+        cleaned_url = ''.join(cleaned_url)
+        return cleaned_url

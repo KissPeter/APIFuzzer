@@ -18,12 +18,12 @@ def get_fuzz_type_by_param_type(fuzz_type):
 
 def get_sample_data_by_type(param_type):
     types = {
-        'name': 012,
-        'string': 'asd',
-        'integer': 0,
-        'number': 667,
-        'boolean': False,
-        'array': ['a', 'b', 'c'],
+        u'name': 012,
+        u'string': 'asd',
+        u'integer': 1,
+        u'number': 667,
+        u'boolean': False,
+        u'array': ['a', 'b', 'c'],
         # TODO sample object
     }
     return types.get(param_type, 'asd')

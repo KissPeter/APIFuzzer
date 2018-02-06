@@ -34,22 +34,20 @@ class SwaggerTemplateGenerator(TemplateGenerator):
                     # get parameter placement(in): path, query, header, cookie
                     # get parameter type: integer, string
                     # get format if present
+                    fuzz_type = get_fuzz_type_by_param_type(param.get('type'))
                     if param.get('in') == [ParamTypes.PATH, ParamTypes.QUERY]:
-                        fuzz_type = get_fuzz_type_by_param_type(param.get('type'))
                         template.path_variables.append(
                             fuzz_type(
                                 name=param['name'],
                                 value=get_sample_data_by_type(param.get('type'))
                             ))
                     elif param.get('in') == ParamTypes.HEADER:
-                        fuzz_type = get_fuzz_type_by_param_type(param.get('type'))
                         template.headers.append(
                             fuzz_type(
                                 name=param['name'],
                                 value=get_sample_data_by_type(param.get('type'))
                             ))
                     else:
-                        fuzz_type = get_fuzz_type_by_param_type(param.get('type'))
                         template.data = fuzz_type(name=param['name'], value=get_sample_data_by_type(param.get('type')))
                 self.templates.append(template)
 

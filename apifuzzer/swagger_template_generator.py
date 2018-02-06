@@ -3,10 +3,20 @@ from template_generator_base import TemplateGenerator
 from utils import get_sample_data_by_type, get_fuzz_type_by_param_type
 
 
+class ParamTypes(object):
+    PATH = 'path'
+    QUERY = 'query'
+    HEADER = 'header'
+    COOKIE = 'cookie'
+    BODY = 'body'
+    FORM_DATA = 'formData'
+
+
 class SwaggerTemplateGenerator(TemplateGenerator):
-    def __init__(self, api_resources):
+    def __init__(self, api_resources, logger):
         self.api_resources = api_resources
         self.templates = list()
+        self.logger = logger
 
     def process_api_resources(self):
         for resource in self.api_resources['paths'].keys():
@@ -24,21 +34,21 @@ class SwaggerTemplateGenerator(TemplateGenerator):
                     # get parameter placement(in): path, query, header, cookie
                     # get parameter type: integer, string
                     # get format if present
-                    if param['in'] == 'path':
+                    if param.get('in') == [ParamTypes.PATH, ParamTypes.QUERY]:
                         fuzz_type = get_fuzz_type_by_param_type(param.get('type'))
                         template.path_variables.append(
                             fuzz_type(
                                 name=param['name'],
                                 value=get_sample_data_by_type(param.get('type'))
                             ))
-                    elif param['in'] == 'header':
+                    elif param.get('in') == ParamTypes.HEADER:
                         fuzz_type = get_fuzz_type_by_param_type(param.get('type'))
                         template.headers.append(
                             fuzz_type(
                                 name=param['name'],
                                 value=get_sample_data_by_type(param.get('type'))
                             ))
-                    elif param['in'] == 'body':
+                    else:
                         fuzz_type = get_fuzz_type_by_param_type(param.get('type'))
                         template.data = fuzz_type(name=param['name'], value=get_sample_data_by_type(param.get('type')))
                 self.templates.append(template)

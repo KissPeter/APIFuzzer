@@ -1,3 +1,6 @@
+import logging
+from logging import Formatter
+from logging.handlers import SysLogHandler
 from custom_fuzzers import RandomBitsField
 
 
@@ -27,3 +30,12 @@ def get_sample_data_by_type(param_type):
         # TODO sample object
     }
     return types.get(param_type, 'asd')
+
+def set_logger(level='warning'):
+    syslog = SysLogHandler(address='/dev/log', facility=SysLogHandler.LOG_LOCAL2)
+    syslog.setFormatter(Formatter('%(pathname)s [%(process)d]: %(levelname)s %(message)s'))
+    logger = logging.getLogger('APIFuzzer')
+
+    logger.setLevel(level=level.upper())
+    logger.addHandler(syslog)
+    return logger

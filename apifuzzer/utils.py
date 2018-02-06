@@ -31,6 +31,7 @@ def get_sample_data_by_type(param_type):
     }
     return types.get(param_type, 'asd')
 
+
 def set_logger(level='warning'):
     syslog = SysLogHandler(address='/dev/log', facility=SysLogHandler.LOG_LOCAL2)
     syslog.setFormatter(Formatter('%(pathname)s [%(process)d]: %(levelname)s %(message)s'))

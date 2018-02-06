@@ -1,6 +1,4 @@
 import json
-import logging
-from logging import handlers
 from time import time
 
 import requests
@@ -16,13 +14,7 @@ class FuzzerTarget(ServerTarget):
     def __init__(self, name, base_url, report_dir, logger=None):
         super(FuzzerTarget, self).__init__(name, logger)
         self.base_url = base_url
-        formtter = logging.Formatter(' [%(levelname)s] %(name)s: %(message)s')
-        self.logger = logging.getLogger('HTTPFuzzer')
-        handler = logging.handlers.SysLogHandler(address='/dev/log',
-                                                 facility=logging.handlers.SysLogHandler.LOG_LOCAL2)
-        handler.setFormatter(formtter)
-        self.logger.addHandler(handler)
-        self.logger.setLevel(logging.WARNING)
+        self.logger = logger
         self._last_sent_request = None
         self.accepted_status_codes = list(range(200, 300)) + list(range(400, 500))
         self.report_dir = report_dir
@@ -45,7 +37,7 @@ class FuzzerTarget(ServerTarget):
         except Exception as e:
             self.logger.error(
                 'Failed to save report "{}" to {} because: {}'
-                    .format(self.report.to_dict(), self.report_dir, e)
+                .format(self.report.to_dict(), self.report_dir, e)
             )
 
     def transmit(self, **kwargs):
@@ -55,8 +47,9 @@ class FuzzerTarget(ServerTarget):
                 _req_url.append(url_part.strip('/'))
             # kwargs['url'] = urlencode('/'.join(_req_url))
             kwargs['url'] = '/'.join(_req_url)
-            kwargs['url'] = self.expand_path_variables(kwargs['path_variables'], kwargs['url'])
-            del kwargs['path_variables']
+            kwargs['url'] = self.expand_path_variables(kwargs.get('path_variables'), kwargs['url'])
+            if kwargs.get('path_variables'):
+                kwargs.pop('path_variables')
             print("Request:")
             print(kwargs)
             _return = requests.request(**kwargs)
@@ -99,13 +92,13 @@ class FuzzerTarget(ServerTarget):
         while counter < len(url_chars):
             char = url_chars[counter]
             if char == '{':
-                logging.debug("found match to { on index" + str(counter))
+                self.logger.debug("found match to { on index" + str(counter))
                 # iterate until a closing parentheses
                 counter = counter + 1
                 placeholder = []
                 while url_chars[counter] != '}':
                     placeholder.append(url_chars[counter])
-                    logging.debug("skip character: " + str(url_chars[counter]))
+                    self.logger.debug("skip character: " + str(url_chars[counter]))
                     counter = counter + 1
                 # find a value for a placeholder
                 value = params[''.join(placeholder).decode('utf-8')]

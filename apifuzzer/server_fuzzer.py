@@ -40,14 +40,14 @@ class OpenApiServerFuzzer(ServerFuzzer):
 
     def _transmit(self, node):
         payload = {}
-        for key in ('url', 'method'):
+        for key in ['url', 'method']:
             payload[key] = node.get_field_by_name(key).render().tobytes()
-        fuzz_places = {'params', 'headers', 'data', 'path_variables'}
+        fuzz_places = ['params', 'headers', 'data', 'path_variables']
         for place in fuzz_places:
             try:
                 payload[place] = self._recurse_params(node.get_field_by_name(place))
-            except KittyException:
-                pass
+            except KittyException as e:
+                self.logger.warn('Exception occurred: {}'.format(e.message))
         self._last_payload = payload
         try:
             return self.target.transmit(**payload)

@@ -2,7 +2,7 @@ language: python
 python:
   - "2.7"
 install:
-  - pip install --user -r requirements.txt
+  - pip install -r requirements.txt
 script:
   - python fuzzer.py -h
 

@@ -37,7 +37,7 @@ class FuzzerTarget(ServerTarget):
         except Exception as e:
             self.logger.error(
                 'Failed to save report "{}" to {} because: {}'
-                .format(self.report.to_dict(), self.report_dir, e)
+                    .format(self.report.to_dict(), self.report_dir, e)
             )
 
     def transmit(self, **kwargs):
@@ -47,8 +47,8 @@ class FuzzerTarget(ServerTarget):
                 _req_url.append(url_part.strip('/'))
             # kwargs['url'] = urlencode('/'.join(_req_url))
             kwargs['url'] = '/'.join(_req_url)
-            kwargs['url'] = self.expand_path_variables(kwargs.get('path_variables'), kwargs['url'])
             if kwargs.get('path_variables'):
+                kwargs['url'] = self.expand_path_variables(kwargs.get('path_variables'), kwargs['url'])
                 kwargs.pop('path_variables')
             print("Request:")
             print(kwargs)

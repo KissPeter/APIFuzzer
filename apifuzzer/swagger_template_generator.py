@@ -34,23 +34,38 @@ class SwaggerTemplateGenerator(TemplateGenerator):
                     # get parameter placement(in): path, query, header, cookie
                     # get parameter type: integer, string
                     # get format if present
-                    if param.get('in') == [ParamTypes.PATH, ParamTypes.QUERY]:
+                    param_type = param.get('in')
+                    if param_type == ParamTypes.PATH:
                         fuzz_type = get_fuzz_type_by_param_type(param.get('type'))
                         template.path_variables.append(
                             fuzz_type(
                                 name=param['name'],
                                 value=get_sample_data_by_type(param.get('type'))
                             ))
-                    elif param.get('in') == ParamTypes.HEADER:
+                    elif param_type == ParamTypes.HEADER or param_type == ParamTypes.COOKIE:
                         fuzz_type = get_fuzz_type_by_param_type(param.get('type'))
                         template.headers.append(
                             fuzz_type(
                                 name=param['name'],
                                 value=get_sample_data_by_type(param.get('type'))
                             ))
-                    else:
+                    elif param_type == ParamTypes.QUERY:
                         fuzz_type = get_fuzz_type_by_param_type(param.get('type'))
-                        template.data = fuzz_type(name=param['name'], value=get_sample_data_by_type(param.get('type')))
+                        template.parameters.append(
+                            fuzz_type(
+                                name=param['name'],
+                                value=get_sample_data_by_type(param.get('type'))
+                            ))
+                    elif param_type == ParamTypes.BODY or param_type == ParamTypes.FORM_DATA:
+                        fuzz_type = get_fuzz_type_by_param_type(param.get('type'))
+                        template.data = fuzz_type(
+                            name=param['name'],
+                            value=get_sample_data_by_type(param.get('type'))
+                        )
+                    else:
+                        # FIXMY doens't work due to some reason!!
+                        print("azaza")
+                        self.logger.error('Cant parse a definition from swagger.json: %s', param)
                 self.templates.append(template)
 
     def compile_base_url(self):

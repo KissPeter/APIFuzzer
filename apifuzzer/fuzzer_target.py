@@ -1,5 +1,6 @@
 import json
 from time import time
+import base64
 
 import requests
 from kitty.data.report import Report
@@ -24,9 +25,20 @@ class FuzzerTarget(ServerTarget):
             self.report.add('request method', req.request.method)
             self.report.add('request body', req.request.body)
             self.report.add('response', req.text)
-        else:
+        elif hasattr(req, 'items'):
             for k, v in req.items():
-                self.report.add(k, v)
+                try:
+                    # E.g headers:
+                    if isinstance(v, dict):
+                        v = json.dumps(v, ensure_ascii=False)
+                    self.report.add(k, base64.b64encode(v))
+                except UnicodeDecodeError:
+                    self.report.add(k, '{} value is not utf16 character'.format(k))
+        elif isinstance(req, list):
+            for item in req:
+                self.report.add(item, item)
+        else:
+            self.report.add('Unknown data type', req)
         self.report.set_status(Report.ERROR)
         self.report.error(msg)
 
@@ -49,7 +61,6 @@ class FuzzerTarget(ServerTarget):
             if kwargs.get('path_variables'):
                 kwargs['url'] = self.expand_path_variables(kwargs.get('path_variables'), kwargs['url'])
                 kwargs.pop('path_variables')
-            print("Request:")
             _return = requests.request(**kwargs)
             status_code = _return.status_code
             if status_code:
@@ -61,7 +72,7 @@ class FuzzerTarget(ServerTarget):
                     self.report.set_status(Report.FAILED)
                     self.report.failed('return code {} is not in the expected list'.format(status_code))
             else:
-                self.error_report('Failed to parse http response code', _return)
+                self.error_report('{}.Failed to parse http response code'.format(self.test_number), _return)
             return _return
         except (RequestException, UnicodeDecodeError) as e:  # request failure such as InvalidHeader
             self.error_report('Failed to parse http response code, exception: {}'.format(e), kwargs)

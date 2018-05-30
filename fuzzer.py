@@ -7,7 +7,7 @@ import logging
 
 if sys.version_info[:2] == (2, 7):
     from kitty.interfaces import WebInterface
-    from kitty.model import GraphModel, BaseModel
+    from kitty.model import GraphModel
 
     from apifuzzer.swagger_template_generator import SwaggerTemplateGenerator
     from apifuzzer.fuzzer_target import FuzzerTarget
@@ -30,18 +30,18 @@ class Fuzzer(object):
 
     def prepare(self):
         # here we will be able to branch the template generator if we would like to support other than Swagger
-        template_generator = SwaggerTemplateGenerator(self.api_resources, self.logger)
+        template_generator = SwaggerTemplateGenerator(self.api_resources)
         template_generator.process_api_resources()
         self.templates = template_generator.templates
         self.base_url = template_generator.compile_base_url(self.alternate_url)
 
     def run(self):
-        target = FuzzerTarget(name='target', base_url=self.base_url, report_dir=self.report_dir, logger=self.logger)
+        target = FuzzerTarget(name='target', base_url=self.base_url, report_dir=self.report_dir)
         interface = WebInterface()
         model = GraphModel()
         for template in self.templates:
             model.connect(template.compile_template())
-        fuzzer = OpenApiServerFuzzer(logger=self.logger)
+        fuzzer = OpenApiServerFuzzer()
         fuzzer.set_model(model)
         fuzzer.set_target(target)
         fuzzer.set_interface(interface)

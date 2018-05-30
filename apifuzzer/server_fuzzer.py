@@ -1,10 +1,13 @@
 from __future__ import print_function
 
 import json
+import logging
 
 from kitty.data.report import Report
 from kitty.fuzzers import ServerFuzzer
 from kitty.model import Container, KittyException
+
+from utils import set_class_logger
 
 
 def _flatten_dict_entry(orig_key, v):
@@ -20,16 +23,16 @@ def _flatten_dict_entry(orig_key, v):
     return entries
 
 
+@set_class_logger
 class OpenApiServerFuzzer(ServerFuzzer):
     """Extends the ServerFuzzer with exit after the end message."""
 
     def not_implemented(self, func_name):
         pass
 
-    def __init__(self, logger=None):
-        self.logger = logger.getChild(self.__class__.__name__)
+    def __init__(self,):
         self.logger.info('Logger initialized')
-        super(OpenApiServerFuzzer, self).__init__(logger=logger.getChild(self.__class__.__name__))
+        super(OpenApiServerFuzzer, self).__init__()
 
     def _end_message(self):
         super(OpenApiServerFuzzer, self)._end_message()

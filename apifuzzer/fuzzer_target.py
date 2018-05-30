@@ -5,19 +5,19 @@ import requests
 from kitty.data.report import Report
 from kitty.targets.server import ServerTarget
 from requests.exceptions import RequestException
+from utils import set_class_logger
 
-
+@set_class_logger
 class FuzzerTarget(ServerTarget):
     def not_implemented(self, func_name):
         pass
 
-    def __init__(self, name, base_url, report_dir, logger=None):
-        super(FuzzerTarget, self).__init__(name, logger)
+    def __init__(self, name, base_url, report_dir):
+        super(FuzzerTarget, self).__init__(name)
         self.base_url = base_url
         self._last_sent_request = None
         self.accepted_status_codes = list(range(200, 300)) + list(range(400, 500))
         self.report_dir = report_dir
-        self.logger = logger.getChild(self.__class__.__name__)
         self.logger.info('Logger initialized')
 
     def error_report(self, msg, req):

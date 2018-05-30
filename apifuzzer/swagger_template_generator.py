@@ -1,6 +1,6 @@
 from base_template import BaseTemplate
 from template_generator_base import TemplateGenerator
-from utils import get_sample_data_by_type, get_fuzz_type_by_param_type
+from utils import get_sample_data_by_type, get_fuzz_type_by_param_type, set_class_logger
 
 
 class ParamTypes(object):
@@ -12,12 +12,12 @@ class ParamTypes(object):
     FORM_DATA = 'formData'
 
 
+@set_class_logger
 class SwaggerTemplateGenerator(TemplateGenerator):
 
-    def __init__(self, api_resources, logger):
+    def __init__(self, api_resources):
         self.api_resources = api_resources
         self.templates = list()
-        self.logger = logger.getChild(self.__class__.__name__)
         self.logger.info('Logger initialized')
 
     def process_api_resources(self):

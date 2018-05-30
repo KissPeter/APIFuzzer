@@ -35,8 +35,8 @@ def get_sample_data_by_type(param_type):
 def set_logger(level='warning'):
     syslog = SysLogHandler(address='/dev/log', facility=SysLogHandler.LOG_LOCAL2)
     syslog.setFormatter(Formatter('%(pathname)s [%(process)d]: %(levelname)s %(message)s'))
-    logger = logging.getLogger('APIFuzzer')
-
+    logging.basicConfig()
+    logger = logging.getLogger()
     logger.setLevel(level=level.upper())
     logger.addHandler(syslog)
     return logger

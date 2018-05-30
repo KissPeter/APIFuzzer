@@ -27,7 +27,9 @@ class OpenApiServerFuzzer(ServerFuzzer):
         pass
 
     def __init__(self, logger=None):
-        super(OpenApiServerFuzzer, self).__init__(logger=logger)
+        self.logger = logger.getChild(self.__class__.__name__)
+        self.logger.info('Logger initialized')
+        super(OpenApiServerFuzzer, self).__init__(logger=logger.getChild(self.__class__.__name__))
 
     def _end_message(self):
         super(OpenApiServerFuzzer, self)._end_message()

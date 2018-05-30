@@ -14,10 +14,11 @@ class FuzzerTarget(ServerTarget):
     def __init__(self, name, base_url, report_dir, logger=None):
         super(FuzzerTarget, self).__init__(name, logger)
         self.base_url = base_url
-        self.logger = logger
         self._last_sent_request = None
         self.accepted_status_codes = list(range(200, 300)) + list(range(400, 500))
         self.report_dir = report_dir
+        self.logger = logger.getChild(self.__class__.__name__)
+        self.logger.info('Logger initialized')
 
     def error_report(self, msg, req):
         if hasattr(req, 'request'):
@@ -44,13 +45,15 @@ class FuzzerTarget(ServerTarget):
         try:
             _req_url = list()
             for url_part in self.base_url, kwargs['url']:
+                self.logger.info('URL part: {}'.format(url_part))
                 _req_url.append(url_part.strip('/'))
-            kwargs['url'] = '/'.join(_req_url)
-            kwargs['url'] = self.expand_path_variables(kwargs.get('path_variables'), kwargs['url'])
+            for k, v in kwargs.get('path_variables', {}).items():
+              _req_url.append(k)
             if kwargs.get('path_variables'):
                 kwargs.pop('path_variables')
-            print("Request:")
-            _return = requests.request(**kwargs)
+            kwargs.pop('url')
+            self.logger.info('Request:{}'.format(kwargs))
+            _return = requests.request(url='/'.join(_req_url), **kwargs)
             status_code = _return.status_code
             if status_code:
                 if status_code not in self.accepted_status_codes:
@@ -73,29 +76,30 @@ class FuzzerTarget(ServerTarget):
         if self.report.get('status') != Report.PASSED:
             self.save_report_to_disc()
 
-    def expand_path_variables(self, params, url_chars):
-        """
-        Expands path variables:
-        Example:
-        http://localhost:8080/ingest/v1/catalog/{catalogid}/layer/{layerid}, {layerid: 11, catalogid:12} ->
-        http://localhost:8080/ingest/v1/catalog/11/layer/12
 
-        :param params: url variables, headers, request body from a swagger.json (
-        :param url_chars: URL string without expanded path variables
-        :returns URL string with expanded path variables
-        """
-        url_chars = list(url_chars)
-        cleaned_url = []
-        counter = 0
-        while counter < len(url_chars):
-            char = url_chars[counter]
-            if char == '{':
-                closing_position = "".join(url_chars)[counter:].find('}')
-                value = url_chars[counter + 1:closing_position + counter]
-                counter = closing_position + counter
-                cleaned_url.extend(value)
-            else:
-                cleaned_url.append(char)
-            counter = counter + 1
-        cleaned_url = ''.join(cleaned_url)
-        return cleaned_url
+def expand_path_variables(url_chars):
+    """
+    Expands path variables:
+    Example:
+    http://localhost:8080/ingest/v1/catalog/{catalogid}/layer/{layerid}, {layerid: 11, catalogid:12} ->
+    http://localhost:8080/ingest/v1/catalog/11/layer/12
+
+    :param params: url variables, headers, request body from a swagger.json (
+    :param url_chars: URL string without expanded path variables
+    :returns URL string with expanded path variables
+    """
+    url_chars = list(url_chars) if isinstance(url_chars, str) else ""
+    cleaned_url = []
+    counter = 0
+    while counter < len(url_chars):
+        char = url_chars[counter]
+        if char == '{':
+            closing_position = "".join(url_chars)[counter:].find('}')
+            value = url_chars[counter + 1:closing_position + counter]
+            counter = closing_position + counter
+            cleaned_url.extend(value)
+        else:
+            cleaned_url.append(char)
+        counter = counter + 1
+    cleaned_url = ''.join(cleaned_url)
+    return cleaned_url

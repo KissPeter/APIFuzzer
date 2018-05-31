@@ -1,11 +1,16 @@
+#  -*- coding: utf-8 -*-
 import json
 from time import time
-
+import re
 import requests
+from base64 import b64encode
+
 from kitty.data.report import Report
 from kitty.targets.server import ServerTarget
 from requests.exceptions import RequestException
+
 from utils import set_class_logger
+
 
 @set_class_logger
 class FuzzerTarget(ServerTarget):
@@ -27,18 +32,22 @@ class FuzzerTarget(ServerTarget):
             self.report.add('response', req.text)
         else:
             for k, v in req.items():
-                self.report.add(k, v)
+                if isinstance(v, dict):
+                    for subkey, subvalue in v.items():
+                        self.report.add(subkey, b64encode(subvalue))
+                else:
+                    self.report.add(k, b64encode(v))
         self.report.set_status(Report.ERROR)
         self.report.error(msg)
 
     def save_report_to_disc(self):
         try:
             with open('{}/{}_{}.json'.format(self.report_dir, self.test_number, time()), 'wb') as report_dump_file:
-                report_dump_file.write(json.dumps(self.report.to_dict()))
+                report_dump_file.write(json.dumps(self.report.to_dict(), ensure_ascii=False, encoding='utf-8').encode('utf8'))
         except Exception as e:
             self.logger.error(
                 'Failed to save report "{}" to {} because: {}'
-                .format(self.report.to_dict(), self.report_dir, e)
+                 .format(self.report.to_dict(), self.report_dir, e)
             )
 
     def transmit(self, **kwargs):
@@ -47,13 +56,14 @@ class FuzzerTarget(ServerTarget):
             for url_part in self.base_url, kwargs['url']:
                 self.logger.info('URL part: {}'.format(url_part))
                 _req_url.append(url_part.strip('/'))
-            for k, v in kwargs.get('path_variables', {}).items():
-              _req_url.append(k)
+            self.logger.warn('Request KWARGS:{}, url: {}'.format(kwargs, _req_url))
+            request_url = '/'.join(_req_url)
+            request_url = self.expand_path_variables(request_url, kwargs.get('path_variables'))
             if kwargs.get('path_variables'):
                 kwargs.pop('path_variables')
             kwargs.pop('url')
-            self.logger.info('Request:{}'.format(kwargs))
-            _return = requests.request(url='/'.join(_req_url), **kwargs)
+            self.logger.warn('>>> Formatted URL: {} <<<'.format(request_url))
+            _return = requests.request(url=request_url, **kwargs)
             status_code = _return.status_code
             if status_code:
                 if status_code not in self.accepted_status_codes:
@@ -76,30 +86,22 @@ class FuzzerTarget(ServerTarget):
         if self.report.get('status') != Report.PASSED:
             self.save_report_to_disc()
 
+    def expand_path_variables(self, url, path_parameters):
+        for path_key, path_value in path_parameters.items():
+            _temporally_url_list = list()
+            splitter = '({' + path_key + '})'
+            url_list = re.split(splitter, url)
+            self.logger.info('Processing: {} key: {} splitter: {} '.format(url_list, path_key, splitter))
+            for url_part in url_list:
+                if url_part == '{' + path_key + '}':
+                    _temporally_url_list.append(path_value.encode())
+                else:
+                    _temporally_url_list.append(url_part)
+            try:
+                url = "".join(_temporally_url_list)
+            except Exception as e:
+                self.logger.error(e)
+            self.logger.warn('url 1: {} | {}->{}'.format(url, path_key, path_value))
+        url = url.replace("{", "").replace("}", "")
+        return url
 
-def expand_path_variables(url_chars):
-    """
-    Expands path variables:
-    Example:
-    http://localhost:8080/ingest/v1/catalog/{catalogid}/layer/{layerid}, {layerid: 11, catalogid:12} ->
-    http://localhost:8080/ingest/v1/catalog/11/layer/12
-
-    :param params: url variables, headers, request body from a swagger.json (
-    :param url_chars: URL string without expanded path variables
-    :returns URL string with expanded path variables
-    """
-    url_chars = list(url_chars) if isinstance(url_chars, str) else ""
-    cleaned_url = []
-    counter = 0
-    while counter < len(url_chars):
-        char = url_chars[counter]
-        if char == '{':
-            closing_position = "".join(url_chars)[counter:].find('}')
-            value = url_chars[counter + 1:closing_position + counter]
-            counter = closing_position + counter
-            cleaned_url.extend(value)
-        else:
-            cleaned_url.append(char)
-        counter = counter + 1
-    cleaned_url = ''.join(cleaned_url)
-    return cleaned_url

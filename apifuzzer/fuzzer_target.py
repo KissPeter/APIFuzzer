@@ -80,7 +80,6 @@ class FuzzerTarget(ServerTarget):
             return _return
         except (RequestException, UnicodeDecodeError) as e:  # request failure such as InvalidHeader
             self.error_report('Failed to parse http response code, exception: {}'.format(e), kwargs)
-            pass
 
     def post_test(self, test_num):
         """Called after a test is completed, perform cleanup etc."""

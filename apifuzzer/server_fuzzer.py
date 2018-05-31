@@ -1,7 +1,6 @@
 from __future__ import print_function
 
 import json
-import logging
 
 from kitty.data.report import Report
 from kitty.fuzzers import ServerFuzzer
@@ -63,11 +62,11 @@ class OpenApiServerFuzzer(ServerFuzzer):
     @staticmethod
     def _recurse_params(param):
         _return = dict()
-        if type(param) != Container:
-            _return = param.render().tobytes()
-        else:
+        if isinstance(param, Container):
             for field in param._fields:
                 _return[field.get_name()] = OpenApiServerFuzzer._recurse_params(field)
+        else:
+            _return = param.render().tobytes()
         return _return
 
     def _store_report(self, report):

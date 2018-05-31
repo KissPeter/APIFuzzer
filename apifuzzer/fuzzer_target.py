@@ -1,4 +1,6 @@
 #  -*- coding: utf-8 -*-
+# encoding: utf-8
+
 import json
 from time import time
 import re
@@ -43,7 +45,7 @@ class FuzzerTarget(ServerTarget):
     def save_report_to_disc(self):
         try:
             with open('{}/{}_{}.json'.format(self.report_dir, self.test_number, time()), 'wb') as report_dump_file:
-                report_dump_file.write(json.dumps(self.report.to_dict(), ensure_ascii=False, encoding='utf-8').encode('utf8'))
+                report_dump_file.write(json.dumps(self.report.to_dict(), ensure_ascii=False, encoding='utf-8'))
         except Exception as e:
             self.logger.error(
                 'Failed to save report "{}" to {} because: {}'
@@ -74,7 +76,7 @@ class FuzzerTarget(ServerTarget):
                     self.report.set_status(Report.FAILED)
                     self.report.failed('return code {} is not in the expected list'.format(status_code))
             else:
-                self.error_report('Failed to parse http response code', _return)
+                self.error_report('Failed to parse http response code', _return.headers)
             return _return
         except (RequestException, UnicodeDecodeError) as e:  # request failure such as InvalidHeader
             self.error_report('Failed to parse http response code, exception: {}'.format(e), kwargs)
@@ -88,20 +90,21 @@ class FuzzerTarget(ServerTarget):
 
     def expand_path_variables(self, url, path_parameters):
         for path_key, path_value in path_parameters.items():
-            _temporally_url_list = list()
-            splitter = '({' + path_key + '})'
-            url_list = re.split(splitter, url)
-            self.logger.info('Processing: {} key: {} splitter: {} '.format(url_list, path_key, splitter))
-            for url_part in url_list:
-                if url_part == '{' + path_key + '}':
-                    _temporally_url_list.append(path_value.encode())
-                else:
-                    _temporally_url_list.append(url_part)
             try:
+                _temporally_url_list = list()
+                splitter = '({' + path_key + '})'
+                url_list = re.split(splitter, url)
+                self.logger.info('Processing: {} key: {} splitter: {} '.format(url_list, path_key, splitter))
+                for url_part in url_list:
+                    if url_part == '{' + path_key + '}':
+                        #_temporally_url_list.append(unicode(path_value, errors='ignore'))
+                        _temporally_url_list.append(path_value.decode('unicode-escape').encode('utf8'))
+                    else:
+                        _temporally_url_list.append(url_part.encode())
                 url = "".join(_temporally_url_list)
+                self.logger.warn('url 1: {} | {}->{}'.format(url, path_key, path_value))
             except Exception as e:
-                self.logger.error(e)
-            self.logger.warn('url 1: {} | {}->{}'.format(url, path_key, path_value))
+                self.logger.warn('Failed to replace string in url: {} param: {}, exception: {}'.format(url, path_value, e))
         url = url.replace("{", "").replace("}", "")
         return url
 

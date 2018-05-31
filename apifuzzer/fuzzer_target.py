@@ -92,17 +92,17 @@ class FuzzerTarget(ServerTarget):
         for path_key, path_value in path_parameters.items():
             try:
                 _temporally_url_list = list()
-                splitter = '({' + path_key + '})'
+                path_parameter = path_key.split('_')[-1]
+                splitter = '({' + path_parameter + '})'
                 url_list = re.split(splitter, url)
-                self.logger.info('Processing: {} key: {} splitter: {} '.format(url_list, path_key, splitter))
+                self.logger.info('Processing: {} key: {} splitter: {} '.format(url_list, path_parameter, splitter))
                 for url_part in url_list:
-                    if url_part == '{' + path_key + '}':
-                        #_temporally_url_list.append(unicode(path_value, errors='ignore'))
+                    if url_part == '{' + path_parameter + '}':
                         _temporally_url_list.append(path_value.decode('unicode-escape').encode('utf8'))
                     else:
                         _temporally_url_list.append(url_part.encode())
                 url = "".join(_temporally_url_list)
-                self.logger.warn('url 1: {} | {}->{}'.format(url, path_key, path_value))
+                self.logger.warn('url 1: {} | {}->{}'.format(url, path_parameter, path_value))
             except Exception as e:
                 self.logger.warn('Failed to replace string in url: {} param: {}, exception: {}'.format(url, path_value, e))
         url = url.replace("{", "").replace("}", "")

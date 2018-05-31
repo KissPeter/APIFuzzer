@@ -1,67 +1,71 @@
+#  -*- coding: utf-8 -*-
+# encoding: utf-8
+
 import json
 from time import time
-import base64
-
+import re
 import requests
+from base64 import b64encode
+
 from kitty.data.report import Report
 from kitty.targets.server import ServerTarget
 from requests.exceptions import RequestException
 
+from utils import set_class_logger
 
+
+@set_class_logger
 class FuzzerTarget(ServerTarget):
     def not_implemented(self, func_name):
         pass
 
-    def __init__(self, name, base_url, report_dir, logger=None):
-        super(FuzzerTarget, self).__init__(name, logger)
+    def __init__(self, name, base_url, report_dir):
+        super(FuzzerTarget, self).__init__(name)
         self.base_url = base_url
-        self.logger = logger
         self._last_sent_request = None
         self.accepted_status_codes = list(range(200, 300)) + list(range(400, 500))
         self.report_dir = report_dir
+        self.logger.info('Logger initialized')
 
     def error_report(self, msg, req):
         if hasattr(req, 'request'):
             self.report.add('request method', req.request.method)
             self.report.add('request body', req.request.body)
             self.report.add('response', req.text)
-        elif hasattr(req, 'items'):
-            for k, v in req.items():
-                try:
-                    # E.g headers:
-                    if isinstance(v, dict):
-                        v = json.dumps(v, ensure_ascii=False)
-                    self.report.add(k, base64.b64encode(v))
-                except UnicodeDecodeError:
-                    self.report.add(k, '{} value is not utf16 character'.format(k))
-        elif isinstance(req, list):
-            for item in req:
-                self.report.add(item, item)
         else:
-            self.report.add('Unknown data type', req)
+            for k, v in req.items():
+                if isinstance(v, dict):
+                    for subkey, subvalue in v.items():
+                        self.report.add(subkey, b64encode(subvalue))
+                else:
+                    self.report.add(k, b64encode(v))
         self.report.set_status(Report.ERROR)
         self.report.error(msg)
 
     def save_report_to_disc(self):
         try:
             with open('{}/{}_{}.json'.format(self.report_dir, self.test_number, time()), 'wb') as report_dump_file:
-                report_dump_file.write(json.dumps(self.report.to_dict()))
+                report_dump_file.write(json.dumps(self.report.to_dict(), ensure_ascii=False, encoding='utf-8'))
         except Exception as e:
             self.logger.error(
                 'Failed to save report "{}" to {} because: {}'
-                    .format(self.report.to_dict(), self.report_dir, e)
+                 .format(self.report.to_dict(), self.report_dir, e)
             )
 
     def transmit(self, **kwargs):
         try:
             _req_url = list()
             for url_part in self.base_url, kwargs['url']:
+                self.logger.info('URL part: {}'.format(url_part))
                 _req_url.append(url_part.strip('/'))
-            kwargs['url'] = '/'.join(_req_url)
+            self.logger.warn('Request KWARGS:{}, url: {}'.format(kwargs, _req_url))
+            request_url = '/'.join(_req_url)
+            request_url = self.expand_path_variables(request_url, kwargs.get('path_variables'))
             if kwargs.get('path_variables'):
-                kwargs['url'] = self.expand_path_variables(kwargs.get('path_variables'), kwargs['url'])
                 kwargs.pop('path_variables')
-            _return = requests.request(**kwargs)
+            kwargs.pop('url')
+            self.logger.warn('>>> Formatted URL: {} <<<'.format(request_url))
+            _return = requests.request(url=request_url, **kwargs)
             status_code = _return.status_code
             if status_code:
                 if status_code not in self.accepted_status_codes:
@@ -72,7 +76,7 @@ class FuzzerTarget(ServerTarget):
                     self.report.set_status(Report.FAILED)
                     self.report.failed('return code {} is not in the expected list'.format(status_code))
             else:
-                self.error_report('{}.Failed to parse http response code'.format(self.test_number), _return)
+                self.error_report('Failed to parse http response code', _return.headers)
             return _return
         except (RequestException, UnicodeDecodeError) as e:  # request failure such as InvalidHeader
             self.error_report('Failed to parse http response code, exception: {}'.format(e), kwargs)
@@ -84,29 +88,23 @@ class FuzzerTarget(ServerTarget):
         if self.report.get('status') != Report.PASSED:
             self.save_report_to_disc()
 
-    def expand_path_variables(self, params, url_chars):
-        """
-        Expands path variables:
-        Example:
-        http://localhost:8080/ingest/v1/catalog/{catalogid}/layer/{layerid}, {layerid: 11, catalogid:12} ->
-        http://localhost:8080/ingest/v1/catalog/11/layer/12
+    def expand_path_variables(self, url, path_parameters):
+        for path_key, path_value in path_parameters.items():
+            try:
+                _temporally_url_list = list()
+                splitter = '({' + path_key + '})'
+                url_list = re.split(splitter, url)
+                self.logger.info('Processing: {} key: {} splitter: {} '.format(url_list, path_key, splitter))
+                for url_part in url_list:
+                    if url_part == '{' + path_key + '}':
+                        #_temporally_url_list.append(unicode(path_value, errors='ignore'))
+                        _temporally_url_list.append(path_value.decode('unicode-escape').encode('utf8'))
+                    else:
+                        _temporally_url_list.append(url_part.encode())
+                url = "".join(_temporally_url_list)
+                self.logger.warn('url 1: {} | {}->{}'.format(url, path_key, path_value))
+            except Exception as e:
+                self.logger.warn('Failed to replace string in url: {} param: {}, exception: {}'.format(url, path_value, e))
+        url = url.replace("{", "").replace("}", "")
+        return url
 
-        :param params: url variables, headers, request body from a swagger.json (
-        :param url_chars: URL string without expanded path variables
-        :returns URL string with expanded path variables
-        """
-        url_chars = list(url_chars)
-        cleaned_url = []
-        counter = 0
-        while counter < len(url_chars):
-            char = url_chars[counter]
-            if char == '{':
-                closing_position = "".join(url_chars)[counter:].find('}')
-                value = url_chars[counter + 1:closing_position + counter]
-                counter = closing_position + counter
-                cleaned_url.extend(value)
-            else:
-                cleaned_url.append(char)
-            counter = counter + 1
-        cleaned_url = ''.join(cleaned_url)
-        return cleaned_url

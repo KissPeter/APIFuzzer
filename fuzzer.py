@@ -1,9 +1,11 @@
 #!/usr/bin/env python2.7
+#  -*- coding: utf-8 -*-
 from __future__ import print_function
 import sys
 import argparse
 import json
 import logging
+import signal
 
 if sys.version_info[:2] == (2, 7):
     from kitty.interfaces import WebInterface
@@ -19,7 +21,8 @@ class Fuzzer(object):
 
     def __init__(self, api_resources, report_dir, test_level, log_level, alternate_url=None, test_result_dst=None):
         self.api_resources = api_resources
-        self.base_url = alternate_url
+        self.base_url = None
+        self.alternate_url = alternate_url
         self.templates = None
         self.test_level = test_level
         self.report_dir = report_dir
@@ -29,14 +32,13 @@ class Fuzzer(object):
 
     def prepare(self):
         # here we will be able to branch the template generator if we would like to support other than Swagger
-        template_generator = SwaggerTemplateGenerator(self.api_resources, self.logger)
+        template_generator = SwaggerTemplateGenerator(self.api_resources)
         template_generator.process_api_resources()
         self.templates = template_generator.templates
-        if not self.base_url:
-            self.base_url = template_generator.compile_base_url()
+        self.base_url = template_generator.compile_base_url(self.alternate_url)
 
     def run(self):
-        target = FuzzerTarget(name='target', base_url=self.base_url, report_dir=self.report_dir, logger=self.logger)
+        target = FuzzerTarget(name='target', base_url=self.base_url, report_dir=self.report_dir)
         interface = WebInterface()
         model = GraphModel()
         for template in self.templates:
@@ -49,6 +51,10 @@ class Fuzzer(object):
 
 
 if __name__ == '__main__':
+
+    def signal_handler(**kwargs):
+        sys.exit(0)
+
     if not sys.version_info[:2] == (2, 7):
         print('Please use with Python 2.7')
         exit()
@@ -107,4 +113,5 @@ if __name__ == '__main__':
                   log_level=args.log_level
                   )
     prog.prepare()
+    signal.signal(signal.SIGINT, signal_handler)
     prog.run()

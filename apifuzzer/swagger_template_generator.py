@@ -1,6 +1,6 @@
 from base_template import BaseTemplate
 from template_generator_base import TemplateGenerator
-from utils import get_sample_data_by_type, get_fuzz_type_by_param_type
+from utils import get_sample_data_by_type, get_fuzz_type_by_param_type, set_class_logger
 
 
 class ParamTypes(object):
@@ -12,70 +12,65 @@ class ParamTypes(object):
     FORM_DATA = 'formData'
 
 
+@set_class_logger
 class SwaggerTemplateGenerator(TemplateGenerator):
-    def __init__(self, api_resources, logger):
+
+    def __init__(self, api_resources):
         self.api_resources = api_resources
         self.templates = list()
-        self.logger = logger
+        self.logger.info('Logger initialized')
 
     def process_api_resources(self):
+        self.logger.info('Start preparation')
         for resource in self.api_resources['paths'].keys():
-            print(resource)
+            normalized_url = resource.lstrip('/').replace('/', '_')
             for method in self.api_resources['paths'][resource].keys():
-                print(method)
-                template = BaseTemplate()
-                template.url = resource
-                template.method = method.upper()
-                template.parameters = list()
-                template.headers = list()
-                template.path_variables = list()
-                for param in self.api_resources['paths'][resource][method].get('parameters', []):
-                    print(param['name'])
+                self.logger.info('Resource: {} Method: {}'.format(resource, method))
+                for param in self.api_resources['paths'][resource][method].get('parameters', {}):
+                    template_container_name = '{}_{}_{}'.format(normalized_url, method, param.get('name'))
+                    template = BaseTemplate(name=template_container_name)
+                    template.url = resource
+                    template.method = method.upper()
+                    self.logger.info('Resource: {} Method: {} Parameter: {}'.format(resource, method, param))
+                    fuzz_type = get_fuzz_type_by_param_type(param.get('type'))
+                    sample_data = get_sample_data_by_type(param.get('type'))
                     # get parameter placement(in): path, query, header, cookie
                     # get parameter type: integer, string
                     # get format if present
                     param_type = param.get('in')
+                    param_name = template_container_name
                     if param_type == ParamTypes.PATH:
-                        fuzz_type = get_fuzz_type_by_param_type(param.get('type'))
-                        template.path_variables.append(
-                            fuzz_type(
-                                name=param['name'],
-                                value=get_sample_data_by_type(param.get('type'))
-                            ))
-                    elif param_type == ParamTypes.HEADER or param_type == ParamTypes.COOKIE:
-                        fuzz_type = get_fuzz_type_by_param_type(param.get('type'))
-                        template.headers.append(
-                            fuzz_type(
-                                name=param['name'],
-                                value=get_sample_data_by_type(param.get('type'))
-                            ))
+                        template.path_variables.append(fuzz_type(name=param_name, value=sample_data))
+                    elif param_type == ParamTypes.HEADER:
+                        template.headers.append(fuzz_type(name=param_name, value=sample_data))
+                    elif param_type == ParamTypes.COOKIE:
+                        template.cookies.append(fuzz_type(name=param_name, value=sample_data))
                     elif param_type == ParamTypes.QUERY:
-                        fuzz_type = get_fuzz_type_by_param_type(param.get('type'))
-                        template.parameters.append(
-                            fuzz_type(
-                                name=param['name'],
-                                value=get_sample_data_by_type(param.get('type'))
-                            ))
-                    elif param_type == ParamTypes.BODY or param_type == ParamTypes.FORM_DATA:
-                        fuzz_type = get_fuzz_type_by_param_type(param.get('type'))
-                        template.data = fuzz_type(
-                            name=param['name'],
-                            value=get_sample_data_by_type(param.get('type'))
-                        )
+                        template.params.append(fuzz_type(name=param_name, value=sample_data))
+                    elif param_type in [ParamTypes.BODY, ParamTypes.FORM_DATA]:
+                        template.data.append(fuzz_type(name=param_name, value=sample_data))
                     else:
-                        # FIXMY doens't work due to some reason!!
-                        print("azaza")
                         self.logger.error('Cant parse a definition from swagger.json: %s', param)
-                self.templates.append(template)
+                    self.templates.append(template)
 
-    def compile_base_url(self):
-        if 'http' in self.api_resources['schemes']:
-            _protocol = 'http'
+    def compile_base_url(self, alternate_url):
+        """
+        :param alternate_url: alternate protocol and base url to be used instead of the one defined in swagger
+        :type alternate_url: string
+        """
+        if alternate_url:
+            _base_url = "/".join([
+                alternate_url.strip('/'),
+                self.api_resources['basePath'].strip('/')
+            ])
         else:
-            _protocol = self.api_resources['schemes'][0]
-        _base_url = '{}://{}{}'.format(
-            _protocol,
-            self.api_resources['host'],
-            self.api_resources['basePath']
-        )
+            if 'http' in self.api_resources['schemes']:
+                _protocol = 'http'
+            else:
+                _protocol = self.api_resources['schemes'][0]
+            _base_url = '{}://{}{}'.format(
+                _protocol,
+                self.api_resources['host'],
+                self.api_resources['basePath']
+            )
         return _base_url

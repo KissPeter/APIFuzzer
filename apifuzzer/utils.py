@@ -34,9 +34,16 @@ def get_sample_data_by_type(param_type):
 
 def set_logger(level='warning'):
     syslog = SysLogHandler(address='/dev/log', facility=SysLogHandler.LOG_LOCAL2)
-    syslog.setFormatter(Formatter('%(pathname)s [%(process)d]: %(levelname)s %(message)s'))
-    logger = logging.getLogger('APIFuzzer')
-
+    syslog.setFormatter(Formatter('%(process)d [%(levelname)s] %(name)s: %(message)s'))
+    logger = logging.getLogger()
     logger.setLevel(level=level.upper())
     logger.addHandler(syslog)
     return logger
+
+
+def set_class_logger(cls):
+    #try:
+    cls.logger = logging.getLogger(cls.__class__.__name__)
+    #except AttributeError:
+    #    cls.logger = logging.getLogger(cls)
+    return cls

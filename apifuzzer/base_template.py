@@ -4,6 +4,7 @@ from kitty.model import Static, Template, Container
 
 
 class BaseTemplate(object):
+
     method = None
     url = None
     params = list()
@@ -22,10 +23,13 @@ class BaseTemplate(object):
     :param cookies: (optional) Dict or CookieJar object to send with the :class:`Request`.
     """
 
+    def __init__(self, name):
+        self.name = name
+
     def compile_template(self):
         _url = Static(name='url', value=self.url.encode())
         _method = Static(name='method', value=self.method.encode())
-        template = Template(name='{}_{}'.format(self.url.lstrip('/').replace('/', '_'), self.method), fields=[_url, _method])
+        template = Template(name=self.name, fields=[_url, _method])
         if list(self.params):
             template.append_fields([Container(name='params', fields=self.params)])
         if list(self.headers):

@@ -5,6 +5,7 @@ import sys
 import argparse
 import json
 import logging
+import signal
 
 if sys.version_info[:2] == (2, 7):
     from kitty.interfaces import WebInterface
@@ -50,6 +51,10 @@ class Fuzzer(object):
 
 
 if __name__ == '__main__':
+
+    def signal_handler(**kwargs):
+        sys.exit(0)
+
     if not sys.version_info[:2] == (2, 7):
         print('Please use with Python 2.7')
         exit()
@@ -108,4 +113,5 @@ if __name__ == '__main__':
                   log_level=args.log_level
                   )
     prog.prepare()
+    signal.signal(signal.SIGINT, signal_handler)
     prog.run()

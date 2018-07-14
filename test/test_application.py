@@ -1,7 +1,8 @@
-#!/usr/bin/env python3.6
+#!/usr/bin/env python2.7
 from werkzeug.exceptions import HTTPException
 from flask import Flask, jsonify, request
 from werkzeug.routing import Rule
+
 import time
 
 
@@ -29,7 +30,6 @@ app = Flask(__name__)
 app.register_error_handler(500, InternalError)
 app.url_map.add(Rule('/', defaults={'path': ''}, endpoint='index'))
 app.url_map.add(Rule('/<path:path>', endpoint='index'))
-
 last_request_data = LastRequestData()
 
 

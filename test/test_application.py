@@ -38,7 +38,7 @@ def transform(integer_id):
     try:
         _integer_id = int(integer_id)
     except ValueError:
-        raise InternalError('Failed to convert {} to int'.format(integer_id))
+        raise InternalError('Failed to convert %s to int', integer_id)
     return 'ID: {}'.format(_integer_id)
 
 

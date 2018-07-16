@@ -32,8 +32,9 @@ $ pip2.7 install -r APIFuzzer/requirements.txt
 Check the help (some of them are not implemented yet):
 ```
 $ python2.7  fuzzer.py -h
-usage: fuzzer.py [-h] -s SRC_FILE [-r REPORT_DIR] [-l LEVEL]
+usage: fuzzer.py [-h] -s SRC_FILE [-r REPORT_DIR] [--level LEVEL]
                  [-u ALTERNATE_URL] [-t TEST_RESULT_DST]
+                 [--log {warn,error,debug,info,warning,critical,notset}]
 
 API fuzzer configuration
 
@@ -44,20 +45,29 @@ optional arguments:
   -r REPORT_DIR, --report_dir REPORT_DIR
                     Directory where error reports will be saved, default:
                     /tmp/
-  -l LEVEL, --level LEVEL
-                    Test deepness: [1,2], higher is the deeper !!!Not
+  --level LEVEL     Test deepness: [1,2], higher is the deeper !!!Not
                     implemented!!!
   -u ALTERNATE_URL, --url ALTERNATE_URL
                     Use CLI defined url instead compile the url from the API
                     definition. Useful for testing
   -t TEST_RESULT_DST, --test_report TEST_RESULT_DST
                     JUnit test result xml save path !!!Not implemented!!!
+  --log {warn,error,debug,info,warning,critical,notset}
+                    Use different log level than the default WARNING
 
 ```
-Start fuzzing:
+
+Usage example:
 
 ```
-$ python2.7  fuzzer.py -s your_swagger_definition.json -u http://localhost:8080/
+Start the sample application (install the necessary packages listed in test/requirements_for_test.txt):
+$ python2.7 test/test_application.py
+
+Start the fuzzer:
+$ python2 fuzzer.py -s test/test_swagger_definition.json -u http://localhost:5000/ -r /tmp/reports/ 
+
+Check the reports:
+$ ls -1 /tmp/reports/
 ```
 
 [API Blueprint]: https://apiblueprint.org/

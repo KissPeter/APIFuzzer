@@ -95,3 +95,11 @@ class OpenApiServerFuzzer(ServerFuzzer):
 
         self.dataman.store_report(report, self.model.current_index())
         self.dataman.get_report_by_id(self.model.current_index())
+
+    def _test_environment(self):
+        sequence = self.model.get_sequence()
+        try:
+            if self._run_sequence(sequence):
+                self.logger.info('Environment test failed')
+        except Exception:
+            self.logger.info('Environment test failed')

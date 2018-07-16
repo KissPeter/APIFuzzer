@@ -4,7 +4,7 @@ indent_size = 4
 insert_final_newline = true
 end_of_line = lf
 
-[*.js]
+[*.{js,json}]
 indent_style = space
 indent_size = 2
 

@@ -1,6 +1,6 @@
 from __future__ import print_function
 import pytest
-import psutil
+import json
 from test_application import app
 from utils import get_test_server_pid
 from fuzzer import Fuzzer
@@ -12,10 +12,12 @@ class BaseTestClass(object):
     def setup_class(cls):
         if not get_test_server_pid():
             app.run(debug=True)
+        with open('./test_swagger_definition.json', 'r') as f:
+            cls.swagger = json.loads(f.read())
 
     @classmethod
     def teardown_class(cls):
-
+        pass
 
     def test_1_that_needs_resource_a(self):
-        print('\ntest_1_that_needs_resource_a()')
+        self.swagger.pop()

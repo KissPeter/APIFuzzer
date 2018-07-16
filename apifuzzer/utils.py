@@ -42,8 +42,5 @@ def set_logger(level='warning'):
 
 
 def set_class_logger(cls):
-    #try:
     cls.logger = logging.getLogger(cls.__class__.__name__)
-    #except AttributeError:
-    #    cls.logger = logging.getLogger(cls)
     return cls

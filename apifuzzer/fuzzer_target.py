@@ -2,6 +2,7 @@
 # encoding: utf-8
 
 import json
+import os
 from time import time
 import re
 import requests
@@ -44,6 +45,11 @@ class FuzzerTarget(ServerTarget):
 
     def save_report_to_disc(self):
         try:
+            if not os.path.exists(os.path.dirname(self.report_dir)):
+                try:
+                    os.makedirs(os.path.dirname(self.report_dir))
+                except OSError:
+                    pass
             with open('{}/{}_{}.json'.format(self.report_dir, self.test_number, time()), 'wb') as report_dump_file:
                 report_dump_file.write(json.dumps(self.report.to_dict(), ensure_ascii=False, encoding='utf-8'))
         except Exception as e:
@@ -61,6 +67,7 @@ class FuzzerTarget(ServerTarget):
             self.logger.warn('Request KWARGS:{}, url: {}'.format(kwargs, _req_url))
             request_url = '/'.join(_req_url)
             request_url = self.expand_path_variables(request_url, kwargs.get('path_variables'))
+            request_url = self.expand_path_variables(request_url, kwargs.get('params'))
             if kwargs.get('path_variables'):
                 kwargs.pop('path_variables')
             kwargs.pop('url')
@@ -88,10 +95,13 @@ class FuzzerTarget(ServerTarget):
             self.save_report_to_disc()
 
     def expand_path_variables(self, url, path_parameters):
+        if not isinstance(path_parameters, dict):
+            self.logger.error('path_parameters: {}'.format(path_parameters))
+            return url
         for path_key, path_value in path_parameters.items():
             try:
                 _temporally_url_list = list()
-                path_parameter = path_key.split('_')[-1]
+                path_parameter = path_key.split('|')[-1]
                 splitter = '({' + path_parameter + '})'
                 url_list = re.split(splitter, url)
                 self.logger.info('Processing: {} key: {} splitter: {} '.format(url_list, path_parameter, splitter))

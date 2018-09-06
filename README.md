@@ -3,6 +3,7 @@
 [![CII Best Practices](https://bestpractices.coreinfrastructure.org/projects/1620/badge)](https://bestpractices.coreinfrastructure.org/projects/1620)
 [![Build Status](https://travis-ci.org/KissPeter/APIFuzzer.svg?branch=master)](https://travis-ci.org/KissPeter/APIFuzzer)
 [![Maintainability](https://api.codeclimate.com/v1/badges/bfc9bda00deb5002b665/maintainability)](https://codeclimate.com/github/KissPeter/APIFuzzer/maintainability)
+[![Documentation Status](https://readthedocs.org/projects/apifuzzer/badge/?version=latest)](https://apifuzzer.readthedocs.io/en/latest/?badge=latest)
 
 # APIFuzzer — HTTP API Testing Framework
 

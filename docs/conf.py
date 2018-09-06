@@ -1,13 +1,12 @@
-#!/usr/bin/env python3
+#!/usr/bin/env python2
 import os
 import sys
 
 path = os.path.abspath(os.path.join(os.path.dirname(os.path.realpath(__file__)), os.pardir))
 sys.path.insert(0, path)
 
-project_version = '0.9'
-project = project_version[0]
-version = "".join(project_version[1:])
+project = 'APIfuzzer'
+version = '0.9'
 master_doc = "index"
 copyright = "All rights reserved"
 extensions = [

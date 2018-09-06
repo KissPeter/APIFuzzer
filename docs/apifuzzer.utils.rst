@@ -1,5 +1,5 @@
-apifuzzer\.utils module
-=======================
+apifuzzer.utils module
+======================
 
 .. automodule:: apifuzzer.utils
     :members:

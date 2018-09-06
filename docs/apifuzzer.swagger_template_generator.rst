@@ -1,5 +1,5 @@
-apifuzzer\.swagger\_template\_generator module
-==============================================
+apifuzzer.swagger\_template\_generator module
+=============================================
 
 .. automodule:: apifuzzer.swagger_template_generator
     :members:

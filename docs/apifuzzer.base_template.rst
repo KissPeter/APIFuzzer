@@ -1,5 +1,5 @@
-apifuzzer\.base\_template module
-================================
+apifuzzer.base\_template module
+===============================
 
 .. automodule:: apifuzzer.base_template
     :members:

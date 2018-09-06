@@ -1,7 +1,7 @@
-apifuzzer\.fuzzer\_target module
+apifuzzer.custom\_fuzzers module
 ================================
 
-.. automodule:: apifuzzer.fuzzer_target
+.. automodule:: apifuzzer.custom_fuzzers
     :members:
     :undoc-members:
     :show-inheritance:

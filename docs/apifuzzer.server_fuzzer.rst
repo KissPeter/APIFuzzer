@@ -1,5 +1,5 @@
-apifuzzer\.server\_fuzzer module
-================================
+apifuzzer.server\_fuzzer module
+===============================
 
 .. automodule:: apifuzzer.server_fuzzer
     :members:

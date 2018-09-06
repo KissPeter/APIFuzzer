@@ -1,5 +1,5 @@
-apifuzzer\.template\_generator\_base module
-===========================================
+apifuzzer.template\_generator\_base module
+==========================================
 
 .. automodule:: apifuzzer.template_generator_base
     :members:

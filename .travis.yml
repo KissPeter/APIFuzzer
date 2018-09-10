@@ -16,8 +16,6 @@ addons:
     project:
       name: KissPeter/APIFuzzer
     notification_email: kiss.peter@linuxadm.hu
-    build_command_prepend: "<Your build preprocessing command here>"
-    build_command: "<Your build command here>"
     branch_pattern: master
 
 script:

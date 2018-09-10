@@ -1,8 +1,24 @@
 language: python
 python:
-  - "2.7"
+- '2.7'
+env:
+  global:
+  - secure: nbvAVCvak6tOUf0K3zCfgM9W561j7i5AzzdfslkJK0qBeT4wTPrQ/EPx7Ay0X44Mk8rFlKlbDAvd1XuP6it1p8OFqDVWiyL2KObP4hh1duqjlg+xMJjO/wAHgQT8SUyk6BIQUnksUMS0wBqpuG2wsmG1B3zWspZpCpB/1XAfwJoG2DRyI5WNIII56pgn8tc57l7iPEmQrucPu7bWQoe4tYjMZCVewxc0rZgC2WLNPhaxuk1OwEJaTkNo8hetctfubnMvkx7JhKq9JgV9TI0CSHO6PYHHs8VvjmpC3kuWepqEVfnyyXYWFEsoPpL5q8bNnJbg/qvuhSlxM2VxJFzMmT5sXWQLKwR7VXHaIPho0jzmOgrL5BX3SlKXGAwLQ+vdrG7eeHJmZjzVUqzIK3NEseYH2u+iXLYSiNAXjdD3U3/NV5VWfbVgFx3yVhzWl1PdeCAe4zpPfllDqqG+WAfuYsYtseN+7+l7KMZjUL5Om+bzddK/jUrrG02U3XGqo1JjGO3rAT0JF9OuW6I+qhuFK8MD7+JAY7xR/cx71lgFgkympsJU3kQ1UKfUCs7aCUs6ask+OxixjUnEtZMEGA+MDdRNm6XLuedqkU0YgA2JgqJMbDt6vxaP5gdX26Jv/taO5m2U0tWM7iJkAtO2u3gpJtXhJvDyBisR/mHGiEGifPk=
 install:
-  - pip install -r requirements.txt
-script:
-  - python fuzzer.py -h
+- pip install -r requirements.txt
+addons:
+  coverity_scan:
+    # customized build script URL
+    # TRAVIS_REPO_SLUG: owner_name/repo_name of repository currently being built
+    # TRAVIS_BRANCH: name of the branch currently being built
+    build_script_url: https://raw.githubusercontent.com/KissPeter/APIFuzzer/master/.travis-coverity-scan-build.sh
+    # project metadata
+    project:
+      name: KissPeter/APIFuzzer
+    notification_email: kiss.peter@linuxadm.hu
+    build_command_prepend: "<Your build preprocessing command here>"
+    build_command: "<Your build command here>"
+    branch_pattern: master
 
+script:
+- python fuzzer.py -h

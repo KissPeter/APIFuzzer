@@ -6,6 +6,7 @@ import argparse
 import json
 import logging
 import signal
+import tempfile
 
 if sys.version_info[:2] == (2, 7):
     from kitty.interfaces import WebInterface
@@ -71,7 +72,7 @@ if __name__ == '__main__':
                         required=False,
                         help='Directory where error reports will be saved, default: /tmp/',
                         dest='report_dir',
-                        default='/tmp/')
+                        default=tempfile.mkdtemp)
     parser.add_argument('--level',
                         type=int,
                         required=False,

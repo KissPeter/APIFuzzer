@@ -1,9 +1,9 @@
 from __future__ import print_function
-import pytest
+
 import json
+
 from test_application import app
 from utils import get_test_server_pid
-from fuzzer import Fuzzer
 
 
 class BaseTestClass(object):

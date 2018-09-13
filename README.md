@@ -4,6 +4,7 @@
 [![Build Status](https://travis-ci.org/KissPeter/APIFuzzer.svg?branch=master)](https://travis-ci.org/KissPeter/APIFuzzer)
 [![Maintainability](https://api.codeclimate.com/v1/badges/bfc9bda00deb5002b665/maintainability)](https://codeclimate.com/github/KissPeter/APIFuzzer/maintainability)
 [![Documentation Status](https://readthedocs.org/projects/apifuzzer/badge/?version=latest)](https://apifuzzer.readthedocs.io/)
+[![Coverity Scan Build Status](https://scan.coverity.com/projects/16708/badge.svg)](https://scan.coverity.com/projects/kisspeter-apifuzzer)
 
 # APIFuzzer — HTTP API Testing Framework
 

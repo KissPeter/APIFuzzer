@@ -8,21 +8,21 @@ UPLOAD_URL="https://scan.coverity.com/builds?project=KissPeter%2FAPIFuzzer"
 
 
 # Verify upload is permitted
-permit=true
-AUTH_RES=`curl -s --form project="$COVERITY_SCAN_PROJECT_NAME" --form token="$COVERITY_SCAN_TOKEN" $SCAN_URL/api/upload_permitted`
+AUTH_RES=$(curl -s --form project="$COVERITY_SCAN_PROJECT_NAME" --form token="$COVERITY_SCAN_TOKEN" $SCAN_URL/api/upload_permitted)
 if [ "$AUTH_RES" = "Access denied" ]; then
   echo -e "\033[33;1mCoverity Scan API access denied. Check COVERITY_SCAN_PROJECT_NAME and COVERITY_SCAN_TOKEN.\033[0m"
   exit 1
 else
-  AUTH=`echo ${AUTH_RES} | ruby -e "require 'rubygems'; require 'json'; puts JSON[STDIN.read]['upload_permitted']"`
+  AUTH=$(echo ${AUTH_RES} | ruby -e "require 'rubygems'; require 'json'; puts JSON[STDIN.read]['upload_permitted']")
   if [ "$AUTH" = "true" ]; then
     echo -e "\033[33;1mCoverity Scan analysis authorized per quota ($COVERITY_SCAN_PROJECT_NAME).\033[0m"
   else
-    WHEN=`echo ${AUTH_RES} | ruby -e "require 'rubygems'; require 'json'; puts JSON[STDIN.read]['next_upload_permitted_at']"`
+    WHEN=$(echo ${AUTH_RES} | ruby -e "require 'rubygems'; require 'json'; puts JSON[STDIN.read]['next_upload_permitted_at']")
     echo -e "\033[33;1mOops!Coverity Scan analysis engine NOT authorized until $WHEN.\033[0m"
-    permit=false
+    exit 0
   fi
 fi
+
 
 # Download Coverity Scan Analysis Tool
 echo -e "\033[33;1mDownloading Coverity Scan Analysis Tool...\033[0m"
@@ -33,7 +33,7 @@ mkdir -p ${TOOL_BASE}
 pushd ${TOOL_BASE}
 tar xzf ${TOOL_ARCHIVE}
 popd
-TOOL_DIR=`find ${TOOL_BASE} -type d -name 'cov-analysis*'`
+TOOL_DIR=$(find ${TOOL_BASE} -type d -name 'cov-analysis*')
 export PATH=${TOOL_DIR}/bin:$PATH
 # Build
 echo -e "\033[33;1mRunning Coverity Scan Analysis Tool...\033[0m"

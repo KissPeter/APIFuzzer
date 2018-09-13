@@ -12,8 +12,10 @@ from utils import set_class_logger
 def _flatten_dict_entry(orig_key, v):
     entries = []
     if isinstance(v, list):
-        for i in range(len(v)):
-            entries.extend(_flatten_dict_entry('%s[%s]' % (orig_key, i), v[i]))
+        count = 0
+        for elem in v:
+            entries.extend(_flatten_dict_entry('%s[%s]' % (orig_key, count), elem))
+            count += 1
     elif isinstance(v, dict):
         for k in v:
             entries.extend(_flatten_dict_entry('%s/%s' % (orig_key, k), v[k]))

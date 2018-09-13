@@ -66,7 +66,7 @@ Start the sample application (install the necessary packages listed in test/requ
 $ python2.7 test/test_application.py
 
 Start the fuzzer:
-$ python2 fuzzer.py -s test/test_swagger_definition.json -u http://localhost:5000/ -r /tmp/reports/ 
+$ python2.7 fuzzer.py -s test/test_swagger_definition.json -u http://localhost:5000/ -r /tmp/reports/ 
 
 Check the reports:
 $ ls -1 /tmp/reports/

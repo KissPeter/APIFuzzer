@@ -4,7 +4,7 @@ PLATFORM=`uname`
 TOOL_ARCHIVE=/tmp/cov-analysis-${PLATFORM}.tgz
 TOOL_URL=https://scan.coverity.com/download/${PLATFORM}
 TOOL_BASE=/tmp/coverity-scan-analysis
-UPLOAD_URL="http://scan5.coverity.com/cgi-bin/travis_upload.py"
+UPLOAD_URL="https://scan.coverity.com/builds?project=KissPeter%2FAPIFuzzer"
 
 
 # Verify upload is permitted
@@ -16,7 +16,7 @@ if [ "$AUTH_RES" = "Access denied" ]; then
 else
   AUTH=`echo ${AUTH_RES} | ruby -e "require 'rubygems'; require 'json'; puts JSON[STDIN.read]['upload_permitted']"`
   if [ "$AUTH" = "true" ]; then
-    echo -e "\033[33;1mCoverity Scan analysis authorized per quota.\033[0m"
+    echo -e "\033[33;1mCoverity Scan analysis authorized per quota ($COVERITY_SCAN_PROJECT_NAME).\033[0m"
   else
     WHEN=`echo ${AUTH_RES} | ruby -e "require 'rubygems'; require 'json'; puts JSON[STDIN.read]['next_upload_permitted_at']"`
     echo -e "\033[33;1mOops!Coverity Scan analysis engine NOT authorized until $WHEN.\033[0m"
@@ -49,6 +49,7 @@ SHA=`git rev-parse --short HEAD`
 #VERSION_SHA=$(cat VERSION)#$SHA
 
 echo -e "\033[33;1mUploading Coverity Scan Analysis results...\033[0m"
+echo "Debug info: project=${COVERITY_SCAN_PROJECT_NAME}, email=${COVERITY_SCAN_NOTIFICATION_EMAIL},version=${SHA}"
 response=$(curl \
   --silent --write-out "\n%{http_code}\n" \
   --form project=${COVERITY_SCAN_PROJECT_NAME} \

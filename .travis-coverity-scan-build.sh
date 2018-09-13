@@ -22,7 +22,7 @@ else
     echo -e "\033[33;1mOops!Coverity Scan analysis engine NOT authorized until $WHEN.\033[0m"
     permit=false
   fi
-
+fi
 
 # Download Coverity Scan Analysis Tool
 echo -e "\033[33;1mDownloading Coverity Scan Analysis Tool...\033[0m"
@@ -59,7 +59,8 @@ response=$(curl \
   --form description="Travis CI build" \
   ${UPLOAD_URL})
 status_code=$(echo "$response" | sed -n '$p')
-if [ "$status_code" != "201" ]; then
+if [ "$status_code" != "201" ]
+then
   TEXT=$(echo "$response" | sed '$d')
   echo -e "\033[33;1mCoverity Scan upload failed: $TEXT.\033[0m"
   exit 1

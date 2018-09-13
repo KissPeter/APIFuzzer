@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # https://github.com/devernay/cminpack/blob/master/.travis-coverity-scan-build.sh
-PLATFORM=`uname`
+PLATFORM=$(uname)
 TOOL_ARCHIVE=/tmp/cov-analysis-${PLATFORM}.tgz
 TOOL_URL=https://scan.coverity.com/download/${PLATFORM}
 TOOL_BASE=/tmp/coverity-scan-analysis
@@ -45,8 +45,7 @@ COVERITY_UNSUPPORTED=1 cov-build --dir $RESULTS_DIR ${COV_BUILD_OPTIONS}
 echo -e "\033[33;1mTarring Coverity Scan Analysis results...\033[0m"
 RESULTS_ARCHIVE=analysis-results.tgz
 tar czf $RESULTS_ARCHIVE $RESULTS_DIR
-SHA=`git rev-parse --short HEAD`
-#VERSION_SHA=$(cat VERSION)#$SHA
+SHA=$(git rev-parse --short HEAD)
 
 echo -e "\033[33;1mUploading Coverity Scan Analysis results...\033[0m"
 echo "Debug info: project=${COVERITY_SCAN_PROJECT_NAME}, email=${COVERITY_SCAN_NOTIFICATION_EMAIL},version=${SHA}"

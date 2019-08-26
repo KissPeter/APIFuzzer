@@ -1,7 +1,7 @@
 import logging
 from logging import Formatter
 from logging.handlers import SysLogHandler
-from custom_fuzzers import RandomBitsField
+from apifuzzer.custom_fuzzers import RandomBitsField
 
 
 def get_field_type_by_method(http_method):
@@ -21,7 +21,7 @@ def get_fuzz_type_by_param_type(fuzz_type):
 
 def get_sample_data_by_type(param_type):
     types = {
-        u'name': 012,
+        u'name': '012',
         u'string': 'asd',
         u'integer': 1,
         u'number': 667,

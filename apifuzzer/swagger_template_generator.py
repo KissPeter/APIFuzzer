@@ -1,6 +1,6 @@
-from base_template import BaseTemplate
-from template_generator_base import TemplateGenerator
-from utils import get_sample_data_by_type, get_fuzz_type_by_param_type, set_class_logger
+from apifuzzer.base_template import BaseTemplate
+from apifuzzer.template_generator_base import TemplateGenerator
+from apifuzzer.utils import get_sample_data_by_type, get_fuzz_type_by_param_type, set_class_logger
 
 
 class ParamTypes(object):
@@ -31,13 +31,16 @@ class SwaggerTemplateGenerator(TemplateGenerator):
                     template = BaseTemplate(name=template_container_name)
                     template.url = resource
                     template.method = method.upper()
-                    self.logger.info('Resource: {} Method: {} Parameter: {}'.format(resource, method, param))
                     fuzz_type = get_fuzz_type_by_param_type(param.get('type'))
                     sample_data = get_sample_data_by_type(param.get('type'))
+
                     # get parameter placement(in): path, query, header, cookie
                     # get parameter type: integer, string
                     # get format if present
                     param_type = param.get('in')
+                    self.logger.info('Resource: {} Method: {} Parameter: {}, Parameter type: {}, Sample data: {}'
+                                     .format(resource, method, param, param_type, sample_data))
+
                     param_name = template_container_name
                     if param_type == ParamTypes.PATH:
                         template.path_variables.append(fuzz_type(name=param_name, value=sample_data))

@@ -12,7 +12,7 @@ from kitty.data.report import Report
 from kitty.targets.server import ServerTarget
 from requests.exceptions import RequestException
 
-from utils import set_class_logger
+from apifuzzer.utils import set_class_logger
 
 
 @set_class_logger

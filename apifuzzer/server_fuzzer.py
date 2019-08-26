@@ -6,7 +6,7 @@ from kitty.data.report import Report
 from kitty.fuzzers import ServerFuzzer
 from kitty.model import Container, KittyException
 
-from utils import set_class_logger
+from apifuzzer.utils import set_class_logger
 
 
 def _flatten_dict_entry(orig_key, v):
@@ -50,10 +50,11 @@ class OpenApiServerFuzzer(ServerFuzzer):
             payload[key] = node.get_field_by_name(key).render().tobytes()
         fuzz_places = ['params', 'headers', 'data', 'path_variables']
         for place in fuzz_places:
+            self.logger.info('Transmit place: {}'.format(place))
             try:
                 payload[place] = self._recurse_params(node.get_field_by_name(place))
             except KittyException as e:
-                self.logger.warn('Exception occurred: {}'.format(e.message))
+                self.logger.warn('Exception occurred while processing {}: {}'.format(place, e.__str__()))
         self._last_payload = payload
         try:
             return self.target.transmit(**payload)
@@ -87,7 +88,7 @@ class OpenApiServerFuzzer(ServerFuzzer):
             data_report = Report('payload')
             data_report.add('raw', payload)
             try:
-                data_report.add('hex', json.dumps(payload).encode('hex'))
+                data_report.add('hex', json.dumps(str(payload)).encode('hex'))
             except UnicodeDecodeError:
                 print('cant serialize payload: %', payload)
             data_report.add('length', len(payload))

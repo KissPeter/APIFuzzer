@@ -1,21 +1,24 @@
-#!/usr/bin/env python2.7
+#!/usr/bin/env python3
 #  -*- coding: utf-8 -*-
 from __future__ import print_function
 import sys
 import argparse
 import json
-import logging
+if sys.version_info[:2] == (2, 7):
+    from logging import _levelNames as levelNames
+else:
+    from logging import _nameToLevel as levelNames
 import signal
 import tempfile
 
-if sys.version_info[:2] == (2, 7):
-    from kitty.interfaces import WebInterface
-    from kitty.model import GraphModel
 
-    from apifuzzer.swagger_template_generator import SwaggerTemplateGenerator
-    from apifuzzer.fuzzer_target import FuzzerTarget
-    from apifuzzer.server_fuzzer import OpenApiServerFuzzer
-    from apifuzzer.utils import set_logger
+from kitty.interfaces import WebInterface
+from kitty.model import GraphModel
+
+from apifuzzer.swagger_template_generator import SwaggerTemplateGenerator
+from apifuzzer.fuzzer_target import FuzzerTarget
+from apifuzzer.server_fuzzer import OpenApiServerFuzzer
+from apifuzzer.utils import set_logger
 
 
 class Fuzzer(object):
@@ -56,10 +59,6 @@ if __name__ == '__main__':
     def signal_handler(**kwargs):
         sys.exit(0)
 
-    if not sys.version_info[:2] == (2, 7):
-        print('Please use with Python 2.7')
-        exit()
-
     parser = argparse.ArgumentParser(description='API fuzzer configuration',
                                      formatter_class=lambda prog: argparse.HelpFormatter(prog, max_help_position=20))
     parser.add_argument('-s', '--src_file',
@@ -70,7 +69,7 @@ if __name__ == '__main__':
     parser.add_argument('-r', '--report_dir',
                         type=str,
                         required=False,
-                        help='Directory where error reports will be saved, default: /tmp/',
+                        help='Directory where error reports will be saved. Default is temporally generated directory',
                         dest='report_dir',
                         default=tempfile.mkdtemp())
     parser.add_argument('--level',
@@ -97,7 +96,7 @@ if __name__ == '__main__':
                         help='Use different log level than the default WARNING',
                         dest='log_level',
                         default='warning',
-                        choices=[level.lower() for level in logging._levelNames if isinstance(level, str)])
+                        choices=[level.lower() for level in levelNames if isinstance(level, str)])
     args = parser.parse_args()
     api_definition_json = dict()
     try:

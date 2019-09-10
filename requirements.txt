@@ -1,1 +1,1 @@
-kittyfuzzer==0.7.1
+kittyfuzzer==0.7.4

@@ -24,7 +24,7 @@ def get_sample_data_by_type(param_type):
         u'name': '012',
         u'string': 'asd',
         u'integer': 1,
-        u'number': 667,
+        u'number': 667.5,
         u'boolean': False,
         u'array': ['a', 'b', 'c'],
         # TODO sample object

@@ -25,15 +25,15 @@ Fetch the most recent code from GitHub
 ```
 $ git clone https://github.com/KissPeter/APIFuzzer.git
 ```
-Install requirements. If you don't have pip installed, then sudo apt-get install python-pip -y 
+Install requirements. If you don't have pip installed, then sudo apt-get install python3-pip -y 
 ```
-$ pip2.7 install -r APIFuzzer/requirements.txt
+$ pip3 install -r APIFuzzer/requirements.txt
 ```
 
 ## Quick Start
 Check the help (some of them are not implemented yet):
 ```
-$ python2.7  fuzzer.py -h
+$ python3  fuzzer.py -h
 usage: fuzzer.py [-h] -s SRC_FILE [-r REPORT_DIR] [--level LEVEL]
                  [-u ALTERNATE_URL] [-t TEST_RESULT_DST]
                  [--log {warn,error,debug,info,warning,critical,notset}]
@@ -63,10 +63,10 @@ Usage example:
 
 ```
 Start the sample application (install the necessary packages listed in test/requirements_for_test.txt):
-$ python2.7 test/test_application.py
+$ python3 test/test_application.py
 
 Start the fuzzer:
-$ python2.7 fuzzer.py -s test/test_swagger_definition.json -u http://localhost:5000/ -r /tmp/reports/ 
+$ python3 fuzzer.py -s test/test_swagger_definition.json -u http://localhost:5000/ -r /tmp/reports/ 
 
 Check the reports:
 $ ls -1 /tmp/reports/

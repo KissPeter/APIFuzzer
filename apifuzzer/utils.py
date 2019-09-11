@@ -43,7 +43,14 @@ def set_logger(level='warning'):
     logger.addHandler(handler)
     return logger
 
+def transform_data_to_bytes(data_in):
+    if isinstance(data_in, float):
+        return bytes(int(data_in))
+    elif isinstance(data_in, str):
+        return bytes(data_in, 'utf-16')
+    else:
+        return bytes(data_in)
 
-def set_class_logger(cls):
-    cls.logger = logging.getLogger(cls.__class__.__name__)
-    return cls
+def set_class_logger(class_name):
+    class_name.logger = logging.getLogger(class_name.__class__.__name__)
+    return class_name

@@ -37,14 +37,14 @@
             "name": "pathparam",
             "in": "path",
             "required": true,
-            "type": "number",
+            "type": "string",
             "format": "double"
           },
           {
             "name": "queryparam",
             "in": "query",
             "required": true,
-            "type": "number",
+            "type": "string",
             "format": "double"
           }
 
@@ -65,14 +65,14 @@
             "name": "pathparam",
             "in": "path",
             "required": true,
-            "type": "number",
+            "type": "string",
             "format": "double"
           },
           {
             "name": "queryparam",
             "in": "query",
             "required": true,
-            "type": "number",
+            "type": "string",
             "format": "double"
           },
           {

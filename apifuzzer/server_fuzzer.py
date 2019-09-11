@@ -47,7 +47,7 @@ class OpenApiServerFuzzer(ServerFuzzer):
     def _transmit(self, node):
         payload = {}
         for key in ['url', 'method']:
-            payload[key] = node.get_field_by_name(key).render().tobytes()
+            payload[key] = node.get_field_by_name(key).render()
         fuzz_places = ['params', 'headers', 'data', 'path_variables']
         for place in fuzz_places:
             self.logger.info('Transmit place: {}'.format(place))
@@ -69,7 +69,7 @@ class OpenApiServerFuzzer(ServerFuzzer):
             for field in param._fields:
                 _return[field.get_name()] = OpenApiServerFuzzer._recurse_params(field)
         else:
-            _return = param.render().tobytes()
+            _return = param.render()
         return _return
 
     def _store_report(self, report):

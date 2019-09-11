@@ -35,14 +35,14 @@ class Fuzzer(object):
         self.logger.info('APIFuzzer initialized')
 
     def prepare(self):
-        # here we will be able to branch the template generator if we would like to support other than Swagger
+        # here we will be able to branch the template generator if we will support other than Swagger
         template_generator = SwaggerTemplateGenerator(self.api_resources)
         template_generator.process_api_resources()
         self.templates = template_generator.templates
         self.base_url = template_generator.compile_base_url(self.alternate_url)
 
     def run(self):
-        target = FuzzerTarget(name='target', base_url=self.base_url, report_dir=self.report_dir)
+        target = FuzzerTarget(name='target', base_url=self.base_url, report_dir=self.report_dir, logger=self.logger)
         interface = WebInterface()
         model = GraphModel()
         for template in self.templates:
@@ -100,7 +100,7 @@ if __name__ == '__main__':
     args = parser.parse_args()
     api_definition_json = dict()
     try:
-        with open(args.src_file, 'r') as f:
+        with open(args.src_file, mode='r', encoding='utf-8') as f:
             api_definition_json = json.loads(f.read())
     except Exception as e:
         print('Failed to parse input file: {}'.format(e))

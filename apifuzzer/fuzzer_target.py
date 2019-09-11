@@ -7,12 +7,12 @@ from time import time
 import re
 import requests
 from base64 import b64encode
-
+from  bitstring import Bits
 from kitty.data.report import Report
 from kitty.targets.server import ServerTarget
 from requests.exceptions import RequestException
 
-from apifuzzer.utils import set_class_logger
+from apifuzzer.utils import set_class_logger,transform_data_to_bytes
 
 
 @set_class_logger
@@ -20,12 +20,13 @@ class FuzzerTarget(ServerTarget):
     def not_implemented(self, func_name):
         pass
 
-    def __init__(self, name, base_url, report_dir):
-        super(FuzzerTarget, self).__init__(name)
+    def __init__(self, name, base_url, report_dir, logger):
+        super(FuzzerTarget, self).__init__(name, logger)
         self.base_url = base_url
         self._last_sent_request = None
         self.accepted_status_codes = list(range(200, 300)) + list(range(400, 500))
         self.report_dir = report_dir
+        self.logger = logger
         self.logger.info('Logger initialized')
 
     def error_report(self, msg, req):
@@ -53,26 +54,39 @@ class FuzzerTarget(ServerTarget):
             with open('{}/{}_{}.json'.format(self.report_dir, self.test_number, time()), 'wb') as report_dump_file:
                 report_dump_file.write(json.dumps(self.report.to_dict(), ensure_ascii=False, encoding='utf-8'))
         except Exception as e:
-            self.logger.error(
-                'Failed to save report "{}" to {} because: {}'
-                 .format(self.report.to_dict(), self.report_dir, e)
-            )
+            self.logger.error('Failed to save report "{}" to {} because: {}'
+                              .format(self.report.to_dict(), self.report_dir, e))
 
     def transmit(self, **kwargs):
+        self.logger.debug('Transmit: {}'.format(kwargs))
         try:
             _req_url = list()
             for url_part in self.base_url, kwargs['url']:
-                self.logger.info('URL part: {}'.format(url_part))
-                _req_url.append(url_part.strip('/'))
+                self.logger.info('URL part: {}, type {}'.format(url_part, type(url_part)))
+                if isinstance(url_part, Bits):
+                    url_part = url_part.tobytes()
+                if isinstance(url_part, bytes):
+                    url_part = url_part.decode()
+                #     url_part= transform_data_to_bytes(url_part)
+                self.logger.info('URL part 2: {}, type {}'.format(url_part, type(url_part)))
+                # _req_url.append(url_part.strip('/'))
+                _req_url.append(url_part)
             self.logger.warn('Request KWARGS:{}, url: {}'.format(kwargs, _req_url))
             request_url = '/'.join(_req_url)
             request_url = self.expand_path_variables(request_url, kwargs.get('path_variables'))
             request_url = self.expand_path_variables(request_url, kwargs.get('params'))
+            self.logger.info('Request URL : {}'.format(request_url ))
             if kwargs.get('path_variables'):
                 kwargs.pop('path_variables')
             kwargs.pop('url')
+            method = kwargs['method']
+            if isinstance(method , Bits):
+                method = method .tobytes()
+            if isinstance(method , bytes):
+                method = method .decode()
+            kwargs.pop('method')
             self.logger.warn('>>> Formatted URL: {} <<<'.format(request_url))
-            _return = requests.request(url=request_url, **kwargs)
+            _return = requests.request(method=method, url=request_url **kwargs)
             status_code = _return.status_code
             if status_code:
                 if status_code not in self.accepted_status_codes:
@@ -107,11 +121,13 @@ class FuzzerTarget(ServerTarget):
                 self.logger.info('Processing: {} key: {} splitter: {} '.format(url_list, path_parameter, splitter))
                 for url_part in url_list:
                     if url_part == '{' + path_parameter + '}':
-                        _temporally_url_list.append(path_value.decode('unicode-escape').encode('utf8'))
+                        _temporally_url_list.append(path_value)
+                        # _temporally_url_list.append(path_value.decode('unicode-escape').encode('utf8'))
                     else:
-                        _temporally_url_list.append(url_part.encode())
+                        _temporally_url_list.append(url_part)
+                        # _temporally_url_list.append(url_part.encode())
                 url = "".join(_temporally_url_list)
-                self.logger.warn('url 1: {} | {}->{}'.format(url, path_parameter, path_value))
+                self.logger.info('url 1: {} | {}->{}'.format(url, path_parameter, path_value))
             except Exception as e:
                 self.logger.warn('Failed to replace string in url: {} param: {}, exception: {}'.format(url, path_value, e))
         url = url.replace("{", "").replace("}", "")

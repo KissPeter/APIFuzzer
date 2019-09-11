@@ -1,34 +1,36 @@
 from __future__ import print_function
 
 from kitty.model import Static, Template, Container
+from kitty.model.low_level.encoder import ENC_STR_UTF8
 
 
 class BaseTemplate(object):
 
-    method = None
-    url = None
-    params = list()
-    data = list()
-    headers = list()
-    path_variables = list()
-    cookies = list()
-    """
-    Possible paramters from request docs:
-    :param method: method for the new :class:`Request` object.
-    :param url: URL for the new :class:`Request` object.
-    :param params: (optional) Dictionary or bytes to be sent in the query string for the :class:`Request`.
-    :param data: (optional) Dictionary, bytes, or file-like object to send in the body of the :class:`Request`.
-    :param json: (optional) json data to send in the body of the :class:`Request`.
-    :param headers: (optional) Dictionary of HTTP Headers to send with the :class:`Request`.
-    :param cookies: (optional) Dict or CookieJar object to send with the :class:`Request`.
-    """
-
     def __init__(self, name):
         self.name = name
+        self.method = None
+        self.url = None
+        self.params = list()
+        self.data = list()
+        self.headers = list()
+        self.path_variables = list()
+        self.cookies = list()
+        """
+        Possible paramters from request docs:
+        :param method: method for the new :class:`Request` object.
+        :param bytes url: URL for the new :class:`Request` object.
+        :param params: (optional) Dictionary or bytes to be sent in the query string for the :class:`Request`.
+        :param data: (optional) Dictionary, bytes, or file-like object to send in the body of the :class:`Request`.
+        :param json: (optional) json data to send in the body of the :class:`Request`.
+        :param headers: (optional) Dictionary of HTTP Headers to send with the :class:`Request`.
+        :param cookies: (optional) Dict or CookieJar object to send with the :class:`Request`.
+        """
 
     def compile_template(self):
-        _url = Static(name='url', value=self.url.encode())
-        _method = Static(name='method', value=self.method.encode())
+        _url = Static(name='url', value=self.url)
+        # _url = Static(name='url', value=self.url, encoder=ENC_STR_UTF8)
+        _method = Static(name='method', value=self.method)
+        # _method = Static(name='method', value=self.method, encoder=ENC_STR_UTF8)
         template = Template(name=self.name, fields=[_url, _method])
         if list(self.params):
             template.append_fields([Container(name='params', fields=self.params)])

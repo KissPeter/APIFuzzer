@@ -1,6 +1,10 @@
 from apifuzzer.base_template import BaseTemplate
 from apifuzzer.template_generator_base import TemplateGenerator
-from apifuzzer.utils import get_sample_data_by_type, get_fuzz_type_by_param_type, set_class_logger
+from apifuzzer.utils import \
+    get_sample_data_by_type,\
+    get_fuzz_type_by_param_type, \
+    set_class_logger, \
+    transform_data_to_bytes
 
 
 class ParamTypes(object):
@@ -29,9 +33,10 @@ class SwaggerTemplateGenerator(TemplateGenerator):
                 for param in self.api_resources['paths'][resource][method].get('parameters', {}):
                     template_container_name = '{}|{}|{}'.format(normalized_url, method, param.get('name'))
                     template = BaseTemplate(name=template_container_name)
-                    template.url = resource
+                    template.url = normalized_url
                     template.method = method.upper()
-                    fuzz_type = get_fuzz_type_by_param_type(param.get('type'))
+                    fuzz_type = get_fuzz_type_by_param_type(
+                        transform_data_to_bytes(param.get('type'))) # gives RandomBitsField at the moment
                     sample_data = get_sample_data_by_type(param.get('type'))
 
                     # get parameter placement(in): path, query, header, cookie
@@ -43,15 +48,15 @@ class SwaggerTemplateGenerator(TemplateGenerator):
 
                     param_name = template_container_name
                     if param_type == ParamTypes.PATH:
-                        template.path_variables.append(fuzz_type(name=param_name, value=sample_data))
+                        template.path_variables.append(fuzz_type(name=param_name, value=str(sample_data)))
                     elif param_type == ParamTypes.HEADER:
-                        template.headers.append(fuzz_type(name=param_name, value=sample_data))
+                        template.headers.append(fuzz_type(name=param_name, value=transform_data_to_bytes(sample_data)))
                     elif param_type == ParamTypes.COOKIE:
                         template.cookies.append(fuzz_type(name=param_name, value=sample_data))
                     elif param_type == ParamTypes.QUERY:
-                        template.params.append(fuzz_type(name=param_name, value=sample_data))
+                        template.params.append(fuzz_type(name=param_name, value=str(sample_data)))
                     elif param_type in [ParamTypes.BODY, ParamTypes.FORM_DATA]:
-                        template.data.append(fuzz_type(name=param_name, value=sample_data))
+                        template.data.append(fuzz_type(name=param_name, value=transform_data_to_bytes(sample_data)))
                     else:
                         self.logger.error('Cant parse a definition from swagger.json: %s', param)
                     self.templates.append(template)

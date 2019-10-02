@@ -6,7 +6,7 @@ from kitty.data.report import Report
 from kitty.fuzzers import ServerFuzzer
 from kitty.model import Container, KittyException
 
-from apifuzzer.utils import set_class_logger
+from apifuzzer.utils import set_class_logger, transform_data_to_bytes
 
 
 def _flatten_dict_entry(orig_key, v):
@@ -47,14 +47,20 @@ class OpenApiServerFuzzer(ServerFuzzer):
     def _transmit(self, node):
         payload = {}
         for key in ['url', 'method']:
-            payload[key] = node.get_field_by_name(key).render()
+            payload[key] = transform_data_to_bytes(node.get_field_by_name(key).render())
         fuzz_places = ['params', 'headers', 'data', 'path_variables']
         for place in fuzz_places:
             self.logger.info('Transmit place: {}'.format(place))
             try:
-                payload[place] = self._recurse_params(node.get_field_by_name(place))
+                param = node.get_field_by_name(place)
+                if isinstance(param, Container):
+                    self.logger.info('Process param recursively: {}'.format(param))
+                    payload[place] = self._recurse_params(param)
+                elif hasattr(param, 'render'):
+                    payload[place] = param.render()
             except KittyException as e:
                 self.logger.warn('Exception occurred while processing {}: {}'.format(place, e.__str__()))
+        self.logger.info('Payload: {}'.format(payload))
         self._last_payload = payload
         try:
             return self.target.transmit(**payload)
@@ -68,8 +74,6 @@ class OpenApiServerFuzzer(ServerFuzzer):
         if isinstance(param, Container):
             for field in param._fields:
                 _return[field.get_name()] = OpenApiServerFuzzer._recurse_params(field)
-        else:
-            _return = param.render()
         return _return
 
     def _store_report(self, report):

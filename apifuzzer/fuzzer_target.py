@@ -67,7 +67,7 @@ class FuzzerTarget(ServerTarget):
                     url_part = url_part.tobytes()
                 if isinstance(url_part, bytes):
                     url_part = url_part.decode()
-                #     url_part= transform_data_to_bytes(url_part)
+                # url_part= transform_data_to_bytes(url_part).decode()
                 self.logger.info('URL part 2: {}, type {}'.format(url_part, type(url_part)))
                 # _req_url.append(url_part.strip('/'))
                 _req_url.append(url_part)
@@ -110,9 +110,10 @@ class FuzzerTarget(ServerTarget):
 
     def expand_path_variables(self, url, path_parameters):
         if not isinstance(path_parameters, dict):
-            self.logger.error('path_parameters: {}'.format(path_parameters))
+            self.logger.error('Path_parameters {} does not in the desired format,received: {}'.format(path_parameters, type(path_parameters)))
             return url
         for path_key, path_value in path_parameters.items():
+            self.logger.info('Processing: path_key: {} , path_variable: {}'.format(path_key, path_value))
             try:
                 _temporally_url_list = list()
                 path_parameter = path_key.split('|')[-1]

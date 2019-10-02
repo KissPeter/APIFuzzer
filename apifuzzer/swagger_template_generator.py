@@ -58,7 +58,7 @@ class SwaggerTemplateGenerator(TemplateGenerator):
                     elif param_type in [ParamTypes.BODY, ParamTypes.FORM_DATA]:
                         template.data.append(fuzz_type(name=param_name, value=transform_data_to_bytes(sample_data)))
                     else:
-                        self.logger.error('Cant parse a definition from swagger.json: %s', param)
+                        self.logger.error('Can not parse a definition from swagger.json: %s', param)
                     self.templates.append(template)
 
     def compile_base_url(self, alternate_url):

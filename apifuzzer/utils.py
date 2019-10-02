@@ -53,7 +53,7 @@ def transform_data_to_bytes(data_in):
     elif isinstance(data_in, Bits):
         return data_in.tobytes()
     else:
-        return bytes(data_in).decode()
+        return bytes(data_in)
 
 
 def set_class_logger(class_name):

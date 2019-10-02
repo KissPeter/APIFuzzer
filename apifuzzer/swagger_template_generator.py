@@ -3,7 +3,6 @@ from apifuzzer.template_generator_base import TemplateGenerator
 from apifuzzer.utils import \
     get_sample_data_by_type,\
     get_fuzz_type_by_param_type, \
-    set_class_logger, \
     transform_data_to_bytes
 
 
@@ -16,18 +15,18 @@ class ParamTypes(object):
     FORM_DATA = 'formData'
 
 
-@set_class_logger
 class SwaggerTemplateGenerator(TemplateGenerator):
 
-    def __init__(self, api_resources):
+    def __init__(self, api_resources, logger):
         self.api_resources = api_resources
         self.templates = list()
+        self.logger = logger
         self.logger.info('Logger initialized')
 
     def process_api_resources(self):
         self.logger.info('Start preparation')
         for resource in self.api_resources['paths'].keys():
-            normalized_url = resource.lstrip('/').replace('/', '_')
+            normalized_url = resource.lstrip('/').replace('/', '_') #.replace('{','').replace('}','')
             for method in self.api_resources['paths'][resource].keys():
                 self.logger.info('Resource: {} Method: {}'.format(resource, method))
                 for param in self.api_resources['paths'][resource][method].get('parameters', {}):
@@ -43,10 +42,10 @@ class SwaggerTemplateGenerator(TemplateGenerator):
                     # get parameter type: integer, string
                     # get format if present
                     param_type = param.get('in')
-                    self.logger.info('Resource: {} Method: {} Parameter: {}, Parameter type: {}, Sample data: {}'
-                                     .format(resource, method, param, param_type, sample_data))
-
                     param_name = template_container_name
+                    self.logger.debug('Resource: {} Method: {} Parameter: {}, Parameter type: {}, Sample data: {},'
+                                     'Param name: {}'
+                                     .format(resource, method, param, param_type, sample_data, param_name))
                     if param_type == ParamTypes.PATH:
                         template.path_variables.append(fuzz_type(name=param_name, value=str(sample_data)))
                     elif param_type == ParamTypes.HEADER:

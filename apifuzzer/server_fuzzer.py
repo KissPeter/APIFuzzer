@@ -1,7 +1,7 @@
 from __future__ import print_function
 
 import json
-
+from binascii import hexlify
 from kitty.data.report import Report
 from kitty.fuzzers import ServerFuzzer
 from kitty.model import Container, KittyException
@@ -50,14 +50,15 @@ class OpenApiServerFuzzer(ServerFuzzer):
             payload[key] = transform_data_to_bytes(node.get_field_by_name(key).render())
         fuzz_places = ['params', 'headers', 'data', 'path_variables']
         for place in fuzz_places:
-            self.logger.info('Transmit place: {}'.format(place))
+            # self.logger.info('Transmit place: {}'.format(place))
             try:
                 param = node.get_field_by_name(place)
-                if isinstance(param, Container):
-                    self.logger.info('Process param recursively: {}'.format(param))
-                    payload[place] = self._recurse_params(param)
-                elif hasattr(param, 'render'):
-                    payload[place] = param.render()
+                # if isinstance(param, Container):
+                _result = self._recurse_params(param)
+                self.logger.info('Process param recursively: {} gives: {}'.format(param, _result))
+                payload[place] = _result
+                # elif hasattr(param, 'render'):
+                #     payload[place] = param.render()
             except KittyException as e:
                 self.logger.warn('Exception occurred while processing {}: {}'.format(place, e.__str__()))
         self.logger.info('Payload: {}'.format(payload))
@@ -74,6 +75,8 @@ class OpenApiServerFuzzer(ServerFuzzer):
         if isinstance(param, Container):
             for field in param._fields:
                 _return[field.get_name()] = OpenApiServerFuzzer._recurse_params(field)
+        elif hasattr(param, 'render'):
+            _return = transform_data_to_bytes(param.render()).decode(errors='ignore')
         return _return
 
     def _store_report(self, report):
@@ -92,16 +95,17 @@ class OpenApiServerFuzzer(ServerFuzzer):
             data_report = Report('payload')
             data_report.add('raw', payload)
             try:
-                data_report.add('hex', json.dumps(str(payload)).encode('hex'))
-            except UnicodeDecodeError:
-                print('cant serialize payload: %', payload)
+                if isinstance(payload, dict):
+                    data_report.add('hex', hexlify(json.dumps(str(payload), ensure_ascii=False)))
+            except (UnicodeDecodeError, TypeError):
+                print('Can not serialize payload: %', payload)
             data_report.add('length', len(payload))
             report.add('payload', data_report)
         else:
             report.add('payload', None)
 
-        self.dataman.store_report(report, self.model.current_index())
-        self.dataman.get_report_by_id(self.model.current_index())
+        # self.dataman.store_report(report, self.model.current_index())
+        # self.dataman.get_report_by_id(self.model.current_index())
 
     def _test_environment(self):
         sequence = self.model.get_sequence()

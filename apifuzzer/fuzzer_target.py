@@ -29,6 +29,12 @@ class FuzzerTarget(ServerTarget):
         self.logger = logger
         self.logger.info('Logger initialized')
 
+    def try_b64encode(self, data_in):
+        try:
+            return b64encode(data_in)
+        except TypeError:
+            return data_in
+
     def error_report(self, msg, req):
         if hasattr(req, 'request'):
             self.report.add('request method', req.request.method)
@@ -38,9 +44,14 @@ class FuzzerTarget(ServerTarget):
             for k, v in req.items():
                 if isinstance(v, dict):
                     for subkey, subvalue in v.items():
-                        self.report.add(subkey, b64encode(subvalue))
+                        try:
+                            self.report.add(subkey, self.try_b64encode(subvalue))
+                        except TypeError:
+                            self.logger.error('Failed to add field ({}) or value ({}) to report because '
+                                              'unsupported type ({}), report the issue'.format(subkey, subvalue,
+                                                                                               type(subvalue)))
                 else:
-                    self.report.add(k, b64encode(v))
+                    self.report.add(k, self.try_b64encode(subvalue))
         self.report.set_status(Report.ERROR)
         self.report.error(msg)
 
@@ -52,10 +63,10 @@ class FuzzerTarget(ServerTarget):
                 except OSError:
                     pass
             with open('{}/{}_{}.json'.format(self.report_dir, self.test_number, time()), 'wb') as report_dump_file:
-                report_dump_file.write(json.dumps(self.report.to_dict(), ensure_ascii=False, encoding='utf-8'))
+                report_dump_file.write(json.dumps(self.report.to_dict()))
         except Exception as e:
             self.logger.error('Failed to save report "{}" to {} because: {}'
-                              .format(self.report.to_dict(), self.report_dir, e))
+                              .format(self.report, self.report_dir, e))
 
     def transmit(self, **kwargs):
         self.logger.debug('Transmit: {}'.format(kwargs))
@@ -73,8 +84,10 @@ class FuzzerTarget(ServerTarget):
                 _req_url.append(url_part)
             self.logger.warn('Request KWARGS:{}, url: {}'.format(kwargs, _req_url))
             request_url = '/'.join(_req_url)
-            request_url = self.expand_path_variables(request_url, kwargs.get('path_variables'))
-            request_url = self.expand_path_variables(request_url, kwargs.get('params'))
+            if kwargs.get('path_variables') is not None:
+                request_url = self.expand_path_variables(request_url, kwargs.get('path_variables'))
+            if kwargs.get('params') is not None:
+                request_url = self.expand_path_variables(request_url, kwargs.get('params'))
             self.logger.info('Request URL : {}'.format(request_url ))
             if kwargs.get('path_variables'):
                 kwargs.pop('path_variables')
@@ -85,8 +98,7 @@ class FuzzerTarget(ServerTarget):
             if isinstance(method , bytes):
                 method = method .decode()
             kwargs.pop('method')
-            self.logger.warn('>>> Formatted URL: {} <<<'.format(request_url))
-            _return = requests.request(method=method, url=request_url **kwargs)
+            _return = requests.request(method=method, url=request_url, **kwargs)
             status_code = _return.status_code
             if status_code:
                 if status_code not in self.accepted_status_codes:
@@ -99,7 +111,7 @@ class FuzzerTarget(ServerTarget):
             else:
                 self.error_report('Failed to parse http response code', _return.headers)
             return _return
-        except (RequestException, UnicodeDecodeError) as e:  # request failure such as InvalidHeader
+        except (RequestException, UnicodeDecodeError, UnicodeEncodeError) as e:  # request failure such as InvalidHeader
             self.error_report('Failed to parse http response code, exception: {}'.format(e), kwargs)
 
     def post_test(self, test_num):

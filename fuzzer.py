@@ -36,7 +36,7 @@ class Fuzzer(object):
 
     def prepare(self):
         # here we will be able to branch the template generator if we will support other than Swagger
-        template_generator = SwaggerTemplateGenerator(self.api_resources)
+        template_generator = SwaggerTemplateGenerator(self.api_resources, logger=self.logger)
         template_generator.process_api_resources()
         self.templates = template_generator.templates
         self.base_url = template_generator.compile_base_url(self.alternate_url)

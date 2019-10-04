@@ -52,16 +52,17 @@ class OpenApiServerFuzzer(ServerFuzzer):
         for place in fuzz_places:
             # self.logger.info('Transmit place: {}'.format(place))
             try:
-                param = node.get_field_by_name(place)
-                # if isinstance(param, Container):
-                _result = self._recurse_params(param)
-                self.logger.info('Process param recursively: {} gives: {}'.format(param, _result))
-                payload[place] = _result
-                # elif hasattr(param, 'render'):
-                #     payload[place] = param.render()
+                if place in node._fields_dict:
+                    param = node.get_field_by_name(place)
+                    # if isinstance(param, Container):
+                    _result = self._recurse_params(param)
+                    # self.logger.info('Process param recursively: {} gives: {}'.format(param, _result))
+                    payload[place] = _result
+                    # elif hasattr(param, 'render'):
+                    #     payload[place] = param.render()
             except KittyException as e:
                 self.logger.warn('Exception occurred while processing {}: {}'.format(place, e.__str__()))
-        self.logger.info('Payload: {}'.format(payload))
+        # self.logger.info('Payload: {}'.format(payload))
         self._last_payload = payload
         try:
             return self.target.transmit(**payload)
@@ -94,18 +95,13 @@ class OpenApiServerFuzzer(ServerFuzzer):
         if payload is not None:
             data_report = Report('payload')
             data_report.add('raw', payload)
-            try:
-                if isinstance(payload, dict):
-                    data_report.add('hex', hexlify(json.dumps(str(payload), ensure_ascii=False)))
-            except (UnicodeDecodeError, TypeError):
-                print('Can not serialize payload: %', payload)
             data_report.add('length', len(payload))
             report.add('payload', data_report)
         else:
             report.add('payload', None)
 
-        # self.dataman.store_report(report, self.model.current_index())
-        # self.dataman.get_report_by_id(self.model.current_index())
+        self.dataman.store_report(report, self.model.current_index())
+        self.dataman.get_report_by_id(self.model.current_index())
 
     def _test_environment(self):
         sequence = self.model.get_sequence()

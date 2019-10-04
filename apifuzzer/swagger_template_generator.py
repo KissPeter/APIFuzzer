@@ -23,10 +23,15 @@ class SwaggerTemplateGenerator(TemplateGenerator):
         self.logger = logger
         self.logger.info('Logger initialized')
 
+    def normalize_url(self, url_in):
+        # Kitty doesn't support some characters as tempalte name so need to be cleaned, but it is necessary, so
+        # we will change back later
+        return url_in.strip('/').replace('/','+')
+
     def process_api_resources(self):
         self.logger.info('Start preparation')
         for resource in self.api_resources['paths'].keys():
-            normalized_url = resource.lstrip('/').replace('/', '_') #.replace('{','').replace('}','')
+            normalized_url = self.normalize_url(resource)
             for method in self.api_resources['paths'][resource].keys():
                 self.logger.info('Resource: {} Method: {}'.format(resource, method))
                 for param in self.api_resources['paths'][resource][method].get('parameters', {}):

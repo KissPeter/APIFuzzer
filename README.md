@@ -66,7 +66,7 @@ Start the sample application (install the necessary packages listed in test/requ
 $ python3 test/test_application.py
 
 Start the fuzzer:
-$ python3 fuzzer.py -s test/test_swagger_definition.json -u http://localhost:5000/ -r /tmp/reports/ 
+$ python3 fuzzer.py -s test/test_swagger_definition.json -u http://127.0.0.1:5000/ -r /tmp/reports/ --log debug 
 
 Check the reports:
 $ ls -1 /tmp/reports/

@@ -1,9 +1,9 @@
 #!/usr/bin/env python2.7
-from werkzeug.exceptions import HTTPException
+import time
+from functools import wraps
+
 from flask import Flask, jsonify, request
 from werkzeug.routing import Rule
-
-import time
 
 
 class LastRequestData(object):
@@ -18,28 +18,29 @@ class LastRequestData(object):
         return self.last_request_data
 
 
-class InternalError(HTTPException):
-    code = 500
+def catch_custom_exception(func):
+    @wraps(func)
+    def decorated_function(*args, **kwargs):
+        try:
+            return func(*args, **kwargs)
+        except Exception as e:
+            return str(e), 500
+    return decorated_function
 
 
 def extract(d):
     return {key: value for (key, value) in d.items()}
 
-
 app = Flask(__name__)
-app.register_error_handler(500, InternalError)
 app.url_map.add(Rule('/', defaults={'path': ''}, endpoint='index'))
 app.url_map.add(Rule('/<path:path>', endpoint='index'))
 last_request_data = LastRequestData()
 
 
 @app.route('/exception/<integer_id>', methods=['GET'])
+@catch_custom_exception
 def transform(integer_id):
-    try:
-        _integer_id = int(integer_id)
-    except ValueError:
-        raise InternalError('Failed to convert %s to int', integer_id)
-    return 'ID: {}'.format(_integer_id)
+    return 'ID: {}'.format(int(integer_id))
 
 
 @app.route('/last_call', methods=['GET'])

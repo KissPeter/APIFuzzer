@@ -1,5 +1,7 @@
 import os
+
 import psutil
+
 
 def get_test_server_pid():
     _return = 0
@@ -8,6 +10,7 @@ def get_test_server_pid():
             _return = proc.pid
             break
     return _return
+
 
 def stop_test_server():
     os.kill(get_test_server_pid(), 9)

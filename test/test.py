@@ -2,8 +2,8 @@ from __future__ import print_function
 
 import json
 
-from test_application import app
-from utils import get_test_server_pid
+from test.utils import get_test_server_pid
+from test.test_application import app
 
 
 class BaseTestClass(object):

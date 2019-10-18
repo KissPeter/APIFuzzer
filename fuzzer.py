@@ -1,13 +1,12 @@
 #!/usr/bin/env python3
 #  -*- coding: utf-8 -*-
 from __future__ import print_function
-import sys
+
 import argparse
 import json
-if sys.version_info[:2] == (2, 7):
-    from logging import _levelNames as levelNames
-else:
-    from logging import _nameToLevel as levelNames
+import sys
+
+from logging import _nameToLevel as levelNames
 import signal
 import tempfile
 

@@ -24,7 +24,7 @@ def catch_custom_exception(func):
         try:
             return func(*args, **kwargs)
         except Exception as e:
-            return str(e), 500
+            return "Test application exception: {}".format(e), 500
     return decorated_function
 
 

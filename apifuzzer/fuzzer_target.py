@@ -67,8 +67,9 @@ class FuzzerTarget(ServerTarget):
             self.logger.debug('Request kwargs:{}, url: {}, method: {}'.format(kwargs, request_url, method))
             _return = requests.request(method=method, url=request_url, **kwargs)
             self.report.set_status(Report.PASSED)
-            self.report.add('request method', _return.request.method)
-            self.report.add('request body', _return.request.body)
+            self.report.add('request_url', _return.request.url)
+            self.report.add('request_method', _return.request.method)
+            self.report.add('request_body', _return.request.body)
             self.report.add('response', _return.text)
             status_code = _return.status_code
             if not status_code:

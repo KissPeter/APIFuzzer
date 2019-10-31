@@ -1,9 +1,12 @@
 import logging
 import os
+from base64 import b64encode
 from logging import Formatter
 from logging.handlers import SysLogHandler
 from apifuzzer.custom_fuzzers import RandomBitsField
 from bitstring import Bits
+from binascii import Error
+
 
 def get_field_type_by_method(http_method):
     fields = {
@@ -59,3 +62,10 @@ def transform_data_to_bytes(data_in):
 def set_class_logger(class_name):
     class_name.logger = logging.getLogger(class_name.__class__.__name__)
     return class_name
+
+
+def try_b64encode(data_in):
+    try:
+        return b64encode(data_in)
+    except (TypeError, Error):
+        return data_in

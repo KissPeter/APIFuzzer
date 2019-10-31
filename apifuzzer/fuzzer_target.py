@@ -4,16 +4,15 @@
 import json
 import os
 import re
-from base64 import b64encode
 from time import time
 
 import requests
 from bitstring import Bits
-from kitty.data.report import Report
 from kitty.targets.server import ServerTarget
 from requests.exceptions import RequestException
 
-from apifuzzer.utils import set_class_logger
+from apifuzzer.apifuzzer_report import Apifuzzer_report as Report
+from apifuzzer.utils import set_class_logger, try_b64encode
 
 
 @set_class_logger
@@ -30,12 +29,18 @@ class FuzzerTarget(ServerTarget):
         self.logger = logger
         self.logger.info('Logger initialized')
 
-    @staticmethod
-    def try_b64encode(data_in):
-        try:
-            return b64encode(data_in)
-        except TypeError:
-            return data_in
+    def pre_test(self, test_num):
+        '''
+        Called when a test is started
+        '''
+        self.test_number = test_num
+        self.report = Report(self.name)
+        if self.controller:
+            self.controller.pre_test(test_number=self.test_number)
+        for monitor in self.monitors:
+            monitor.pre_test(test_number=self.test_number)
+        self.report.add('test_number', test_num)
+        self.report.add('state', 'STARTED')
 
     def transmit(self, **kwargs):
         self.logger.debug('Transmit: {}'.format(kwargs))
@@ -67,9 +72,9 @@ class FuzzerTarget(ServerTarget):
             self.logger.debug('Request kwargs:{}, url: {}, method: {}'.format(kwargs, request_url, method))
             _return = requests.request(method=method, url=request_url, **kwargs)
             self.report.set_status(Report.PASSED)
-            self.report.add('request method', _return.request.method)
-            self.report.add('request body', _return.request.body)
-            self.report.add('response', _return.text)
+            self.report.add('request method', try_b64encode(_return.request.method))
+            self.report.add('request body', try_b64encode(_return.request.body))
+            self.report.add('response', try_b64encode(_return.text))
             status_code = _return.status_code
             if not status_code:
                 self.report.set_status(Report.FAILED)
@@ -89,12 +94,13 @@ class FuzzerTarget(ServerTarget):
     def post_test(self, test_num):
         """Called after a test is completed, perform cleanup etc."""
         if self.report.get('report') is None:
-            self.report.add('reason', self.report.get_name())
+            self.report.add('reason', self.report.get_status())
         super(FuzzerTarget, self).post_test(test_num)
         if self.report.get_status() != Report.PASSED:
             self.save_report_to_disc()
 
     def save_report_to_disc(self):
+        self.logger.info('Report: {}'.format(self.report.to_dict()))
         try:
             if not os.path.exists(os.path.dirname(self.report_dir)):
                 try:
@@ -105,6 +111,7 @@ class FuzzerTarget(ServerTarget):
                 report_dump_file.write(json.dumps(self.report.to_dict()))
         except Exception as e:
             self.logger.error('Failed to save report "{}" to {} because: {}'.format(self.report, self.report_dir, e))
+            pass
 
     def expand_path_variables(self, url, path_parameters):
         if not isinstance(path_parameters, dict):

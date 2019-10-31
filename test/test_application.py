@@ -25,11 +25,13 @@ def catch_custom_exception(func):
             return func(*args, **kwargs)
         except Exception as e:
             return "Test application exception: {}".format(e), 500
+
     return decorated_function
 
 
 def extract(d):
     return {key: value for (key, value) in d.items()}
+
 
 app = Flask(__name__)
 app.url_map.add(Rule('/', defaults={'path': ''}, endpoint='index'))

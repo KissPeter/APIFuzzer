@@ -35,7 +35,7 @@ def get_sample_data_by_type(param_type):
 
 def set_logger(level='warning'):
     handler = logging.StreamHandler()
-    if os.path.exists('/dev/null/'):
+    if os.path.exists('/dev/log'):
         handler = SysLogHandler(address='/dev/log', facility=SysLogHandler.LOG_LOCAL2)
     handler.setFormatter(Formatter('%(process)d [%(levelname)s] %(name)s: %(message)s'))
     logger = logging.getLogger()

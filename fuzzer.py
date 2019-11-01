@@ -1,5 +1,4 @@
-#!/usr/bin/env python3
-#  -*- coding: utf-8 -*-
+#!/usr/bin/env python3 -X utf8
 from __future__ import print_function
 
 import argparse

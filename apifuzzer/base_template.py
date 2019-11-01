@@ -1,7 +1,6 @@
 from __future__ import print_function
 
 from kitty.model import Static, Template, Container
-from kitty.model.low_level.encoder import ENC_STR_UTF8
 
 
 class BaseTemplate(object):

@@ -3,9 +3,12 @@ import os
 from base64 import b64encode
 from logging import Formatter
 from logging.handlers import SysLogHandler
-from apifuzzer.custom_fuzzers import RandomBitsField
+
 from bitstring import Bits
 from binascii import Error
+
+
+from apifuzzer.custom_fuzzers import RandomBitsField
 
 
 def get_field_type_by_method(http_method):

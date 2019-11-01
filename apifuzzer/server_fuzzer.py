@@ -1,7 +1,5 @@
 from __future__ import print_function
 
-import json
-from binascii import hexlify
 from kitty.data.report import Report
 from kitty.fuzzers import ServerFuzzer
 from kitty.model import Container, KittyException
@@ -31,7 +29,7 @@ class OpenApiServerFuzzer(ServerFuzzer):
     def not_implemented(self, func_name):
         pass
 
-    def __init__(self,):
+    def __init__(self):
         self.logger.info('Logger initialized')
         super(OpenApiServerFuzzer, self).__init__()
 
@@ -101,7 +99,8 @@ class OpenApiServerFuzzer(ServerFuzzer):
             report.add('payload', None)
 
         self.dataman.store_report(report, self.model.current_index())
-        self.dataman.get_report_by_id(self.model.current_index())
+        # TODO investigate:
+        #  self.dataman.get_report_by_id(self.model.current_index())
 
     def _test_environment(self):
         sequence = self.model.get_sequence()

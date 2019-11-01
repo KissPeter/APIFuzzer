@@ -1,6 +1,3 @@
-#  -*- coding: utf-8 -*-
-# encoding: utf-8
-
 import json
 import os
 import re
@@ -54,27 +51,37 @@ class FuzzerTarget(ServerTarget):
                 _req_url.append(url_part.strip('/'))
             kwargs.pop('url')
             request_url = '/'.join(_req_url)
-            if kwargs.get('path_variables') is not None:
-                request_url = self.expand_path_variables(request_url, kwargs.get('path_variables'))
-                kwargs.pop('path_variables')
-            if kwargs.get('params') is not None:
-                request_url = self.expand_path_variables(request_url, kwargs.get('params'))
-                kwargs.pop('params')
-            self.logger.info('Request URL : {}'.format(request_url ))
-            # if kwargs.get('path_variables'):
-            #     kwargs.pop('path_variables')
+            for param in ['path_variables', 'params']:
+                if kwargs.get(param) is not None:
+                    request_url = self.expand_path_variables(request_url, kwargs.get(param))
+                    kwargs.pop(param)
+            self.logger.info('Request URL : {}'.format(request_url))
             method = kwargs['method']
             if isinstance(method, Bits):
                 method = method.tobytes()
             if isinstance(method, bytes):
                 method = method.decode()
             kwargs.pop('method')
-            self.logger.debug('Request kwargs:{}, url: {}, method: {}'.format(kwargs, request_url, method))
-            _return = requests.request(method=method, url=request_url, **kwargs)
+            self.logger.debug('Request url:{}\nRequest method: {}\nRequest headers: {}\nRequest body: {}'.format(
+                request_url, method, json.dumps(dict(kwargs['headers']), indent=2), kwargs.get('params')))
             self.report.set_status(Report.PASSED)
-            self.report.add('request method', try_b64encode(_return.request.method))
-            self.report.add('request body', try_b64encode(_return.request.body))
-            self.report.add('response', try_b64encode(_return.text))
+            self.report.add('request_url', try_b64encode(request_url))
+            self.report.add('request_method', try_b64encode(method))
+            self.report.add('request_headers', try_b64encode(kwargs['headers']))
+            try:
+                _return = requests.request(method=method, url=request_url, verify=False, timeout=10, **kwargs)
+            except Exception as e:
+                self.report.set_status(Report.FAILED)
+                self.logger.error('Request failed, reason: {}'.format(e))
+                self.report.add('request_sending_failed', e.reason if hasattr(e, 'reason') else e)
+                self.report.add('request_method', try_b64encode(method))
+                return
+            # overwrite request headers in report, add auto generated ones
+            self.report.add('request_headers', try_b64encode(_return.request.headers))
+            self.logger.debug('Response code:{}\nResponse headers: {}\nResponse body: {}'.format(
+                _return.status_code, json.dumps(dict(_return.headers), indent=2), _return.content))
+            self.report.add('request_body', try_b64encode(_return.request.body))
+            self.report.add('response', try_b64encode(_return.content))
             status_code = _return.status_code
             if not status_code:
                 self.report.set_status(Report.FAILED)
@@ -115,7 +122,9 @@ class FuzzerTarget(ServerTarget):
 
     def expand_path_variables(self, url, path_parameters):
         if not isinstance(path_parameters, dict):
-            self.logger.warn('Path_parameters {} does not in the desired format,received: {}'.format(path_parameters, type(path_parameters)))
+            self.logger.warn('Path_parameters {} does not in the desired format,received: {}'.format(path_parameters,
+                                                                                                     type(
+                                                                                                         path_parameters)))
             return url
         for path_key, path_value in path_parameters.items():
             self.logger.debug('Processing: path_key: {} , path_variable: {}'.format(path_key, path_value))
@@ -134,7 +143,7 @@ class FuzzerTarget(ServerTarget):
                 url = "".join(_temporally_url_list)
                 # self.logger.info('Compiled url In {} + {}, out: {}'.format(url, path_parameter, path_value))
             except Exception as e:
-                self.logger.warn('Failed to replace string in url: {} param: {}, exception: {}'.format(url, path_value, e))
-        url = url.replace("{", "").replace("}", "").replace("+","/")
+                self.logger.warn(
+                    'Failed to replace string in url: {} param: {}, exception: {}'.format(url, path_value, e))
+        url = url.replace("{", "").replace("}", "").replace("+", "/")
         return url
-

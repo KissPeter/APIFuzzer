@@ -1,0 +1,17 @@
+checks:
+    python:
+        typecheck_maybe_no_member: true
+        duplicate_code: true
+        code_rating: true
+        classes_valid_slots: true
+        basic_missing_reversed_argument: true
+
+build:
+    nodes:
+        tests: true
+        analysis:
+            tests:
+                override:
+                    -
+                        command: pylint-run
+                        use_website_config: true

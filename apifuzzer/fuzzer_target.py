@@ -63,11 +63,11 @@ class FuzzerTarget(ServerTarget):
                 method = method.decode()
             kwargs.pop('method')
             self.logger.debug('Request url:{}\nRequest method: {}\nRequest headers: {}\nRequest body: {}'.format(
-                request_url, method, json.dumps(dict(kwargs['headers']), indent=2), kwargs.get('params')))
+                request_url, method, json.dumps(dict(kwargs.get('headers',{})), indent=2), kwargs.get('params')))
             self.report.set_status(Report.PASSED)
             self.report.add('request_url', try_b64encode(request_url))
             self.report.add('request_method', try_b64encode(method))
-            self.report.add('request_headers', try_b64encode(kwargs['headers']))
+            self.report.add('request_headers', try_b64encode(kwargs.get('headers')))
             try:
                 _return = requests.request(method=method, url=request_url, verify=False, timeout=10, **kwargs)
             except Exception as e:

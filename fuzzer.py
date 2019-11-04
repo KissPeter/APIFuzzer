@@ -21,7 +21,8 @@ from apifuzzer.utils import set_logger
 
 class Fuzzer(object):
 
-    def __init__(self, api_resources, report_dir, test_level, log_level, alternate_url=None, test_result_dst=None):
+    def __init__(self, api_resources, report_dir, test_level, log_level, alternate_url=None, test_result_dst=None,
+                 auth_headers=None):
         self.api_resources = api_resources
         self.base_url = None
         self.alternate_url = alternate_url
@@ -29,6 +30,7 @@ class Fuzzer(object):
         self.test_level = test_level
         self.report_dir = report_dir
         self.test_result_dst = test_result_dst
+        self.auth_headers = auth_headers if auth_headers else {}
         self.logger = set_logger(log_level)
         self.logger.info('APIFuzzer initialized')
 
@@ -40,7 +42,8 @@ class Fuzzer(object):
         self.base_url = template_generator.compile_base_url(self.alternate_url)
 
     def run(self):
-        target = FuzzerTarget(name='target', base_url=self.base_url, report_dir=self.report_dir, logger=self.logger)
+        target = FuzzerTarget(name='target', base_url=self.base_url, report_dir=self.report_dir,
+                              auth_headers=self.auth_headers, logger=self.logger)
         interface = WebInterface()
         model = GraphModel()
         for template in self.templates:
@@ -54,8 +57,14 @@ class Fuzzer(object):
 
 if __name__ == '__main__':
 
-    def signal_handler(**kwargs):
+    def signal_handler(sig, frame):
         sys.exit(0)
+
+    def json_dict(arg_string):
+        try:
+            return json.loads(arg_string)
+        except Exception as e:
+            raise argparse.ArgumentError(e)
 
     parser = argparse.ArgumentParser(description='API fuzzer configuration',
                                      formatter_class=lambda prog: argparse.HelpFormatter(prog, max_help_position=20))
@@ -95,6 +104,12 @@ if __name__ == '__main__':
                         dest='log_level',
                         default='warning',
                         choices=[level.lower() for level in levelNames if isinstance(level, str)])
+    parser.add_argument('--headers',
+                        type=json_dict,
+                        required=False,
+                        help='Http request headers added to all request',
+                        dest='headers',
+                        default=None)
     args = parser.parse_args()
     api_definition_json = dict()
     try:
@@ -108,7 +123,8 @@ if __name__ == '__main__':
                   test_level=args.level,
                   alternate_url=args.alternate_url,
                   test_result_dst=args.test_result_dst,
-                  log_level=args.log_level
+                  log_level=args.log_level,
+                  auth_headers=args.headers
                   )
     prog.prepare()
     signal.signal(signal.SIGINT, signal_handler)

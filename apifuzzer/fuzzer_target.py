@@ -17,11 +17,12 @@ class FuzzerTarget(ServerTarget):
     def not_implemented(self, func_name):
         pass
 
-    def __init__(self, name, base_url, report_dir, logger):
+    def __init__(self, name, base_url, report_dir, auth_headers, logger):
         super(FuzzerTarget, self).__init__(name, logger)
         self.base_url = base_url
         self._last_sent_request = None
         self.accepted_status_codes = list(range(200, 300)) + list(range(400, 500))
+        self.auth_headers = auth_headers
         self.report_dir = report_dir
         self.logger = logger
         self.logger.info('Logger initialized')
@@ -38,6 +39,22 @@ class FuzzerTarget(ServerTarget):
             monitor.pre_test(test_number=self.test_number)
         self.report.add('test_number', test_num)
         self.report.add('state', 'STARTED')
+
+    def compile_headers(self, fuzz_header=None):
+        """
+        Using the fuzzer headers plus the header(s) defined at cli parameter this puts together a dict which will be
+        used at the reques
+        :type fuzz_header: list, dict, None
+        """
+        _header = dict()
+        if isinstance(fuzz_header, dict):
+            _header = fuzz_header
+        if isinstance(self.auth_headers, list):
+            for auth_header_part in self.auth_headers:
+                _header.update(auth_header_part)
+        else:
+            _header.update(self.auth_headers)
+        return _header
 
     def transmit(self, **kwargs):
         self.logger.debug('Transmit: {}'.format(kwargs))
@@ -62,6 +79,7 @@ class FuzzerTarget(ServerTarget):
             if isinstance(method, bytes):
                 method = method.decode()
             kwargs.pop('method')
+            kwargs['headers'] = self.compile_headers(kwargs.get('headers'))
             self.logger.debug('Request url:{}\nRequest method: {}\nRequest headers: {}\nRequest body: {}'.format(
                 request_url, method, json.dumps(dict(kwargs.get('headers',{})), indent=2), kwargs.get('params')))
             self.report.set_status(Report.PASSED)

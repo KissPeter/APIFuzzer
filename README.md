@@ -33,10 +33,11 @@ $ pip3 install -r APIFuzzer/requirements.txt
 ## Quick Start
 Check the help (some of them are not implemented yet):
 ```
-$ python3  fuzzer.py -h
+$$ python3 fuzzer.py -h
 usage: fuzzer.py [-h] -s SRC_FILE [-r REPORT_DIR] [--level LEVEL]
                  [-u ALTERNATE_URL] [-t TEST_RESULT_DST]
-                 [--log {warn,error,debug,info,warning,critical,notset}]
+                 [--log {critical,fatal,error,warn,warning,info,debug,notset}]
+                 [--headers HEADERS]
 
 API fuzzer configuration
 
@@ -45,8 +46,8 @@ optional arguments:
   -s SRC_FILE, --src_file SRC_FILE
                     API definition file path
   -r REPORT_DIR, --report_dir REPORT_DIR
-                    Directory where error reports will be saved, default:
-                    /tmp/
+                    Directory where error reports will be saved. Default is
+                    temporally generated directory
   --level LEVEL     Test deepness: [1,2], higher is the deeper !!!Not
                     implemented!!!
   -u ALTERNATE_URL, --url ALTERNATE_URL
@@ -54,8 +55,11 @@ optional arguments:
                     definition. Useful for testing
   -t TEST_RESULT_DST, --test_report TEST_RESULT_DST
                     JUnit test result xml save path !!!Not implemented!!!
-  --log {warn,error,debug,info,warning,critical,notset}
+  --log {critical,fatal,error,warn,warning,info,debug,notset}
                     Use different log level than the default WARNING
+  --headers HEADERS
+                    Http request headers added to all request. Example:
+                    '[{"Authorization": "SuperSecret"}, {"Auth2": "asd"}]'
 
 ```
 

@@ -107,7 +107,7 @@ if __name__ == '__main__':
     parser.add_argument('--headers',
                         type=json_dict,
                         required=False,
-                        help='Http request headers added to all request',
+                        help='Http request headers added to all request. Example: \'[{"Authorization": "SuperSecret"}, {"Auth2": "asd"}]\'',
                         dest='headers',
                         default=None)
     args = parser.parse_args()

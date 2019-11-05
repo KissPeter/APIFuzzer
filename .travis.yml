@@ -21,3 +21,4 @@ addons:
 
 script:
 - python fuzzer.py -h
+- cd test && pytest test.py

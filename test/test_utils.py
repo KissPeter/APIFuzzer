@@ -4,10 +4,11 @@ import psutil
 
 
 def get_test_server_pid():
-    _return = 0
+    _return = None
     for proc in psutil.net_connections('tcp4'):
         if proc.laddr.port == 5000:
             _return = proc.pid
+            print('Found process:'.format(proc))
             break
     return _return
 

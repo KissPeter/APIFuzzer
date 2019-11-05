@@ -15,3 +15,8 @@ build:
                     -
                         command: pylint-run
                         use_website_config: true
+coding_style:
+    python:
+        indentation:
+            general:
+                use_tabs: true

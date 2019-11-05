@@ -1,6 +1,6 @@
 [![Join the chat at https://gitter.im/API-Fuzzer/Lobby](https://badges.gitter.im/API-Fuzzer/Lobby.svg)](https://gitter.im/API-Fuzzer/Lobby?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
 [![Codacy Badge](https://api.codacy.com/project/badge/Grade/eab6434d9bd742e3880d8f589a9cc0a6)](https://www.codacy.com/app/KissPeter/APIFuzzer?utm_source=github.com&utm_medium=referral&utm_content=KissPeter/APIFuzzer&utm_campaign=badger)
-[![CII Best Practices](https://bestpractices.coreinfrastructure.org/projects/1620/badge)](https://bestpractices.coreinfrastructure.org/projects/1620)
+[![Scrutinizer Code Quality](https://scrutinizer-ci.com/g/KissPeter/APIFuzzer/badges/quality-score.png?b=master)](https://scrutinizer-ci.com/g/KissPeter/APIFuzzer/?branch=master)
 [![Build Status](https://travis-ci.org/KissPeter/APIFuzzer.svg?branch=master)](https://travis-ci.org/KissPeter/APIFuzzer)
 [![Maintainability](https://api.codeclimate.com/v1/badges/bfc9bda00deb5002b665/maintainability)](https://codeclimate.com/github/KissPeter/APIFuzzer/maintainability)
 [![Documentation Status](https://readthedocs.org/projects/apifuzzer/badge/?version=latest)](https://apifuzzer.readthedocs.io/)

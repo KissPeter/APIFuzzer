@@ -51,7 +51,7 @@ def set_logger(level='warning'):
 
 
 def transform_data_to_bytes(data_in):
-    # print('data_in: {}, type: {}'.format(data_in, type(data_in)))
+    print('data_in: {}, type: {}'.format(data_in, type(data_in)))
     if isinstance(data_in, float):
         return bytes(int(data_in))
     elif isinstance(data_in, str):

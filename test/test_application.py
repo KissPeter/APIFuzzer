@@ -1,5 +1,4 @@
 #!/usr/bin/env python2.7
-import time
 from functools import wraps
 
 from flask import Flask, jsonify, request
@@ -9,6 +8,9 @@ from werkzeug.routing import Rule
 class LastRequestData(object):
 
     def __init__(self):
+        self.last_request_data = dict()
+
+    def wipe_data(self):
         self.last_request_data = dict()
 
     def set_data(self, data=None):
@@ -49,7 +51,7 @@ def transform(integer_id):
 @app.route('/last_call', methods=['GET'])
 def last_call():
     _return = jsonify(last_request_data.get_data())
-    last_request_data.set_data({})
+    last_request_data.wipe_data()
     return _return
 
 

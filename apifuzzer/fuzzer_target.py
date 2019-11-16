@@ -83,30 +83,30 @@ class FuzzerTarget(ServerTarget):
             self.logger.debug('Request url:{}\nRequest method: {}\nRequest headers: {}\nRequest body: {}'.format(
                 request_url, method, json.dumps(dict(kwargs.get('headers',{})), indent=2), kwargs.get('params')))
             self.report.set_status(Report.PASSED)
-            self.report.add('request_url', try_b64encode(request_url))
-            self.report.add('request_method', try_b64encode(method))
-            self.report.add('request_headers', try_b64encode(kwargs.get('headers')))
+            self.report.add('request_url', request_url)
+            self.report.add('request_method', method)
+            self.report.add('request_headers', json.dumps(dict(kwargs.get('headers', {}))))
             try:
                 _return = requests.request(method=method, url=request_url, verify=False, timeout=10, **kwargs)
             except Exception as e:
                 self.report.set_status(Report.FAILED)
                 self.logger.error('Request failed, reason: {}'.format(e))
                 self.report.add('request_sending_failed', e.reason if hasattr(e, 'reason') else e)
-                self.report.add('request_method', try_b64encode(method))
+                self.report.add('request_method', method)
                 return
             # overwrite request headers in report, add auto generated ones
-            self.report.add('request_headers', try_b64encode(_return.request.headers))
+            self.report.add('request_headers', try_b64encode(json.dumps(dict(_return.request.headers))))
             self.logger.debug('Response code:{}\nResponse headers: {}\nResponse body: {}'.format(
                 _return.status_code, json.dumps(dict(_return.headers), indent=2), _return.content))
-            self.report.add('request_body', try_b64encode(_return.request.body))
-            self.report.add('response', try_b64encode(_return.content))
+            self.report.add('request_body', _return.request.body)
+            self.report.add('response', _return.content.decode())
             status_code = _return.status_code
             if not status_code:
                 self.report.set_status(Report.FAILED)
                 self.logger.warn('Failed to parse http response code')
                 self.report.failed('Failed to parse http response code')
             elif status_code not in self.accepted_status_codes:
-                self.report.add('Parsed status_code', status_code)
+                self.report.add('parsed_status_code', status_code)
                 self.report.set_status(Report.FAILED)
                 self.logger.warn('Return code %s is not in the expected list', status_code)
                 self.report.failed(('Return code %s is not in the expected list', status_code))
@@ -135,7 +135,7 @@ class FuzzerTarget(ServerTarget):
             with open('{}/{}_{}.json'.format(self.report_dir, self.test_number, time()), 'w') as report_dump_file:
                 report_dump_file.write(json.dumps(self.report.to_dict()))
         except Exception as e:
-            self.logger.error('Failed to save report "{}" to {} because: {}'.format(self.report, self.report_dir, e))
+            self.logger.error('Failed to save report "{}" to {} because: {}'.format(self.report.to_dict(), self.report_dir, e))
             pass
 
     def expand_path_variables(self, url, path_parameters):

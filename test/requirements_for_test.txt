@@ -1,6 +1,7 @@
 Flask==1.0.2
 pytest==3.6.3
 pytest-cov==2.5.1
+pytest-hidecaptured==0.2.2
 sphinx
 sphinx_rtd_theme
 psutil

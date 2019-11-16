@@ -12,16 +12,22 @@ from test.test_utils import get_test_server_pid
 
 class TestClass(object):
 
+
     @classmethod
     def setup_class(cls):
-        print('\nsetup_class()')
         cls.report_dir = tempfile.mkdtemp()
+        cls.report_files = list()
         cls.test_app_url = "http://127.0.0.1:5000/"
+        print('Setup_class with report dir: {}'.format(cls.report_dir))
         if not get_test_server_pid():
             print('Start test app')
             os.system("python3 ./test_application.py 2>&1 | logger -t $0 &")
         with open('./test_swagger_definition.json', 'r') as f:
             cls.swagger = json.loads(f.read())
+
+    def teardown_method(self, method):
+        for f in self.report_files:
+            os.remove('{}/{}'.format(self.report_dir,f))
 
     @classmethod
     def teardown_class(cls):
@@ -51,6 +57,11 @@ class TestClass(object):
             prog.prepare()
             prog.run()
 
+    def get_last_report_file(self):
+        self.report_files = os.listdir(self.report_dir)
+        with open("{}/{}".format(self.report_dir, self.report_files[0]), mode='r', encoding='utf-8') as f:
+            return json.loads(f.read())
+
     def test_integer_status_code(self):
         api_endpoint_to_test = self.swagger['paths']['/exception/{integer_id}']
         print('API to test: {}'.format(api_endpoint_to_test))
@@ -64,3 +75,11 @@ class TestClass(object):
         last_value_sent = last_call['req_path'].replace('/exception/', '')
         assert not isinstance(last_value_sent, int), last_value_sent
         assert last_call['resp_status'] == 500, last_call['resp_status'] + "Received"
+
+    def test_integer_status_code_in_report(self):
+        required_report_fields = ['status', 'sub_reports', 'name', 'request_body', 'parsed_status_code',
+                                  'request_headers', 'state', 'request_method', 'reason', 'request_url',
+                                  'response', 'test_number']
+        last_report = self.get_last_report_file()
+        assert sorted(required_report_fields) == sorted(last_report.keys())
+        assert last_report['parsed_status_code'] == 500

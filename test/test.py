@@ -19,7 +19,7 @@ class TestClass(object):
         cls.test_app_url = "http://127.0.0.1:5000/"
         if not get_test_server_pid():
             print('Start test app')
-            os.system("python3 ./test_application.py &")
+            os.system("python3 ./test_application.py 2>&1 | logger -t $0 &")
         with open('./test_swagger_definition.json', 'r') as f:
             cls.swagger = json.loads(f.read())
 
@@ -60,8 +60,7 @@ class TestClass(object):
         self.fuzz(self.swagger)
         last_call = self.query_last_call()
         # last_call field:
-        # "path": "/exception/\u001f/\u001c\u007f\u0000N@",
-        last_value_sent = last_call['path'].replace('/exception/', '')
+        # "req_path": "/exception/\u001f/\u001c\u007f\u0000N@",
+        last_value_sent = last_call['req_path'].replace('/exception/', '')
         assert not isinstance(last_value_sent, int), last_value_sent
-        # TODO Check why status code is not presented
-        #  assert last_call['status_code'] == 500, last_call['status_code'] + "Received"
+        assert last_call['resp_status'] == 500, last_call['resp_status'] + "Received"

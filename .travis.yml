@@ -21,4 +21,5 @@ addons:
 
 script:
 - python fuzzer.py -h
+- pip3 install -r test/requirements_for_test.txt
 - cd test && pytest test.py

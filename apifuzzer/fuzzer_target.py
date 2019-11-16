@@ -136,7 +136,6 @@ class FuzzerTarget(ServerTarget):
                 report_dump_file.write(json.dumps(self.report.to_dict()))
         except Exception as e:
             self.logger.error('Failed to save report "{}" to {} because: {}'.format(self.report.to_dict(), self.report_dir, e))
-            pass
 
     def expand_path_variables(self, url, path_parameters):
         if not isinstance(path_parameters, dict):

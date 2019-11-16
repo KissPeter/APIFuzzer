@@ -60,11 +60,11 @@ if __name__ == '__main__':
     def signal_handler(sig, frame):
         sys.exit(0)
 
-    def json_dict(arg_string):
+    def json_data(arg_string):
         try:
             return json.loads(arg_string)
         except Exception as e:
-            raise argparse.ArgumentError(e)
+            raise argparse.ArgumentError()
 
     parser = argparse.ArgumentParser(description='API fuzzer configuration',
                                      formatter_class=lambda prog: argparse.HelpFormatter(prog, max_help_position=20))
@@ -105,7 +105,7 @@ if __name__ == '__main__':
                         default='warning',
                         choices=[level.lower() for level in levelNames if isinstance(level, str)])
     parser.add_argument('--headers',
-                        type=json_dict,
+                        type=json_data,
                         required=False,
                         help='Http request headers added to all request. Example: \'[{"Authorization": "SuperSecret"}, '
                              '{"Auth2": "asd"}]\'',

@@ -22,6 +22,75 @@
 
         ]
       }
+    },
+    "/get": {
+      "get": {
+        "parameters": [
+          {
+            "name": "headerparam",
+            "in": "header",
+            "required": true,
+            "type": "number",
+            "format": "double"
+          },
+          {
+            "name": "pathparam",
+            "in": "path",
+            "required": true,
+            "type": "string",
+            "format": "double"
+          },
+          {
+            "name": "queryparam",
+            "in": "query",
+            "required": true,
+            "type": "string",
+            "format": "double"
+          }
+
+        ]
+      }
+    },
+    "/other_methods": {
+      "post": {
+        "parameters": [
+          {
+            "name": "headerparam",
+            "in": "header",
+            "required": true,
+            "type": "number",
+            "format": "double"
+          },
+          {
+            "name": "pathparam",
+            "in": "path",
+            "required": true,
+            "type": "string",
+            "format": "double"
+          },
+          {
+            "name": "queryparam",
+            "in": "query",
+            "required": true,
+            "type": "string",
+            "format": "double"
+          },
+          {
+            "name": "bodyparam",
+            "in": "body",
+            "required": true,
+            "type": "number",
+            "format": "double"
+          },
+          {
+            "name": "formDataparam",
+            "in": "formData",
+            "required": true,
+            "type": "number",
+            "format": "double"
+          }
+        ]
+      }
     }
   }
 }

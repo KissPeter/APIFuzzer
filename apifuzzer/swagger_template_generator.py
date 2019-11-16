@@ -23,7 +23,8 @@ class SwaggerTemplateGenerator(TemplateGenerator):
         self.logger = logger
         self.logger.info('Logger initialized')
 
-    def normalize_url(self, url_in):
+    @staticmethod
+    def normalize_url(url_in):
         # Kitty doesn't support some characters as tempalte name so need to be cleaned, but it is necessary, so
         # we will change back later
         return url_in.strip('/').replace('/', '+')

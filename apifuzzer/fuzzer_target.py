@@ -56,6 +56,11 @@ class FuzzerTarget(ServerTarget):
             _header.update(self.auth_headers)
         return _header
 
+    def report_add_basic_msg(self, msg):
+        self.report.set_status(Report.FAILED)
+        self.logger.warn(msg)
+        self.report.failed(msg)
+
     def transmit(self, **kwargs):
         self.logger.debug('Transmit: {}'.format(kwargs))
         try:
@@ -102,19 +107,13 @@ class FuzzerTarget(ServerTarget):
             self.report.add('response', _return.content.decode())
             status_code = _return.status_code
             if not status_code:
-                self.report.set_status(Report.FAILED)
-                self.logger.warn('Failed to parse http response code')
-                self.report.failed('Failed to parse http response code')
+                self.report_add_basic_msg('Failed to parse http response code')
             elif status_code not in self.accepted_status_codes:
                 self.report.add('parsed_status_code', status_code)
-                self.report.set_status(Report.FAILED)
-                self.logger.warn('Return code %s is not in the expected list', status_code)
-                self.report.failed(('Return code %s is not in the expected list', status_code))
+                self.report_add_basic_msg(('Return code %s is not in the expected list:', status_code))
             return _return
         except (RequestException, UnicodeDecodeError, UnicodeEncodeError) as e:  # request failure such as InvalidHeader
-            self.report.set_status(Report.FAILED)
-            self.logger.warn('Failed to parse http response code, exception occurred')
-            self.report.failed('Failed to parse http response code, exception occurred')
+            self.report_add_basic_msg(('Failed to parse http response code, exception occurred: %s', e))
 
     def post_test(self, test_num):
         """Called after a test is completed, perform cleanup etc."""

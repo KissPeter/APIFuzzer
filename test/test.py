@@ -15,29 +15,42 @@ class TestClass(object):
 
     @classmethod
     def setup_class(cls):
+        """
+        Setup test class at initialization
+        """
         cls.report_dir = tempfile.mkdtemp()
         cls.report_files = list()
         cls.test_app_url = "http://127.0.0.1:5000/"
         print('Setup_class with report dir: {}'.format(cls.report_dir))
         if not get_test_server_pid():
-            print('Start test app')
             os.system("python3 ./test_application.py 2>&1 | logger -t $0 &")
         with open('./test_swagger_definition.json', 'r') as f:
             cls.swagger = json.loads(f.read())
 
     def teardown_method(self, method):
+        """
+        Clears the report directory at the end of each test run
+        :param method: test method
+        """
         for f in self.report_files:
             os.remove('{}/{}'.format(self.report_dir,f))
 
     @classmethod
     def teardown_class(cls):
+        """
+        Stops the test application at the end of the test run
+        """
         pid = get_test_server_pid()
         if pid:
             os.kill(pid, 9)
 
     def query_last_call(self):
+        """
+        Queries the test application and gets the details of the last call which sent by the fuzzer
+        :return: dict
+        """
         _resp = requests.get('{}{}'.format(self.test_app_url, 'last_call'))
-        assert _resp.status_code == 200, "status code mismatch expected {} received {}".format(200, _resp.status_code)
+        assert _resp.status_code == 200, 'Response headers: {}, response body: {}'.format( _resp.headers, _resp.content)
         return json.loads(_resp.content)
 
     def fuzz(self, api_resources):

@@ -1,5 +1,3 @@
-from __future__ import print_function
-
 from kitty.data.report import Report
 from kitty.fuzzers import ServerFuzzer
 from kitty.model import Container, KittyException

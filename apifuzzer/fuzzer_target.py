@@ -8,7 +8,7 @@ from bitstring import Bits
 from kitty.targets.server import ServerTarget
 from requests.exceptions import RequestException
 
-from apifuzzer.apifuzzer_report import Apifuzzer_report as Report
+from apifuzzer.apifuzzer_report import Apifuzzer_Report as Report
 from apifuzzer.utils import set_class_logger, try_b64encode
 
 

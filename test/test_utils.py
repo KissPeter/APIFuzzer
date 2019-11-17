@@ -10,6 +10,7 @@ def get_test_server_pid():
             _return = proc.pid
             print('Found process: {}'.format(proc))
             break
+    print('No process found which listens on port 5000')
     return _return
 
 

@@ -16,7 +16,7 @@ class BaseTemplate(object):
         self.cookies = list()
         self.field_to_param = {
             'params': self.params,
-            'headers':self.headers,
+            'headers': self.headers,
             'data': self.data,
             'path_variables': self.path_variables,
             'cookies': self.cookies
@@ -34,9 +34,7 @@ class BaseTemplate(object):
 
     def compile_template(self):
         _url = Static(name='url', value=self.url)
-        # _url = Static(name='url', value=self.url, encoder=ENC_STR_UTF8)
         _method = Static(name='method', value=self.method)
-        # _method = Static(name='method', value=self.method, encoder=ENC_STR_UTF8)
         template = Template(name=self.name, fields=[_url, _method])
         for name, field in self.field_to_param.items():
             if list(field):

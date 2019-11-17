@@ -12,7 +12,6 @@ from test.test_utils import get_test_server_pid
 
 class TestClass(object):
 
-
     @classmethod
     def setup_class(cls):
         """
@@ -32,8 +31,10 @@ class TestClass(object):
         Clears the report directory at the end of each test run
         :param method: test method
         """
+        print('Removing {} report files...'.format(len(self.report_files)))
         for f in self.report_files:
-            os.remove('{}/{}'.format(self.report_dir,f))
+            pass
+            # os.remove('{}/{}'.format(self.report_dir, f))
 
     @classmethod
     def teardown_class(cls):
@@ -49,8 +50,8 @@ class TestClass(object):
         Queries the test application and gets the details of the last call which sent by the fuzzer
         :return: dict
         """
-        _resp = requests.get('{}{}'.format(self.test_app_url, 'last_call'))
-        assert _resp.status_code == 200, 'Response headers: {}, response body: {}'.format( _resp.headers, _resp.content)
+        _resp = requests.get('{}{}'.format(self.test_app_url, 'last_call'), timeout=1)
+        assert _resp.status_code == 200, 'Response headers: {}, response body: {}'.format(_resp.headers, _resp.content)
         return json.loads(_resp.content)
 
     def fuzz(self, api_resources):
@@ -88,8 +89,7 @@ class TestClass(object):
         last_value_sent = last_call['req_path'].replace('/exception/', '')
         assert not isinstance(last_value_sent, int), last_value_sent
         assert last_call['resp_status'] == 500, last_call['resp_status'] + "Received"
-
-    def test_integer_status_code_in_report(self):
+        # report file test
         required_report_fields = ['status', 'sub_reports', 'name', 'request_body', 'parsed_status_code',
                                   'request_headers', 'state', 'request_method', 'reason', 'request_url',
                                   'response', 'test_number']

@@ -2,12 +2,13 @@
 import json
 import os
 import tempfile
+from subprocess import Popen
 
 import pytest
 import requests
 
 from fuzzer import Fuzzer
-from test.test_utils import get_test_server_pid
+from test.test_utils import get_test_server_pid, stop_test_server
 
 
 class TestClass(object):
@@ -21,8 +22,8 @@ class TestClass(object):
         cls.report_files = list()
         cls.test_app_url = "http://127.0.0.1:5000/"
         print('Setup_class with report dir: {}'.format(cls.report_dir))
-        if not get_test_server_pid():
-            os.system("python3 ./test_application.py 2>&1 | logger -t $0 &")
+        if len(get_test_server_pid("Setup")) < 1:
+            Popen(["python3", "./test_application.py", "2>&1", "|", "logger -t $0"])
         with open('./test_swagger_definition.json', 'r') as f:
             cls.swagger = json.loads(f.read())
 
@@ -33,17 +34,14 @@ class TestClass(object):
         """
         print('Removing {} report files...'.format(len(self.report_files)))
         for f in self.report_files:
-            pass
-            # os.remove('{}/{}'.format(self.report_dir, f))
+            os.remove('{}/{}'.format(self.report_dir, f))
 
     @classmethod
     def teardown_class(cls):
         """
         Stops the test application at the end of the test run
         """
-        pid = get_test_server_pid()
-        if pid:
-            os.kill(pid, 9)
+        stop_test_server()
 
     def query_last_call(self):
         """

@@ -46,7 +46,12 @@ class FuzzerTarget(ServerTarget):
         used at the reques
         :type fuzz_header: list, dict, None
         """
-        _header = dict()
+        _header = requests.utils.default_headers()
+        _header.update(
+            {
+                'User-Agent': 'APIFuzzer',
+            }
+        )
         if isinstance(fuzz_header, dict):
             _header = fuzz_header
         if isinstance(self.auth_headers, list):

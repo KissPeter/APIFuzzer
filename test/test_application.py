@@ -1,9 +1,9 @@
 #!/usr/bin/env python2.7
 from functools import wraps
-
-from flask import Flask, jsonify, request
+import json
+from flask import Flask,  request
 from werkzeug.routing import Rule
-
+from apifuzzer.utils import try_b64encode
 
 class LastRequestData(object):
 
@@ -18,7 +18,10 @@ class LastRequestData(object):
             self.last_request_data.update(data)
 
     def get_data(self):
-        return self.last_request_data
+        try:
+            return json.dumps(self.last_request_data, ensure_ascii=False, indent=2, sort_keys=True)
+        except TypeError as e:
+            return 'Error: {}, latest data: {}'.format(e, self.last_request_data)
 
 
 def catch_custom_exception(func):
@@ -50,7 +53,7 @@ def transform(integer_id):
 
 @app.route('/last_call', methods=['GET'])
 def last_call():
-    _return = jsonify(last_request_data.get_data())
+    _return = last_request_data.get_data()
     last_request_data.wipe_data()
     return _return
 
@@ -58,7 +61,7 @@ def last_call():
 @app.after_request
 def log_the_status_code(response):
     last_request_data.set_data({
-        'resp_body': response.get_data(),
+        'resp_body': str(response.get_data()),
         'resp_headers': extract(response.headers),
         'resp_status': response.status_code,
         'req_path': request.path,

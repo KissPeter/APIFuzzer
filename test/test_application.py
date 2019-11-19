@@ -1,9 +1,8 @@
-#!/usr/bin/env python2.7
+#!/usr/bin/env python3
 from functools import wraps
 import json
 from flask import Flask,  request
 from werkzeug.routing import Rule
-from apifuzzer.utils import try_b64encode
 
 class LastRequestData(object):
 

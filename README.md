@@ -66,7 +66,7 @@ Usage example:
 
 ```
 Start the sample application (install the necessary packages listed in test/requirements_for_test.txt):
-$ python3 test/test_application.py
+$ python3 -m test.test_application
 
 Start the fuzzer:
 $ python3 fuzzer.py -s test/test_swagger_definition.json -u http://127.0.0.1:5000/ -r /tmp/reports/ --log debug 

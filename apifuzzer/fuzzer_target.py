@@ -1,8 +1,10 @@
 import json
 import os
 import re
+from io import BytesIO
 from time import time
 
+import pycurl
 import requests
 from bitstring import Bits
 from kitty.targets.server import ServerTarget
@@ -11,6 +13,9 @@ from requests.exceptions import RequestException
 from apifuzzer.apifuzzer_report import Apifuzzer_Report as Report
 from apifuzzer.utils import set_class_logger, try_b64encode
 
+
+class Return():
+    pass
 
 @set_class_logger
 class FuzzerTarget(ServerTarget):
@@ -26,6 +31,7 @@ class FuzzerTarget(ServerTarget):
         self.report_dir = report_dir
         self.logger = logger
         self.logger.info('Logger initialized')
+        self.resp_headers = dict()
 
     def pre_test(self, test_num):
         '''
@@ -66,6 +72,19 @@ class FuzzerTarget(ServerTarget):
         self.logger.warn(msg)
         self.report.failed(msg)
 
+    def header_function(self, header_line):
+        header_line = header_line.decode('iso-8859-1')
+        if ':' not in header_line:
+            return
+        name, value = header_line.split(':', 1)
+        self.resp_headers[name.strip().lower()] = value.strip()
+
+    def pycurl_headers(self, headers):
+        _return = list()
+        for key, value in headers.items():
+            _return.append('{}:{}'.format(key, value))
+        return _return
+
     def transmit(self, **kwargs):
         self.logger.debug('Transmit: {}'.format(kwargs))
         try:
@@ -97,11 +116,36 @@ class FuzzerTarget(ServerTarget):
             self.report.add('request_method', method)
             self.report.add('request_headers', json.dumps(dict(kwargs.get('headers', {}))))
             try:
-                _return = requests.request(method=method, url=request_url, verify=False, timeout=10, **kwargs)
+                # _return = requests.request(method=method, url=request_url, verify=False, timeout=10, **kwargs)
+                # https: // www.programcreek.com / python / example / 35196 / pycurl.HEADER
+                c = pycurl.Curl()
+                b = BytesIO()
+                if request_url.startswith('https'):
+                    c.setopt(pycurl.SSL_OPTIONS, pycurl.SSLVERSION_TLSv1_2)
+                    c.setopt(pycurl.SSL_VERIFYPEER, 1)
+                    c.setopt(pycurl.SSL_VERIFYHOST, 2)
+                c.setopt(pycurl.URL, request_url)
+                c.setopt(pycurl.HEADERFUNCTION, self.header_function)
+                c.setopt(pycurl.HTTPHEADER, self.pycurl_headers(kwargs.get('headers', {})))
+                c.setopt(pycurl.COOKIEFILE, "")
+                c.setopt(pycurl.USERAGENT, 'APIFuzzer')
+                c.setopt(pycurl.POST, len(kwargs.get('data', {}).items()))
+                c.setopt(pycurl.HTTPPOST, list(kwargs.get('data', {}).items()))
+                c.setopt(c.WRITEDATA, b)
+                c.perform()
+                _return = Return()
+                _return.status_code = c.getinfo(pycurl.HTTP_CODE)
+                _return.headers = self.resp_headers
+                _return.content = b.getvalue()
+                _return.request = Return()
+                _return.request.headers = kwargs.get('headers', {})
+                _return.request.body = kwargs.get('data', {})
+                c.close()
+
             except Exception as e:
                 self.report.set_status(Report.FAILED)
                 self.logger.error('Request failed, reason: {}'.format(e))
-                self.report.add('request_sending_failed', e.reason if hasattr(e, 'reason') else e)
+                # self.report.add('request_sending_failed', e.msg if hasattr(e, 'msg') else e)
                 self.report.add('request_method', method)
                 return
             # overwrite request headers in report, add auto generated ones

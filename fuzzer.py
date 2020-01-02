@@ -71,7 +71,7 @@ if __name__ == '__main__':
     parser.add_argument('-s', '--src_file',
                         type=str,
                         required=True,
-                        help='API definition file path',
+                        help='API definition file path. Currently only JSON format is supported',
                         dest='src_file')
     parser.add_argument('-r', '--report_dir',
                         type=str,

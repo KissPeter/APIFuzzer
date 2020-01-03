@@ -18,11 +18,12 @@ build:
                     -
                       command: pylint-run
                       use_website_config: true
-        test:
+        test-setup:
             project_setup:
                 before:
                   - command: pip3 install -r test/requirements_for_test.txt && python3 test/test_application.py
                     background: true
+        test:
             commands:
                 - command: pip3 install -r test/requirements_for_test.txt && cd test && pytest --durations=10 --show-capture=stdout -v -rP test.py
 filter:

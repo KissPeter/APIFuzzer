@@ -15,8 +15,9 @@ build:
             tests:
                 override:
                     - py-scrutinizer-run
-                    - command: pylint-run
-                        use_website_config: true
+                    -
+                      command: pylint-run
+                      use_website_config: true
         test:
             project_setup:
                 before:

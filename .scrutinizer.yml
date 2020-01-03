@@ -18,20 +18,18 @@ build:
                     -
                       command: pylint-run
                       use_website_config: true
-        test-setup:
-            project_setup:
-                before:
-                  - command: pip3 install -r test/requirements_for_test.txt
-                    on_node: 1
-                    idle_timeout: 10
-                  - command: python3 test/test_application.py
-                    background: true
-                    on_node: 1
-                    idle_timeout: 10
         test:
-            before:
-                - "cd test"
+            dependencies:
+                before:
+                    - command: pip3 install -r test/requirements_for_test.txt
+                      on_node: 1
+                      idle_timeout: 10
+                    - command: python3 test/test_application.py
+                      background: true
+                      on_node: 1
+                      idle_timeout: 10
             commands:
+                - cd test
                 - command: pip3 install -r requirements_for_test.txt
                   on_node: 1
                   idle_timeout: 10

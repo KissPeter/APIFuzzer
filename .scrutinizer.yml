@@ -8,7 +8,7 @@ checks:
 
 build:
     environment:
-        python: 3.4.6, 3.6.3, 3.7.1
+        python: 3.7.1
     nodes:
         tests: true
         analysis:

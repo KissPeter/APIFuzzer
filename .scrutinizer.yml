@@ -21,11 +21,11 @@ build:
         test-setup:
             project_setup:
                 before:
-                  - command: pip3 install -r test/requirements_for_test.txt && python3 test/test_application.py
+                  - command: 'pip3 install -r test/requirements_for_test.txt && python3 test/test_application.py'
                     background: true
         test:
             commands:
-                - command: pip3 install -r test/requirements_for_test.txt && cd test && pytest --durations=10 --show-capture=stdout -v -rP test.py
+                - command: 'pip3 install -r test/requirements_for_test.txt && cd test && pytest --durations=10 --show-capture=stdout -v -rP test.py'
 filter:
     excluded_paths:
         - "test/"

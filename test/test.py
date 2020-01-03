@@ -22,9 +22,9 @@ class TestClass(object):
         cls.report_files = list()
         cls.test_app_url = "http://127.0.0.1:5000/"
         print('Setup_class with report dir: {}'.format(cls.report_dir))
-        if len(get_test_server_pid("Setup")) < 1:
-            Popen(["python3", "./test_application.py", "2>&1", "|", "logger -t $0"], stdout=None, stderr=None,
-                  shell=True)
+        # if len(get_test_server_pid("Setup")) < 1:
+        #     Popen(["python3", "./test_application.py", "2>&1", "|", "logger -t $0"], stdout=None, stderr=None,
+        #           shell=True)
         with open('./test_swagger_definition.json', 'r') as f:
             cls.swagger = json.loads(f.read())
 
@@ -37,12 +37,12 @@ class TestClass(object):
         for f in self.report_files:
             os.remove('{}/{}'.format(self.report_dir, f))
 
-    @classmethod
-    def teardown_class(cls):
-        """
-        Stops the test application at the end of the test run
-        """
-        stop_test_server()
+    # @classmethod
+    # def teardown_class(cls):
+    #     """
+    #     Stops the test application at the end of the test run
+    #     """
+    #     stop_test_server()
 
     def query_last_call(self):
         """

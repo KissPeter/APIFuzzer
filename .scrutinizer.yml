@@ -21,11 +21,23 @@ build:
         test-setup:
             project_setup:
                 before:
-                  - command: 'pip3 install -r test/requirements_for_test.txt && python3 test/test_application.py'
+                  - command: pip3 install -r test/requirements_for_test.txt
+                    on_node: 1
+                    idle_timeout: 10
+                  - command: python3 test/test_application.py
                     background: true
+                    on_node: 1
+                    idle_timeout: 10
         test:
+            before:
+                - "cd test"
             commands:
-                - command: 'pip3 install -r test/requirements_for_test.txt && cd test && pytest --durations=10 --show-capture=stdout -v -rP test.py'
+                - command: pip3 install -r requirements_for_test.txt
+                  on_node: 1
+                  idle_timeout: 10
+                - command: pytest --durations=10 --show-capture=stdout -v -rP test.py
+                  on_node: 1
+                  idle_timeout: 10
 filter:
     excluded_paths:
         - "test/"

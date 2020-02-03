@@ -1,6 +1,7 @@
 import json
 import os
 import re
+import urllib.parse
 from io import BytesIO
 from time import time
 
@@ -16,6 +17,7 @@ from apifuzzer.utils import set_class_logger, try_b64encode
 
 class Return():
     pass
+
 
 @set_class_logger
 class FuzzerTarget(ServerTarget):
@@ -79,12 +81,6 @@ class FuzzerTarget(ServerTarget):
         name, value = header_line.split(':', 1)
         self.resp_headers[name.strip().lower()] = value.strip()
 
-    def pycurl_headers(self, headers):
-        _return = list()
-        for key, value in headers.items():
-            _return.append('{}:{}'.format(key, value))
-        return _return
-
     def transmit(self, **kwargs):
         self.logger.debug('Transmit: {}'.format(kwargs))
         try:
@@ -110,38 +106,50 @@ class FuzzerTarget(ServerTarget):
             kwargs.pop('method')
             kwargs['headers'] = self.compile_headers(kwargs.get('headers'))
             self.logger.debug('Request url:{}\nRequest method: {}\nRequest headers: {}\nRequest body: {}'.format(
-                request_url, method, json.dumps(dict(kwargs.get('headers',{})), indent=2), kwargs.get('params')))
+                request_url, method, json.dumps(dict(kwargs.get('headers', {})), indent=2), kwargs.get('data')))
             self.report.set_status(Report.PASSED)
             self.report.add('request_url', request_url)
             self.report.add('request_method', method)
             self.report.add('request_headers', json.dumps(dict(kwargs.get('headers', {}))))
             try:
-                # _return = requests.request(method=method, url=request_url, verify=False, timeout=10, **kwargs)
-                # https: // www.programcreek.com / python / example / 35196 / pycurl.HEADER
-                c = pycurl.Curl()
+                resp_buff_hdrs = BytesIO()
+                resp_buff_body = BytesIO()
+                _curl = pycurl.Curl()
                 b = BytesIO()
                 if request_url.startswith('https'):
-                    c.setopt(pycurl.SSL_OPTIONS, pycurl.SSLVERSION_TLSv1_2)
-                    c.setopt(pycurl.SSL_VERIFYPEER, 1)
-                    c.setopt(pycurl.SSL_VERIFYHOST, 2)
-                c.setopt(pycurl.URL, request_url)
-                c.setopt(pycurl.HEADERFUNCTION, self.header_function)
-                c.setopt(pycurl.HTTPHEADER, self.pycurl_headers(kwargs.get('headers', {})))
-                c.setopt(pycurl.COOKIEFILE, "")
-                c.setopt(pycurl.USERAGENT, 'APIFuzzer')
-                c.setopt(pycurl.POST, len(kwargs.get('data', {}).items()))
-                c.setopt(pycurl.HTTPPOST, list(kwargs.get('data', {}).items()))
-                c.setopt(c.WRITEDATA, b)
-                c.perform()
+                    _curl.setopt(pycurl.SSL_OPTIONS, pycurl.SSLVERSION_TLSv1_2)
+                    _curl.setopt(pycurl.SSL_VERIFYPEER, False)
+                    _curl.setopt(pycurl.SSL_VERIFYHOST, False)
+                _curl.setopt(pycurl.VERBOSE, True)
+                _curl.setopt(pycurl.TIMEOUT, 10)
+                _curl.setopt(pycurl.URL, request_url)
+                _curl.setopt(pycurl.HEADERFUNCTION, self.header_function)
+                _curl.setopt(pycurl.HTTPHEADER, ['{}: {}'.format(k, v) for k, v in kwargs.get('headers', {}).items()])
+                _curl.setopt(pycurl.COOKIEFILE, "")
+                _curl.setopt(pycurl.USERAGENT, 'APIFuzzer')
+                _curl.setopt(pycurl.POST, len(kwargs.get('data', {}).items()))
+                _curl.setopt(pycurl.CUSTOMREQUEST, method)
+                _curl.setopt(pycurl.POSTFIELDS, urllib.parse.urlencode(kwargs.get('data', {})))
+                _curl.setopt(pycurl.HEADERFUNCTION, resp_buff_hdrs.write)
+                _curl.setopt(pycurl.WRITEFUNCTION, resp_buff_body.write)
+                for retries in reversed(range(3)):
+                    try:
+                        _curl.perform()
+                    except Exception as e:
+                        # pycurl.error usually
+                        self.logger.error('{}: {}'.format(e.__class__.__name__, e))
+                        if retries:
+                            self.logger.error('Retrying... ({})'.format(retries))
+                        else:
+                            raise e
                 _return = Return()
-                _return.status_code = c.getinfo(pycurl.HTTP_CODE)
+                _return.status_code = _curl.getinfo(pycurl.RESPONSE_CODE)
                 _return.headers = self.resp_headers
                 _return.content = b.getvalue()
                 _return.request = Return()
                 _return.request.headers = kwargs.get('headers', {})
                 _return.request.body = kwargs.get('data', {})
-                c.close()
-
+                _curl.close()
             except Exception as e:
                 self.report.set_status(Report.FAILED)
                 self.logger.error('Request failed, reason: {}'.format(e))
@@ -183,11 +191,14 @@ class FuzzerTarget(ServerTarget):
             with open('{}/{}_{}.json'.format(self.report_dir, self.test_number, time()), 'w') as report_dump_file:
                 report_dump_file.write(json.dumps(self.report.to_dict()))
         except Exception as e:
-            self.logger.error('Failed to save report "{}" to {} because: {}'.format(self.report.to_dict(), self.report_dir, e))
+            self.logger.error(
+                'Failed to save report "{}" to {} because: {}'.format(self.report.to_dict(), self.report_dir, e))
 
     def expand_path_variables(self, url, path_parameters):
         if not isinstance(path_parameters, dict):
-            self.logger.warn('Path_parameters {} does not in the desired format,received: {}'.format(path_parameters, type(path_parameters)))
+            self.logger.warn('Path_parameters {} does not in the desired format,received: {}'.format(path_parameters,
+                                                                                                     type(
+                                                                                                         path_parameters)))
             return url
         for path_key, path_value in path_parameters.items():
             self.logger.debug('Processing: path_key: {} , path_variable: {}'.format(path_key, path_value))

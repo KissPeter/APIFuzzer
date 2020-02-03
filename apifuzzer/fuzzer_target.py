@@ -9,7 +9,6 @@ import pycurl
 import requests
 from bitstring import Bits
 from kitty.targets.server import ServerTarget
-from requests.exceptions import RequestException
 
 from apifuzzer.apifuzzer_report import Apifuzzer_Report as Report
 from apifuzzer.utils import set_class_logger, try_b64encode
@@ -71,7 +70,7 @@ class FuzzerTarget(ServerTarget):
 
     def report_add_basic_msg(self, msg):
         self.report.set_status(Report.FAILED)
-        self.logger.warn(msg)
+        self.logger.warning(msg)
         self.report.failed(msg)
 
     def header_function(self, header_line):
@@ -80,6 +79,32 @@ class FuzzerTarget(ServerTarget):
             return
         name, value = header_line.split(':', 1)
         self.resp_headers[name.strip().lower()] = value.strip()
+
+    def format_pycurl_header(self, headers):
+        _dummy_curl = pycurl.Curl()
+        _tmp = dict()
+        _return = list()
+        for k, v in headers.items():
+            iteration = 0
+            chop_direction = ['first', 'last']
+            while True:
+                iteration = iteration + 1
+                try:
+                    _dummy_curl.setopt(pycurl.HTTPHEADER, ['{}: {}'.format(k, v).encode()])
+                    _tmp[k] = v
+                    break
+                except ValueError as e:
+                    self.logger.debug('{} Problem at adding {} to the header. Issue was:{}'.format(iteration, k, e))
+                    if len(v):
+                        self.logger.info('Removing final character from fuzzy value, current length: {}'.format(len(v)))
+                        v = v[:-1]
+                    else:
+                        self.logger.info('The whole value was removed, using empty string instead')
+                        _tmp[k] = ""
+                        break
+        for k, v in _tmp.items():
+            _return.append('{}: {}'.format(k, v).encode())
+        return _return
 
     def transmit(self, **kwargs):
         self.logger.debug('Transmit: {}'.format(kwargs))
@@ -124,7 +149,7 @@ class FuzzerTarget(ServerTarget):
                 _curl.setopt(pycurl.TIMEOUT, 10)
                 _curl.setopt(pycurl.URL, request_url)
                 _curl.setopt(pycurl.HEADERFUNCTION, self.header_function)
-                _curl.setopt(pycurl.HTTPHEADER, ['{}: {}'.format(k, v) for k, v in kwargs.get('headers', {}).items()])
+                _curl.setopt(pycurl.HTTPHEADER, self.format_pycurl_header(kwargs.get('headers', {})))
                 _curl.setopt(pycurl.COOKIEFILE, "")
                 _curl.setopt(pycurl.USERAGENT, 'APIFuzzer')
                 _curl.setopt(pycurl.POST, len(kwargs.get('data', {}).items()))
@@ -169,7 +194,7 @@ class FuzzerTarget(ServerTarget):
                 self.report.add('parsed_status_code', status_code)
                 self.report_add_basic_msg(('Return code %s is not in the expected list:', status_code))
             return _return
-        except (RequestException, UnicodeDecodeError, UnicodeEncodeError) as e:  # request failure such as InvalidHeader
+        except (UnicodeDecodeError, UnicodeEncodeError) as e:  # request failure such as InvalidHeader
             self.report_add_basic_msg(('Failed to parse http response code, exception occurred: %s', e))
 
     def post_test(self, test_num):

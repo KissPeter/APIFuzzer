@@ -1,8 +1,9 @@
 #!/usr/bin/env python3
-from functools import wraps
 import json
-from flask import Flask,  request
-from werkzeug.routing import Rule
+from functools import wraps
+
+from flask import Flask, request
+
 
 class LastRequestData(object):
 
@@ -39,8 +40,6 @@ def extract(d):
 
 
 app = Flask(__name__)
-app.url_map.add(Rule('/', defaults={'path': ''}, endpoint='index'))
-app.url_map.add(Rule('/<path:path>', endpoint='index'))
 last_request_data = LastRequestData()
 
 

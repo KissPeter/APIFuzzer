@@ -60,7 +60,10 @@ class FuzzerTarget(ServerTarget):
             }
         )
         if isinstance(fuzz_header, dict):
-            _header = fuzz_header
+            for k, v in fuzz_header.items():
+                fuzz_header_name = k.split('|')[-1]
+                self.logger.debug('Adding fuzz header: {}->{}'.format(fuzz_header_name, v))
+                _header[fuzz_header_name] = v
         if isinstance(self.auth_headers, list):
             for auth_header_part in self.auth_headers:
                 _header.update(auth_header_part)

@@ -172,7 +172,7 @@ class FuzzerTarget(ServerTarget):
                 _req_url.append(url_part.strip('/'))
             kwargs.pop('url')
             request_url = '/'.join(_req_url)
-            for param in ['path_variables', 'params']:
+            for param in ['path_variables', 'params']:  # todo: params are querystrings
                 if kwargs.get(param) is not None:
                     request_url = self.expand_path_variables(request_url, kwargs.get(param))
                     kwargs.pop(param)

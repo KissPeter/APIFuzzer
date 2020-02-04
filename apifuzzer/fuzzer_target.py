@@ -80,14 +80,56 @@ class FuzzerTarget(ServerTarget):
         name, value = header_line.split(':', 1)
         self.resp_headers[name.strip().lower()] = value.strip()
 
+    def format_pycurl_url(self, url):
+        self.logger.debug('URL to process: %s', url)
+        _dummy_curl = pycurl.Curl()
+        url_fields = url.split('/')
+        _tmp_url_list = list()
+        for part in url_fields:
+            self.logger.debug('Processing URL part: {}'.format(part))
+            iteration = 0
+            while True:
+                iteration = iteration + 1
+                try:
+                    _test_list = list()
+                    _test_list = _tmp_url_list[::]
+                    _test_list.append(part)
+                    _dummy_curl.setopt(pycurl.URL, '/'.join(_test_list))
+                    self.logger.debug('Adding %s to the url: %s', part, _tmp_url_list)
+                    _tmp_url_list.append(part)
+                    break
+                except (UnicodeEncodeError, ValueError) as e:
+                    self.logger.debug('{} Problem adding ({}) to the url. Issue was:{}'.format(iteration, part, e))
+                    if len(part):
+                        self.logger.debug('Removing last character from part, current length: %s', len(part))
+                        part = part[:-1]
+                    else:
+                        self.logger.info('The whole url part was removed, using empty string instead')
+                        _tmp_url_list.append("")
+                        break
+                # except Exception as e:
+                #   self.logger.exception(e)
+        _return = '/'.join(_tmp_url_list)
+        self.logger.info('URL to be used: %s', _return)
+        return _return
+
     def format_pycurl_header(self, headers):
+        """
+        Pycurl and other http clients are picky, so this function tries to put everyting into the field as it can.
+        :param headers: http headers
+        :return: http headers
+        :rtype: list of dicts
+        """
         _dummy_curl = pycurl.Curl()
         _tmp = dict()
         _return = list()
         for k, v in headers.items():
+            original_value = v
             iteration = 0
-            chop_direction = ['first', 'last']
+            chop_left = True
+            chop_right = True
             while True:
+
                 iteration = iteration + 1
                 try:
                     _dummy_curl.setopt(pycurl.HTTPHEADER, ['{}: {}'.format(k, v).encode()])
@@ -96,10 +138,19 @@ class FuzzerTarget(ServerTarget):
                 except ValueError as e:
                     self.logger.debug('{} Problem at adding {} to the header. Issue was:{}'.format(iteration, k, e))
                     if len(v):
-                        self.logger.info('Removing final character from fuzzy value, current length: {}'.format(len(v)))
-                        v = v[:-1]
+                        if chop_left:
+                            self.logger.debug('Removing first character from value, current length: %s', len(v))
+                            v = v[1:]
+                            if len(v) == 0:
+                                chop_left = False
+                                v = original_value
+                        elif chop_right:
+                            self.logger.debug('Removing last character from value, current length: %s', len(v))
+                            v = v[:-1]
+                            if len(v) == 1:
+                                chop_left = False
                     else:
-                        self.logger.info('The whole value was removed, using empty string instead')
+                        self.logger.info('The whole header value was removed, using empty string instead')
                         _tmp[k] = ""
                         break
         for k, v in _tmp.items():
@@ -147,7 +198,7 @@ class FuzzerTarget(ServerTarget):
                     _curl.setopt(pycurl.SSL_VERIFYHOST, False)
                 _curl.setopt(pycurl.VERBOSE, True)
                 _curl.setopt(pycurl.TIMEOUT, 10)
-                _curl.setopt(pycurl.URL, request_url)
+                _curl.setopt(pycurl.URL, self.format_pycurl_url(request_url))
                 _curl.setopt(pycurl.HEADERFUNCTION, self.header_function)
                 _curl.setopt(pycurl.HTTPHEADER, self.format_pycurl_header(kwargs.get('headers', {})))
                 _curl.setopt(pycurl.COOKIEFILE, "")
@@ -176,6 +227,7 @@ class FuzzerTarget(ServerTarget):
                 _return.request.body = kwargs.get('data', {})
                 _curl.close()
             except Exception as e:
+                self.logger.exception(e)
                 self.report.set_status(Report.FAILED)
                 self.logger.error('Request failed, reason: {}'.format(e))
                 # self.report.add('request_sending_failed', e.msg if hasattr(e, 'msg') else e)

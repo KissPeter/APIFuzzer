@@ -43,7 +43,7 @@ API fuzzer configuration
 optional arguments:
   -h, --help        show this help message and exit
   -s SRC_FILE, --src_file SRC_FILE
-                    API definition file path
+                    API definition file path. Currently only JSON format is supported
   -r REPORT_DIR, --report_dir REPORT_DIR
                     Directory where error reports will be saved. Default is
                     temporally generated directory

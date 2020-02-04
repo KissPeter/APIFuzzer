@@ -7,15 +7,32 @@ checks:
         basic_missing_reversed_argument: true
 
 build:
+    environment:
+        python: 3.7.1
     nodes:
         tests: true
         analysis:
             tests:
                 override:
-                    -   py-scrutinizer-run
+                    - py-scrutinizer-run
                     -
-                        command: pylint-run
-                        use_website_config: true
+                      command: pylint-run
+                      use_website_config: true
+        test-setup:
+            project_setup:
+                before:
+                  - command: pip3 install -r test/requirements_for_test.txt
+                    on_node: 1
+                    idle_timeout: 10
+                  - command: python3 test/test_application.py | tee test.log
+                    background: true
+                    on_node: 1
+                    idle_timeout: 10
+        test:
+            commands:
+                - command: 'cd test && pytest --durations=10 --show-capture=stdout -v -rP test.py'
+                  on_node: 1
+                  idle_timeout: 10
 filter:
     excluded_paths:
         - "test/"

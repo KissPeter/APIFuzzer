@@ -276,28 +276,28 @@ class FuzzerTarget(ServerTarget):
 
     def expand_path_variables(self, url, path_parameters):
         if not isinstance(path_parameters, dict):
-            self.logger.warn('Path_parameters {} does not in the desired format,received: {}'.format(path_parameters,
-                                                                                                     type(
-                                                                                                         path_parameters)))
+            self.logger.warn('Path_parameters {} does not in the desired format,received: {}'
+                             .format(path_parameters, type(path_parameters)))
             return url
+        _temporally_url_list = list()
         for path_key, path_value in path_parameters.items():
             self.logger.debug('Processing: path_key: {} , path_variable: {}'.format(path_key, path_value))
-            try:
-                _temporally_url_list = list()
-                path_parameter = path_key.split('|')[-1]
-                splitter = '({' + path_parameter + '})'
-                url_list = re.split(splitter, url)
-                for url_part in url_list:
-                    if url_part == '{' + path_parameter + '}':
-                        _temporally_url_list.append(path_value)
-                        # _temporally_url_list.append(path_value.decode('unicode-escape').encode('utf8'))
-                    else:
-                        _temporally_url_list.append(url_part)
-                        # _temporally_url_list.append(url_part.encode())
-                url = "".join(_temporally_url_list)
-                # self.logger.info('Compiled url In {} + {}, out: {}'.format(url, path_parameter, path_value))
-            except Exception as e:
-                self.logger.warn(
-                    'Failed to replace string in url: {} param: {}, exception: {}'.format(url, path_value, e))
-        url = url.replace("{", "").replace("}", "").replace("+", "/")
-        return url
+            path_parameter = path_key.split('|')[-1]
+            url_path_paramter = '{%PATH_PARAM%}'.replace('%PATH_PARAM%', path_parameter)
+            splitter = '({})'.format(path_parameter)
+            url_list = re.split(splitter, url)
+            self.logger.debug('URL split: {} with: {}'.format(url_list, splitter))
+            if len(url_list) == 1:
+                self.logger.warn('{} was not in the url: {}, adding it'.format(url_path_paramter, url))
+                url_list.extend(['/', url_path_paramter])
+            for url_part in url_list:
+                self.logger.debug('Processing url part: {}'.format(url_part))
+                if url_part == url_path_paramter:
+                    self.logger.debug('Replace path parameter marker ({}) with fuzz value: {}'
+                                      .format(url_path_paramter, path_value))
+                    _temporally_url_list.append(path_value)
+                else:
+                    _temporally_url_list.append(url_part)
+        _url = "".join(_temporally_url_list)
+        self.logger.info('Compiled url in {}, out: {}'.format(url, _url))
+        return _url.replace("{", "").replace("}", "").replace("+", "/")

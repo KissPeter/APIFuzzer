@@ -2,13 +2,11 @@
 import json
 import os
 import tempfile
-from subprocess import Popen
 
 import pytest
 import requests
 
 from fuzzer import Fuzzer
-from test.test_utils import get_test_server_pid, stop_test_server
 
 
 class TestClass(object):
@@ -51,7 +49,7 @@ class TestClass(object):
         """
         _resp = requests.get('{}{}'.format(self.test_app_url, 'last_call'), timeout=1)
         assert _resp.status_code == 200, 'Response headers: {}, response body: {}'.format(_resp.headers, _resp.content)
-        return json.loads(_resp.content)
+        return json.loads(_resp.content.decode("utf-8"))
 
     def fuzz(self, api_resources):
         """

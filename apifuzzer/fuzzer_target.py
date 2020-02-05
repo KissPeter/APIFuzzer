@@ -83,6 +83,39 @@ class FuzzerTarget(ServerTarget):
         name, value = header_line.split(':', 1)
         self.resp_headers[name.strip().lower()] = value.strip()
 
+    def dict_to_query_string(self, query_strings):
+        _tmp_list = list()
+        for query_string_key in query_strings.keys():
+            _tmp_list.append('{}={}'.format(query_string_key, query_strings[query_string_key]))
+        return '?' + '&'.join(_tmp_list)
+
+    def format_pycurl_query_param(self, url, query_params):
+        _dummy_curl = pycurl.Curl()
+        _tmp_query_params = dict()
+        for k, v in query_params.items():
+            iteration = 0
+            while True:
+                iteration = iteration + 1
+                _test_query_params = _tmp_query_params.copy()
+                _query_param_name = k.split('|')[-1]
+                _test_query_params[_query_param_name] = v
+                try:
+                    _dummy_curl.setopt(pycurl.URL, url + self.dict_to_query_string(_test_query_params))
+                    _tmp_query_params[_query_param_name] = v
+                    break
+                except (UnicodeEncodeError, ValueError)  as e:
+                    self.logger.exception(e)
+                    self.logger.debug('{} Problem adding ({}) as query param. Issue was:{}'.format(iteration, k, e))
+                    if len(v):
+                        self.logger.debug('Removing last character from query param, current length: %s', len(v))
+                        v = v[:-1]
+                    else:
+                        self.logger.info('The whole query param was removed, using empty string instead')
+                        _tmp_query_params[_query_param_name] = ""
+                        break
+
+        return self.dict_to_query_string(_tmp_query_params)
+
     def format_pycurl_url(self, url):
         self.logger.debug('URL to process: %s', url)
         _dummy_curl = pycurl.Curl()
@@ -172,10 +205,14 @@ class FuzzerTarget(ServerTarget):
                 _req_url.append(url_part.strip('/'))
             kwargs.pop('url')
             request_url = '/'.join(_req_url)
-            for param in ['path_variables', 'params']:  # todo: params are querystrings
-                if kwargs.get(param) is not None:
-                    request_url = self.expand_path_variables(request_url, kwargs.get(param))
-                    kwargs.pop(param)
+            query_params = None
+            if kwargs.get('params') is not None:
+                query_params = self.format_pycurl_query_param(request_url, kwargs.get('params', {}))
+                kwargs.pop('params')
+            if kwargs.get('path_variables') is not None:
+                request_url = self.expand_path_variables(request_url, kwargs.get('path_variables'))
+                kwargs.pop('path_variables')
+            request_url = request_url + query_params
             self.logger.info('Request URL : {}'.format(request_url))
             method = kwargs['method']
             if isinstance(method, Bits):

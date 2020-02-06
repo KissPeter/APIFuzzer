@@ -81,6 +81,8 @@ class TestClass(object):
         required_report_fields = ['status', 'sub_reports', 'name', 'request_body', 'request_headers', 'state',
                                   'request_method', 'reason', 'request_url', 'response', 'test_number']
         last_report = self.get_last_report_file()
+        assert_msg = json.dumps(last_report, sort_keys=True, indent=2)
         for field in required_report_fields:
-            assert field in last_report.keys(), json.dumps(last_report, sort_keys=True, indent=2)
-        assert last_report['parsed_status_code'] == 500
+            assert field in last_report.keys(), assert_msg
+        if last_report.get('parsed_status_code') is not None:
+            assert last_report['parsed_status_code'] == 500, assert_msg

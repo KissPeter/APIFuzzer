@@ -1,9 +1,6 @@
 from apifuzzer.base_template import BaseTemplate
 from apifuzzer.template_generator_base import TemplateGenerator
-from apifuzzer.utils import \
-    get_sample_data_by_type, \
-    get_fuzz_type_by_param_type, \
-    transform_data_to_bytes
+from apifuzzer.utils import get_sample_data_by_type, get_fuzz_type_by_param_type, transform_data_to_bytes
 
 
 class ParamTypes(object):
@@ -25,7 +22,7 @@ class SwaggerTemplateGenerator(TemplateGenerator):
 
     @staticmethod
     def normalize_url(url_in):
-        # Kitty doesn't support some characters as tempalte name so need to be cleaned, but it is necessary, so
+        # Kitty doesn't support some characters as template name so need to be cleaned, but it is necessary, so
         # we will change back later
         return url_in.strip('/').replace('/', '+')
 
@@ -40,7 +37,15 @@ class SwaggerTemplateGenerator(TemplateGenerator):
                     template = BaseTemplate(name=template_container_name)
                     template.url = normalized_url
                     template.method = method.upper()
-                    fuzz_type = get_fuzz_type_by_param_type(param.get('type'))
+                    type = param.get('type')
+                    format = param.get('format')
+                    if format is not None:
+                        fuzzer_type = format.lower()
+                    elif type is not None:
+                        fuzzer_type = type.lower()
+                    else:
+                        fuzzer_type = None
+                    fuzz_type = get_fuzz_type_by_param_type(fuzzer_type)
                     sample_data = get_sample_data_by_type(param.get('type'))
 
                     # get parameter placement(in): path, query, header, cookie

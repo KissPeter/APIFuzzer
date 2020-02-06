@@ -4,6 +4,7 @@ from base64 import b64encode
 from binascii import Error
 from logging import Formatter
 from logging.handlers import SysLogHandler
+from random import randint
 
 from bitstring import Bits
 
@@ -20,9 +21,28 @@ def get_field_type_by_method(http_method):
 
 
 def get_fuzz_type_by_param_type(fuzz_type):
-    # TODO we should have a shallow and a deep scan. This could be the difference
-    # TODO get mutation according to a field type
-    return RandomBitsField
+    # https://kitty.readthedocs.io/en/latest/data_model/big_list_of_fields.html#atomic-fields
+    # https://swagger.io/docs/specification/data-models/data-types/
+    string_types = [RandomBitsField]
+    number_types = [RandomBitsField]
+    types = {
+        'integer': number_types,
+        'float': number_types,
+        'double': number_types,
+        'int32': number_types,
+        'int64': number_types,
+        'number': number_types,
+        'string': string_types,
+        'email': string_types,
+        'uuid': string_types,
+        'uri': string_types,
+        'hostname': string_types,
+        'ipv4': string_types,
+        'ipv6': string_types,
+        'boolean': string_types
+    }
+    fuzzer_list = types.get(fuzz_type, string_types)
+    return fuzzer_list[randint(0, len(fuzzer_list) - 1)]
 
 
 def get_sample_data_by_type(param_type):
@@ -32,8 +52,7 @@ def get_sample_data_by_type(param_type):
         u'integer': 1,
         u'number': 667.5,
         u'boolean': False,
-        u'array': ['a', 'b', 'c'],
-        # TODO sample object
+        u'array': ['a', 'b', 'c']
     }
     return types.get(param_type, b'\x00')
 

@@ -76,10 +76,7 @@ class SwaggerTemplateGenerator(TemplateGenerator):
         :type alternate_url: string
         """
         if alternate_url:
-            _base_url = "/".join([
-                alternate_url.strip('/'),
-                self.api_resources['basePath'].strip('/')
-            ])
+            _base_url = "/".join([alternate_url.strip('/'), self.api_resources.get('basePath', '').strip('/')])
         else:
             if 'http' in self.api_resources['schemes']:
                 _protocol = 'http'

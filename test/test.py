@@ -31,7 +31,7 @@ class TestClass(object):
         print('Removing {} report files...'.format(len(self.report_files)))
         for f in self.report_files:
             filepath = '{}/{}'.format(self.report_dir, f)
-            with open(filepath, 'rb') as reportfile:
+            with open(filepath, 'r') as reportfile:
                 print(filepath)
                 print(json.dumps(json.loads(reportfile.read()), indent=2, sort_keys=True))
             os.remove(filepath)

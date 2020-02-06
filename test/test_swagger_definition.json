@@ -14,7 +14,7 @@
         "parameters": [
           {
             "name": "integer_id",
-            "in": "query",
+            "in": "path",
             "required": true,
             "type": "number",
             "format": "double"

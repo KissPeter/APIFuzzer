@@ -12,4 +12,4 @@ script:
 - python fuzzer.py -h
 - pip3 install -r test/requirements_for_test.txt
 - cd test && python3 test_application.py&
-- cd test && pytest --durations=10 --show-capture=stdout -v -rP test.py
+- cd test && pytest --durations=10 --show-capture=stdout -vv -rP test.py

@@ -82,5 +82,5 @@ class TestClass(object):
                                   'request_method', 'reason', 'request_url', 'response', 'test_number']
         last_report = self.get_last_report_file()
         for field in required_report_fields:
-            assert field in last_report.keys()
+            assert field in last_report.keys(), json.dumps(last_report, sort_keys=True, indent=2)
         assert last_report['parsed_status_code'] == 500

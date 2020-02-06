@@ -137,11 +137,11 @@ class FuzzerTarget(ServerTarget):
                 except (UnicodeEncodeError, ValueError) as e:
                     self.logger.debug('{} Problem adding ({}) to the url. Issue was:{}'.format(iteration, part, e))
                     if len(part):
-                        self.logger.debug('Removing last character from part, current length: %s', len(part))
-                        part = part[:-1]
+                        self.logger.debug('Removing first character from part, current length: %s', len(part))
+                        part = part[1:]
                     else:
                         self.logger.info('The whole url part was removed, using empty string instead')
-                        _tmp_url_list.append("")
+                        _tmp_url_list.append("-")
                         break
                 # except Exception as e:
                 #   self.logger.exception(e)
@@ -212,7 +212,7 @@ class FuzzerTarget(ServerTarget):
             if kwargs.get('path_variables') is not None:
                 request_url = self.expand_path_variables(request_url, kwargs.get('path_variables'))
                 kwargs.pop('path_variables')
-            request_url = request_url + query_params
+            request_url = '{}{}'.format(request_url, query_params)
             self.logger.info('Request URL : {}'.format(request_url))
             method = kwargs['method']
             if isinstance(method, Bits):
@@ -321,7 +321,7 @@ class FuzzerTarget(ServerTarget):
             self.logger.debug('Processing: path_key: {} , path_variable: {}'.format(path_key, path_value))
             path_parameter = path_key.split('|')[-1]
             url_path_paramter = '{%PATH_PARAM%}'.replace('%PATH_PARAM%', path_parameter)
-            splitter = '({})'.format(path_parameter)
+            splitter = '(%PATH_PARAM%)'.replace('%PATH_PARAM%', url_path_paramter)
             url_list = re.split(splitter, url)
             self.logger.debug('URL split: {} with: {}'.format(url_list, splitter))
             if len(url_list) == 1:

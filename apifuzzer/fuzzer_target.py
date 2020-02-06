@@ -35,9 +35,9 @@ class FuzzerTarget(ServerTarget):
         self.resp_headers = dict()
 
     def pre_test(self, test_num):
-        '''
+        """
         Called when a test is started
-        '''
+        """
         self.test_number = test_num
         self.report = Report(self.name)
         if self.controller:
@@ -83,13 +83,29 @@ class FuzzerTarget(ServerTarget):
         name, value = header_line.split(':', 1)
         self.resp_headers[name.strip().lower()] = value.strip()
 
-    def dict_to_query_string(self, query_strings):
+    @staticmethod
+    def dict_to_query_string(query_strings):
+        """
+        Transforms dictionary to query string format
+        :param query_strings: dictionary
+        :type query_strings: dict
+        :return: query string
+        :rtype: str
+        """
         _tmp_list = list()
         for query_string_key in query_strings.keys():
             _tmp_list.append('{}={}'.format(query_string_key, query_strings[query_string_key]))
         return '?' + '&'.join(_tmp_list)
 
     def format_pycurl_query_param(self, url, query_params):
+        """
+        Prepares fuzz query string by removing parts if necessary
+        :param url: url used only to provide realistic url for pycurl
+        :type url: str
+        :param query_params: query strings in dict format
+        :type query_params: dict
+        :rtype: str
+        """
         _dummy_curl = pycurl.Curl()
         _tmp_query_params = dict()
         for k, v in query_params.items():
@@ -100,7 +116,7 @@ class FuzzerTarget(ServerTarget):
                 _query_param_name = k.split('|')[-1]
                 _test_query_params[_query_param_name] = v
                 try:
-                    _dummy_curl.setopt(pycurl.URL, url + self.dict_to_query_string(_test_query_params))
+                    _dummy_curl.setopt(pycurl.URL, '{}{}'.format(url, self.dict_to_query_string(_test_query_params)))
                     _tmp_query_params[_query_param_name] = v
                     break
                 except (UnicodeEncodeError, ValueError)  as e:
@@ -117,6 +133,12 @@ class FuzzerTarget(ServerTarget):
         return self.dict_to_query_string(_tmp_query_params)
 
     def format_pycurl_url(self, url):
+        """
+        Prepares fuzz URL for pycurl removing elements if necessary
+        :param url: URL string prepared earlier
+        :type url: str
+        :return: pycurl compliant URL
+        """
         self.logger.debug('URL to process: %s', url)
         _dummy_curl = pycurl.Curl()
         url_fields = url.split('/')
@@ -194,6 +216,11 @@ class FuzzerTarget(ServerTarget):
         return _return
 
     def transmit(self, **kwargs):
+        """
+        Prepares fuzz HTTP request, sends and processes the response
+        :param kwargs: url, method, params, querystring, etc
+        :return:
+        """
         self.logger.debug('Transmit: {}'.format(kwargs))
         try:
             _req_url = list()

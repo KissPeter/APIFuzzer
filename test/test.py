@@ -31,9 +31,6 @@ class TestClass(object):
         print('Removing {} report files...'.format(len(self.report_files)))
         for f in self.report_files:
             filepath = '{}/{}'.format(self.report_dir, f)
-            with open(filepath, 'r') as reportfile:
-                print(filepath)
-                print(json.dumps(json.loads(reportfile.read()), indent=2, sort_keys=True))
             os.remove(filepath)
 
     def query_last_call(self):
@@ -81,9 +78,9 @@ class TestClass(object):
         assert not isinstance(last_value_sent, int), last_value_sent
         assert last_call['resp_status'] == 500, last_call['resp_status'] + "Received"
         # report file test
-        required_report_fields = ['status', 'sub_reports', 'name', 'request_body', 'parsed_status_code',
-                                  'request_headers', 'state', 'request_method', 'reason', 'request_url',
-                                  'response', 'test_number']
+        required_report_fields = ['status', 'sub_reports', 'name', 'request_body', 'request_headers', 'state',
+                                  'request_method', 'reason', 'request_url', 'response', 'test_number']
         last_report = self.get_last_report_file()
-        assert sorted(required_report_fields) == sorted(last_report.keys())
+        for field in required_report_fields:
+            assert field in last_report.keys()
         assert last_report['parsed_status_code'] == 500

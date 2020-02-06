@@ -2,13 +2,11 @@
 import json
 import os
 import tempfile
-from subprocess import Popen
 
 import pytest
 import requests
 
 from fuzzer import Fuzzer
-from test.test_utils import get_test_server_pid, stop_test_server
 
 
 class TestClass(object):
@@ -22,9 +20,6 @@ class TestClass(object):
         cls.report_files = list()
         cls.test_app_url = "http://127.0.0.1:5000/"
         print('Setup_class with report dir: {}'.format(cls.report_dir))
-        # if len(get_test_server_pid("Setup")) < 1:
-        #     Popen(["python3", "./test_application.py", "2>&1", "|", "logger -t $0"], stdout=None, stderr=None,
-        #           shell=True)
         with open('./test_swagger_definition.json', 'r') as f:
             cls.swagger = json.loads(f.read())
 
@@ -35,14 +30,8 @@ class TestClass(object):
         """
         print('Removing {} report files...'.format(len(self.report_files)))
         for f in self.report_files:
-            os.remove('{}/{}'.format(self.report_dir, f))
-
-    # @classmethod
-    # def teardown_class(cls):
-    #     """
-    #     Stops the test application at the end of the test run
-    #     """
-    #     stop_test_server()
+            filepath = '{}/{}'.format(self.report_dir, f)
+            os.remove(filepath)
 
     def query_last_call(self):
         """
@@ -51,7 +40,7 @@ class TestClass(object):
         """
         _resp = requests.get('{}{}'.format(self.test_app_url, 'last_call'), timeout=1)
         assert _resp.status_code == 200, 'Response headers: {}, response body: {}'.format(_resp.headers, _resp.content)
-        return json.loads(_resp.content)
+        return json.loads(_resp.content.decode("utf-8"))
 
     def fuzz(self, api_resources):
         """
@@ -89,9 +78,9 @@ class TestClass(object):
         assert not isinstance(last_value_sent, int), last_value_sent
         assert last_call['resp_status'] == 500, last_call['resp_status'] + "Received"
         # report file test
-        required_report_fields = ['status', 'sub_reports', 'name', 'request_body', 'parsed_status_code',
-                                  'request_headers', 'state', 'request_method', 'reason', 'request_url',
-                                  'response', 'test_number']
+        required_report_fields = ['status', 'sub_reports', 'name', 'request_body', 'request_headers', 'state',
+                                  'request_method', 'reason', 'request_url', 'response', 'test_number']
         last_report = self.get_last_report_file()
-        assert sorted(required_report_fields) == sorted(last_report.keys())
+        for field in required_report_fields:
+            assert field in last_report.keys(), json.dumps(last_report, sort_keys=True, indent=2)
         assert last_report['parsed_status_code'] == 500

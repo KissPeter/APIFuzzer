@@ -1,12 +1,11 @@
 import logging
 import os
 from base64 import b64encode
+from binascii import Error
 from logging import Formatter
 from logging.handlers import SysLogHandler
 
 from bitstring import Bits
-from binascii import Error
-
 
 from apifuzzer.custom_fuzzers import RandomBitsField
 
@@ -36,7 +35,7 @@ def get_sample_data_by_type(param_type):
         u'array': ['a', 'b', 'c'],
         # TODO sample object
     }
-    return types.get(param_type, 'asd')
+    return types.get(param_type, b'\x00')
 
 
 def set_logger(level='warning'):

@@ -1,15 +1,21 @@
 import json
 import os
 import re
+import urllib.parse
+from io import BytesIO
 from time import time
 
+import pycurl
 import requests
 from bitstring import Bits
 from kitty.targets.server import ServerTarget
-from requests.exceptions import RequestException
 
 from apifuzzer.apifuzzer_report import Apifuzzer_Report as Report
 from apifuzzer.utils import set_class_logger, try_b64encode
+
+
+class Return():
+    pass
 
 
 @set_class_logger
@@ -26,11 +32,12 @@ class FuzzerTarget(ServerTarget):
         self.report_dir = report_dir
         self.logger = logger
         self.logger.info('Logger initialized')
+        self.resp_headers = dict()
 
     def pre_test(self, test_num):
-        '''
+        """
         Called when a test is started
-        '''
+        """
         self.test_number = test_num
         self.report = Report(self.name)
         if self.controller:
@@ -53,7 +60,10 @@ class FuzzerTarget(ServerTarget):
             }
         )
         if isinstance(fuzz_header, dict):
-            _header = fuzz_header
+            for k, v in fuzz_header.items():
+                fuzz_header_name = k.split('|')[-1]
+                self.logger.debug('Adding fuzz header: {}->{}'.format(fuzz_header_name, v))
+                _header[fuzz_header_name] = v
         if isinstance(self.auth_headers, list):
             for auth_header_part in self.auth_headers:
                 _header.update(auth_header_part)
@@ -63,10 +73,154 @@ class FuzzerTarget(ServerTarget):
 
     def report_add_basic_msg(self, msg):
         self.report.set_status(Report.FAILED)
-        self.logger.warn(msg)
+        self.logger.warning(msg)
         self.report.failed(msg)
 
+    def header_function(self, header_line):
+        header_line = header_line.decode('iso-8859-1')
+        if ':' not in header_line:
+            return
+        name, value = header_line.split(':', 1)
+        self.resp_headers[name.strip().lower()] = value.strip()
+
+    @staticmethod
+    def dict_to_query_string(query_strings):
+        """
+        Transforms dictionary to query string format
+        :param query_strings: dictionary
+        :type query_strings: dict
+        :return: query string
+        :rtype: str
+        """
+        _tmp_list = list()
+        for query_string_key in query_strings.keys():
+            _tmp_list.append('{}={}'.format(query_string_key, query_strings[query_string_key]))
+        return '?' + '&'.join(_tmp_list)
+
+    def format_pycurl_query_param(self, url, query_params):
+        """
+        Prepares fuzz query string by removing parts if necessary
+        :param url: url used only to provide realistic url for pycurl
+        :type url: str
+        :param query_params: query strings in dict format
+        :type query_params: dict
+        :rtype: str
+        """
+        _dummy_curl = pycurl.Curl()
+        _tmp_query_params = dict()
+        for k, v in query_params.items():
+            iteration = 0
+            while True:
+                iteration = iteration + 1
+                _test_query_params = _tmp_query_params.copy()
+                _query_param_name = k.split('|')[-1]
+                _test_query_params[_query_param_name] = v
+                try:
+                    _dummy_curl.setopt(pycurl.URL, '{}{}'.format(url, self.dict_to_query_string(_test_query_params)))
+                    _tmp_query_params[_query_param_name] = v
+                    break
+                except (UnicodeEncodeError, ValueError)  as e:
+                    self.logger.exception(e)
+                    self.logger.debug('{} Problem adding ({}) as query param. Issue was:{}'.format(iteration, k, e))
+                    if len(v):
+                        self.logger.debug('Removing last character from query param, current length: %s', len(v))
+                        v = v[:-1]
+                    else:
+                        self.logger.info('The whole query param was removed, using empty string instead')
+                        _tmp_query_params[_query_param_name] = ""
+                        break
+
+        return self.dict_to_query_string(_tmp_query_params)
+
+    def format_pycurl_url(self, url):
+        """
+        Prepares fuzz URL for pycurl removing elements if necessary
+        :param url: URL string prepared earlier
+        :type url: str
+        :return: pycurl compliant URL
+        """
+        self.logger.debug('URL to process: %s', url)
+        _dummy_curl = pycurl.Curl()
+        url_fields = url.split('/')
+        _tmp_url_list = list()
+        for part in url_fields:
+            self.logger.debug('Processing URL part: {}'.format(part))
+            iteration = 0
+            while True:
+                iteration = iteration + 1
+                try:
+                    _test_list = list()
+                    _test_list = _tmp_url_list[::]
+                    _test_list.append(part)
+                    _dummy_curl.setopt(pycurl.URL, '/'.join(_test_list))
+                    self.logger.debug('Adding %s to the url: %s', part, _tmp_url_list)
+                    _tmp_url_list.append(part)
+                    break
+                except (UnicodeEncodeError, ValueError) as e:
+                    self.logger.debug('{} Problem adding ({}) to the url. Issue was:{}'.format(iteration, part, e))
+                    if len(part):
+                        self.logger.debug('Removing first character from part, current length: %s', len(part))
+                        part = part[1:]
+                    else:
+                        self.logger.info('The whole url part was removed, using empty string instead')
+                        _tmp_url_list.append("-")
+                        break
+                # except Exception as e:
+                #   self.logger.exception(e)
+        _return = '/'.join(_tmp_url_list)
+        self.logger.info('URL to be used: %s', _return)
+        return _return
+
+    def format_pycurl_header(self, headers):
+        """
+        Pycurl and other http clients are picky, so this function tries to put everyting into the field as it can.
+        :param headers: http headers
+        :return: http headers
+        :rtype: list of dicts
+        """
+        _dummy_curl = pycurl.Curl()
+        _tmp = dict()
+        _return = list()
+        for k, v in headers.items():
+            original_value = v
+            iteration = 0
+            chop_left = True
+            chop_right = True
+            while True:
+
+                iteration = iteration + 1
+                try:
+                    _dummy_curl.setopt(pycurl.HTTPHEADER, ['{}: {}'.format(k, v).encode()])
+                    _tmp[k] = v
+                    break
+                except ValueError as e:
+                    self.logger.debug('{} Problem at adding {} to the header. Issue was:{}'.format(iteration, k, e))
+                    if len(v):
+                        if chop_left:
+                            self.logger.debug('Removing first character from value, current length: %s', len(v))
+                            v = v[1:]
+                            if len(v) == 0:
+                                chop_left = False
+                                v = original_value
+                        elif chop_right:
+                            self.logger.debug('Removing last character from value, current length: %s', len(v))
+                            v = v[:-1]
+                            if len(v) == 1:
+                                chop_left = False
+                    else:
+                        self.logger.info('The whole header value was removed, using empty string instead')
+                        _tmp[k] = ""
+                        break
+        for k, v in _tmp.items():
+            _return.append('{}: {}'.format(k, v).encode())
+        return _return
+
     def transmit(self, **kwargs):
+        """
+        Prepares fuzz HTTP request, sends and processes the response
+        :param kwargs: url, method, params, querystring, etc
+        :return:
+        """
         self.logger.debug('Transmit: {}'.format(kwargs))
         try:
             _req_url = list()
@@ -78,10 +232,14 @@ class FuzzerTarget(ServerTarget):
                 _req_url.append(url_part.strip('/'))
             kwargs.pop('url')
             request_url = '/'.join(_req_url)
-            for param in ['path_variables', 'params']:
-                if kwargs.get(param) is not None:
-                    request_url = self.expand_path_variables(request_url, kwargs.get(param))
-                    kwargs.pop(param)
+            query_params = None
+            if kwargs.get('params') is not None:
+                query_params = self.format_pycurl_query_param(request_url, kwargs.get('params', {}))
+                kwargs.pop('params')
+            if kwargs.get('path_variables') is not None:
+                request_url = self.expand_path_variables(request_url, kwargs.get('path_variables'))
+                kwargs.pop('path_variables')
+            request_url = '{}{}'.format(request_url, query_params)
             self.logger.info('Request URL : {}'.format(request_url))
             method = kwargs['method']
             if isinstance(method, Bits):
@@ -91,17 +249,55 @@ class FuzzerTarget(ServerTarget):
             kwargs.pop('method')
             kwargs['headers'] = self.compile_headers(kwargs.get('headers'))
             self.logger.debug('Request url:{}\nRequest method: {}\nRequest headers: {}\nRequest body: {}'.format(
-                request_url, method, json.dumps(dict(kwargs.get('headers',{})), indent=2), kwargs.get('params')))
+                request_url, method, json.dumps(dict(kwargs.get('headers', {})), indent=2), kwargs.get('data')))
             self.report.set_status(Report.PASSED)
             self.report.add('request_url', request_url)
             self.report.add('request_method', method)
             self.report.add('request_headers', json.dumps(dict(kwargs.get('headers', {}))))
             try:
-                _return = requests.request(method=method, url=request_url, verify=False, timeout=10, **kwargs)
+                resp_buff_hdrs = BytesIO()
+                resp_buff_body = BytesIO()
+                _curl = pycurl.Curl()
+                b = BytesIO()
+                if request_url.startswith('https'):
+                    _curl.setopt(pycurl.SSL_OPTIONS, pycurl.SSLVERSION_TLSv1_2)
+                    _curl.setopt(pycurl.SSL_VERIFYPEER, False)
+                    _curl.setopt(pycurl.SSL_VERIFYHOST, False)
+                _curl.setopt(pycurl.VERBOSE, True)
+                _curl.setopt(pycurl.TIMEOUT, 10)
+                _curl.setopt(pycurl.URL, self.format_pycurl_url(request_url))
+                _curl.setopt(pycurl.HEADERFUNCTION, self.header_function)
+                _curl.setopt(pycurl.HTTPHEADER, self.format_pycurl_header(kwargs.get('headers', {})))
+                _curl.setopt(pycurl.COOKIEFILE, "")
+                _curl.setopt(pycurl.USERAGENT, 'APIFuzzer')
+                _curl.setopt(pycurl.POST, len(kwargs.get('data', {}).items()))
+                _curl.setopt(pycurl.CUSTOMREQUEST, method)
+                _curl.setopt(pycurl.POSTFIELDS, urllib.parse.urlencode(kwargs.get('data', {})))
+                _curl.setopt(pycurl.HEADERFUNCTION, resp_buff_hdrs.write)
+                _curl.setopt(pycurl.WRITEFUNCTION, resp_buff_body.write)
+                for retries in reversed(range(3)):
+                    try:
+                        _curl.perform()
+                    except Exception as e:
+                        # pycurl.error usually
+                        self.logger.error('{}: {}'.format(e.__class__.__name__, e))
+                        if retries:
+                            self.logger.error('Retrying... ({})'.format(retries))
+                        else:
+                            raise e
+                _return = Return()
+                _return.status_code = _curl.getinfo(pycurl.RESPONSE_CODE)
+                _return.headers = self.resp_headers
+                _return.content = b.getvalue()
+                _return.request = Return()
+                _return.request.headers = kwargs.get('headers', {})
+                _return.request.body = kwargs.get('data', {})
+                _curl.close()
             except Exception as e:
+                self.logger.exception(e)
                 self.report.set_status(Report.FAILED)
                 self.logger.error('Request failed, reason: {}'.format(e))
-                self.report.add('request_sending_failed', e.reason if hasattr(e, 'reason') else e)
+                # self.report.add('request_sending_failed', e.msg if hasattr(e, 'msg') else e)
                 self.report.add('request_method', method)
                 return
             # overwrite request headers in report, add auto generated ones
@@ -117,7 +313,7 @@ class FuzzerTarget(ServerTarget):
                 self.report.add('parsed_status_code', status_code)
                 self.report_add_basic_msg(('Return code %s is not in the expected list:', status_code))
             return _return
-        except (RequestException, UnicodeDecodeError, UnicodeEncodeError) as e:  # request failure such as InvalidHeader
+        except (UnicodeDecodeError, UnicodeEncodeError) as e:  # request failure such as InvalidHeader
             self.report_add_basic_msg(('Failed to parse http response code, exception occurred: %s', e))
 
     def post_test(self, test_num):
@@ -139,30 +335,33 @@ class FuzzerTarget(ServerTarget):
             with open('{}/{}_{}.json'.format(self.report_dir, self.test_number, time()), 'w') as report_dump_file:
                 report_dump_file.write(json.dumps(self.report.to_dict()))
         except Exception as e:
-            self.logger.error('Failed to save report "{}" to {} because: {}'.format(self.report.to_dict(), self.report_dir, e))
+            self.logger.error(
+                'Failed to save report "{}" to {} because: {}'.format(self.report.to_dict(), self.report_dir, e))
 
     def expand_path_variables(self, url, path_parameters):
         if not isinstance(path_parameters, dict):
-            self.logger.warn('Path_parameters {} does not in the desired format,received: {}'.format(path_parameters, type(path_parameters)))
+            self.logger.warn('Path_parameters {} does not in the desired format,received: {}'
+                             .format(path_parameters, type(path_parameters)))
             return url
+        _temporally_url_list = list()
         for path_key, path_value in path_parameters.items():
             self.logger.debug('Processing: path_key: {} , path_variable: {}'.format(path_key, path_value))
-            try:
-                _temporally_url_list = list()
-                path_parameter = path_key.split('|')[-1]
-                splitter = '({' + path_parameter + '})'
-                url_list = re.split(splitter, url)
-                for url_part in url_list:
-                    if url_part == '{' + path_parameter + '}':
-                        _temporally_url_list.append(path_value)
-                        # _temporally_url_list.append(path_value.decode('unicode-escape').encode('utf8'))
-                    else:
-                        _temporally_url_list.append(url_part)
-                        # _temporally_url_list.append(url_part.encode())
-                url = "".join(_temporally_url_list)
-                # self.logger.info('Compiled url In {} + {}, out: {}'.format(url, path_parameter, path_value))
-            except Exception as e:
-                self.logger.warn(
-                    'Failed to replace string in url: {} param: {}, exception: {}'.format(url, path_value, e))
-        url = url.replace("{", "").replace("}", "").replace("+", "/")
-        return url
+            path_parameter = path_key.split('|')[-1]
+            url_path_paramter = '{%PATH_PARAM%}'.replace('%PATH_PARAM%', path_parameter)
+            splitter = '(%PATH_PARAM%)'.replace('%PATH_PARAM%', url_path_paramter)
+            url_list = re.split(splitter, url)
+            self.logger.debug('URL split: {} with: {}'.format(url_list, splitter))
+            if len(url_list) == 1:
+                self.logger.warn('{} was not in the url: {}, adding it'.format(url_path_paramter, url))
+                url_list.extend(['/', url_path_paramter])
+            for url_part in url_list:
+                self.logger.debug('Processing url part: {}'.format(url_part))
+                if url_part == url_path_paramter:
+                    self.logger.debug('Replace path parameter marker ({}) with fuzz value: {}'
+                                      .format(url_path_paramter, path_value))
+                    _temporally_url_list.append(path_value)
+                else:
+                    _temporally_url_list.append(url_part)
+        _url = "".join(_temporally_url_list)
+        self.logger.info('Compiled url in {}, out: {}'.format(url, _url))
+        return _url.replace("{", "").replace("}", "").replace("+", "/")

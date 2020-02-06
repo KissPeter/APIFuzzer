@@ -40,8 +40,7 @@ class SwaggerTemplateGenerator(TemplateGenerator):
                     template = BaseTemplate(name=template_container_name)
                     template.url = normalized_url
                     template.method = method.upper()
-                    fuzz_type = get_fuzz_type_by_param_type(
-                        transform_data_to_bytes(param.get('type')))  # gives RandomBitsField at the moment
+                    fuzz_type = get_fuzz_type_by_param_type(param.get('type'))
                     sample_data = get_sample_data_by_type(param.get('type'))
 
                     # get parameter placement(in): path, query, header, cookie

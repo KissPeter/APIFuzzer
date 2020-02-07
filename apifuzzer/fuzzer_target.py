@@ -232,8 +232,9 @@ class FuzzerTarget(ServerTarget):
                 _req_url.append(url_part.strip('/'))
             kwargs.pop('url')
             # Replace back the placeholder for '/'
-            # (this happens in expand_path_variables, but if we don't have any path_variables, it won't)
-            request_url = '/'.join(_req_url).replace('+','/')
+            # (this happens in expand_path_variables,
+            # but if we don't have any path_variables, it won't)
+            request_url = '/'.join(_req_url).replace('+', '/')
             query_params = None
             if kwargs.get('params') is not None:
                 query_params = self.format_pycurl_query_param(request_url, kwargs.get('params', {}))

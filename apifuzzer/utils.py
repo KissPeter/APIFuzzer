@@ -57,7 +57,7 @@ def get_sample_data_by_type(param_type):
     return types.get(param_type, b'\x00')
 
 
-def set_logger(level='warning', basic_output=false):
+def set_logger(level='warning', basic_output=False):
     fmt = '%(process)d [%(levelname)s] %(name)s: %(message)s'
     if (basic_output):
         logging.basicConfig(format=fmt)

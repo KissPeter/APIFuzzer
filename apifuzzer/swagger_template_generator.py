@@ -120,7 +120,7 @@ class SwaggerTemplateGenerator(TemplateGenerator):
             'default': strategy_default,
             'all_params_at_once': strategy_all_params_at_once,
         }
-        strategy = switcher.get(self.strategy, lambda: strategy_default)
+        strategy = switcher.get(self.strategy, strategy_default)
         strategy()
 
     def compile_base_url(self, alternate_url):

@@ -131,7 +131,7 @@ if __name__ == '__main__':
                   alternate_url=args.alternate_url,
                   test_result_dst=args.test_result_dst,
                   log_level=args.log_level,
-                  basic_output=args.basic_output
+                  basic_output=args.basic_output,
                   auth_headers=args.headers
                   )
     prog.prepare()

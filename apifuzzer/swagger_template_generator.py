@@ -59,7 +59,7 @@ class SwaggerTemplateGenerator(TemplateGenerator):
         else:
             self.logger.error('Can not parse a definition from swagger.json: %s', param)
 
-    def strategy_default(self):
+    def strategy_default(self, resource, normalized_url, method):
         for param in self.api_resources['paths'][resource][method].get('parameters', {}):
             template_container_name = '{}|{}|{}'.format(normalized_url, method, param.get('name'))
             template = BaseTemplate(name=template_container_name)
@@ -68,7 +68,7 @@ class SwaggerTemplateGenerator(TemplateGenerator):
             self.process_param(resource, method, template_container_name, template, param)
             self.templates.append(template)
 
-    def strategy_all_params_at_once(self, resource, method):
+    def strategy_all_params_at_once(self, resource, normalized_url, method):
         template_container_name = '{}|{}'.format(normalized_url, method)
         template = BaseTemplate(name=template_container_name)
         template.url = normalized_url
@@ -89,7 +89,7 @@ class SwaggerTemplateGenerator(TemplateGenerator):
             normalized_url = self.normalize_url(resource)
             for method in self.api_resources['paths'][resource].keys():
                 self.logger.info('Resource: {} Method: {}'.format(resource, method))
-                strategy(resource, method)
+                strategy(resource, normalized_url, method)
 
     def compile_base_url(self, alternate_url):
         """

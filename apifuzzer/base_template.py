@@ -43,8 +43,6 @@ class BaseTemplate(object):
 
     def strategy_all_params_at_once(self, template):
         for name, field in self.field_to_param.items():
-            self.logger.info('Name {}, Field {}'.format(name, field))
-            self.logger.info('Self.name {}'.format(self.name, field))
             if list(field):
                 template.append_fields([Container(name=name, fields=field)])
 

@@ -5,7 +5,7 @@ from kitty.model import Static, Template, Container
 
 class BaseTemplate(object):
 
-    def __init__(self, name, strategy = None, logger):
+    def __init__(self, name, strategy, logger):
         self.name = name
         self.method = None
         self.url = None
@@ -57,5 +57,6 @@ class BaseTemplate(object):
             'all_params_at_once': self.strategy_all_params_at_once,
         }
         strategy = switcher.get(self.strategy, self.strategy_default)
+        self.logger.info('Compiling template with strategy: {}'.format(self.strategy))
         strategy(template)
         return template

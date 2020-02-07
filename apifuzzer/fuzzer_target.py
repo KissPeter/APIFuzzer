@@ -244,7 +244,8 @@ class FuzzerTarget(ServerTarget):
                 kwargs.pop('path_variables')
             if kwargs.get('data') is not None:
                 kwargs['data'] = self.fix_data(kwargs.get('data'))
-            request_url = '{}{}'.format(request_url, query_params)
+            if query_params is not None:
+                request_url = '{}{}'.format(request_url, query_params)
             self.logger.info('Request URL : {}'.format(request_url))
             method = kwargs['method']
             if isinstance(method, Bits):

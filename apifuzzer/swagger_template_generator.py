@@ -117,14 +117,11 @@ class SwaggerTemplateGenerator(TemplateGenerator):
 
     def process_api_resources(self):
         switcher = {
-            'default': strategy_default,
-            'all_params_at_once': strategy_all_params_at_once,
+            'default': self.strategy_default,
+            'all_params_at_once': self.strategy_all_params_at_once,
         }
-        strategy = switcher.get(self.strategy, None)
-        if strategy is not none:
-            strategy()
-        else:
-            strategy_default()
+        strategy = switcher.get(self.strategy, self.strategy_default)
+        strategy()
 
     def compile_base_url(self, alternate_url):
         """

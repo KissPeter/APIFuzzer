@@ -5,7 +5,7 @@ from kitty.model import Static, Template, Container
 
 class BaseTemplate(object):
 
-    def __init__(self, name, strategy, logger):
+    def __init__(self, name):
         self.name = name
         self.method = None
         self.url = None
@@ -23,8 +23,6 @@ class BaseTemplate(object):
             'cookies': self.cookies,
             'query': self.query
         }
-        self.strategy = strategy
-        self.logger = logger
         """
         Possible paramters from request docs:
         :param method: method for the new :class:`Request` object.
@@ -36,25 +34,11 @@ class BaseTemplate(object):
         :param cookies: (optional) Dict or CookieJar object to send with the :class:`Request`.
         """
 
-    def strategy_default(self, template):
-        for name, field in self.field_to_param.items():
-            if list(field):
-                template.append_fields([Container(name=name, fields=field)])
-
-    def strategy_all_params_at_once(self, template):
-        for name, field in self.field_to_param.items():
-            if list(field):
-                template.append_fields([Container(name=name, fields=field)])
-
     def compile_template(self):
         _url = Static(name='url', value=self.url)
         _method = Static(name='method', value=self.method)
         template = Template(name=self.name, fields=[_url, _method])
-        switcher = {
-            'default': self.strategy_default,
-            'all_params_at_once': self.strategy_all_params_at_once,
-        }
-        strategy = switcher.get(self.strategy, self.strategy_default)
-        
-        strategy(template)
+        for name, field in self.field_to_param.items():
+            if list(field):
+                template.append_fields([Container(name=name, fields=field)])
         return template

@@ -51,6 +51,7 @@ class SwaggerTemplateGenerator(TemplateGenerator):
                     # get parameter type: integer, string
                     # get format if present
                     param_type = param.get('in')
+                    param_name = '{}|{}'.format(template_container_name, param.get('name'))
                     self.logger.debug('Resource: {} Method: {} Parameter: {}, Parameter type: {}, Sample data: {},'
                                       'Param name: {}'
                                       .format(resource, method, param, param_type, sample_data, param_name))

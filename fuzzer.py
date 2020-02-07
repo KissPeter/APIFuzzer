@@ -54,6 +54,16 @@ class Fuzzer(object):
         fuzzer.set_interface(interface)
         fuzzer.start()
 
+def str2bool(v):
+    if isinstance(v, bool):
+       return v
+    if v.lower() in ('yes', 'true', 't', 'y', '1', 'True', 'T'):
+        return True
+    elif v.lower() in ('no', 'false', 'f', 'n', '0', 'False', 'F'):
+        return False
+    else:
+        raise argparse.ArgumentTypeError('Boolean value expected.')
+
 
 if __name__ == '__main__':
 
@@ -105,7 +115,7 @@ if __name__ == '__main__':
                         default='warning',
                         choices=[level.lower() for level in levelNames if isinstance(level, str)])
     parser.add_argument('--basic_output',
-                        type=bool,
+                        type=str2bool,
                         required=False,
                         help='Use basic output for logging (useful if running in jenkins). Example --basic_output=True',
                         dest='basic_output',

@@ -150,7 +150,7 @@ if __name__ == '__main__':
                   log_level=args.log_level,
                   basic_output=args.basic_output,
                   auth_headers=args.headers,
-                  strategy=strategy
+                  strategy=args.strategy
                   )
     prog.prepare()
     signal.signal(signal.SIGINT, signal_handler)

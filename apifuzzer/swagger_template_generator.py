@@ -27,7 +27,7 @@ class SwaggerTemplateGenerator(TemplateGenerator):
         # we will change back later
         return url_in.strip('/').replace('/', '+')
 
-    def strategy_default():
+    def strategy_default(self):
         self.logger.info('Start preparation with default strategy')
         for resource in self.api_resources['paths'].keys():
             normalized_url = self.normalize_url(resource)
@@ -71,7 +71,7 @@ class SwaggerTemplateGenerator(TemplateGenerator):
                         self.logger.error('Can not parse a definition from swagger.json: %s', param)
                     self.templates.append(template)
 
-    def strategy_all_params_at_once():
+    def strategy_all_params_at_once(self):
         self.logger.info('Start preparation with strategy \'all_params_at_once\'')
         for resource in self.api_resources['paths'].keys():
             normalized_url = self.normalize_url(resource)
@@ -120,8 +120,11 @@ class SwaggerTemplateGenerator(TemplateGenerator):
             'default': strategy_default,
             'all_params_at_once': strategy_all_params_at_once,
         }
-        strategy = switcher.get(self.strategy, strategy_default)
-        strategy()
+        strategy = switcher.get(self.strategy, None)
+        if strategy is not none:
+            strategy()
+        else:
+            strategy_default()
 
     def compile_base_url(self, alternate_url):
         """

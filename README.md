@@ -18,6 +18,10 @@ if you application can cope with the fuzzed parameters. Does not require coding.
 ### Work in progress
 - [API Blueprint][]
 
+## Pre-requirements
+1. Python3
+2. libcurl4-openssl-dev libssl-dev (for pycurl)
+
 ## Installation
 
 Fetch the most recent code from GitHub

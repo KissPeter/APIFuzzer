@@ -320,7 +320,8 @@ class FuzzerTarget(ServerTarget):
         except (UnicodeDecodeError, UnicodeEncodeError) as e:  # request failure such as InvalidHeader
             self.report_add_basic_msg(('Failed to parse http response code, exception occurred: %s', e))
 
-    def fix_data(self, data):
+    @staticmethod
+    def fix_data(data):
         new_data = {}
         for data_key, data_value in data.items():
             new_key = data_key.split('|')[-1]

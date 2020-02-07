@@ -27,6 +27,7 @@ class SwaggerTemplateGenerator(TemplateGenerator):
         return url_in.strip('/').replace('/', '+')
 
     def process_api_resources(self):
+        self.logger.info('Start preparation')
         for resource in self.api_resources['paths'].keys():
             normalized_url = self.normalize_url(resource)
             for method in self.api_resources['paths'][resource].keys():

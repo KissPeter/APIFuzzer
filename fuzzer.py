@@ -22,7 +22,7 @@ from apifuzzer.utils import set_logger
 class Fuzzer(object):
 
     def __init__(self, api_resources, report_dir, test_level, log_level, basic_output, alternate_url=None, test_result_dst=None,
-                 auth_headers=None):
+                 auth_headers=None, strategy=None):
         self.api_resources = api_resources
         self.base_url = None
         self.alternate_url = alternate_url
@@ -31,12 +31,13 @@ class Fuzzer(object):
         self.report_dir = report_dir
         self.test_result_dst = test_result_dst
         self.auth_headers = auth_headers if auth_headers else {}
+        self.strategy = strategy
         self.logger = set_logger(log_level, basic_output)
         self.logger.info('APIFuzzer initialized')
 
     def prepare(self):
         # here we will be able to branch the template generator if we will support other than Swagger
-        template_generator = SwaggerTemplateGenerator(self.api_resources, logger=self.logger)
+        template_generator = SwaggerTemplateGenerator(self.api_resources, logger=self.logger, strategy=self.strategy)
         template_generator.process_api_resources()
         self.templates = template_generator.templates
         self.base_url = template_generator.compile_base_url(self.alternate_url)
@@ -127,6 +128,12 @@ if __name__ == '__main__':
                              '{"Auth2": "asd"}]\'',
                         dest='headers',
                         default=None)
+    parser.add_argument('--strategy',
+                        type=str,
+                        required=False,
+                        help='Fuzzing strategy to be used. Example \'--strategy=all_params_at_once\'',
+                        dest='strategy',
+                        default=None)
     args = parser.parse_args()
     api_definition_json = dict()
     try:
@@ -142,7 +149,8 @@ if __name__ == '__main__':
                   test_result_dst=args.test_result_dst,
                   log_level=args.log_level,
                   basic_output=args.basic_output,
-                  auth_headers=args.headers
+                  auth_headers=args.headers,
+                  strategy=strategy
                   )
     prog.prepare()
     signal.signal(signal.SIGINT, signal_handler)

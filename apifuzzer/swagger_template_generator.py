@@ -35,7 +35,7 @@ class SwaggerTemplateGenerator(TemplateGenerator):
                 self.logger.info('Resource: {} Method: {}'.format(resource, method))
                 for param in self.api_resources['paths'][resource][method].get('parameters', {}):
                     template_container_name = '{}|{}|{}'.format(normalized_url, method, param.get('name'))
-                    template = BaseTemplate(name=template_container_name)
+                    template = BaseTemplate(name=template_container_name, strategy=self.strategy, logger=self.logger)
                     template.url = normalized_url
                     template.method = method.upper()
                     type = param.get('type')

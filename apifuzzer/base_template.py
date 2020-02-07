@@ -5,7 +5,7 @@ from kitty.model import Static, Template, Container
 
 class BaseTemplate(object):
 
-    def __init__(self, name, strategy = None):
+    def __init__(self, name, strategy = None, logger):
         self.name = name
         self.method = None
         self.url = None
@@ -24,6 +24,7 @@ class BaseTemplate(object):
             'query': self.query
         }
         self.strategy = strategy
+        self.logger = logger
         """
         Possible paramters from request docs:
         :param method: method for the new :class:`Request` object.

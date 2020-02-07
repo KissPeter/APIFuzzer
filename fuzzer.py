@@ -107,7 +107,7 @@ if __name__ == '__main__':
     parser.add_argument('--basic_output',
                         type=bool,
                         required=False,
-                        help='Use basic output for logging (useful if running in jenkins). Example --basic_output=True'
+                        help='Use basic output for logging (useful if running in jenkins). Example --basic_output=True',
                         dest='basic_output',
                         default=False) # Useful if running in jenkins.
     parser.add_argument('--headers',

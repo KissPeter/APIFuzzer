@@ -27,7 +27,7 @@ class SwaggerTemplateGenerator(TemplateGenerator):
         # we will change back later
         return url_in.strip('/').replace('/', '+')
 
-    def process_param(self, resource, method, template_container_name, template, param):
+    def process_param(self, resource, method, param_name, template, param):
         type = param.get('type')
         format = param.get('format')
         if format is not None:
@@ -75,7 +75,7 @@ class SwaggerTemplateGenerator(TemplateGenerator):
         template.method = method.upper()
         self.logger.debug('Resource: {} Method: {}'.format(resource, method))
         for param in self.api_resources['paths'][resource][method].get('parameters', {}):
-            self.process_param(resource, method, template_container_name, template, param)
+            self.process_param(resource, method, '{}|{}'.format(template_container_name, param.get('name')), template, param)
         self.templates.append(template)
 
     def process_api_resources(self):

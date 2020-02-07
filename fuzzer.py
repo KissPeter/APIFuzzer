@@ -21,7 +21,7 @@ from apifuzzer.utils import set_logger
 
 class Fuzzer(object):
 
-    def __init__(self, api_resources, report_dir, test_level, log_level, alternate_url=None, test_result_dst=None,
+    def __init__(self, api_resources, report_dir, test_level, log_level, basic_output, alternate_url=None, test_result_dst=None,
                  auth_headers=None):
         self.api_resources = api_resources
         self.base_url = None
@@ -31,7 +31,7 @@ class Fuzzer(object):
         self.report_dir = report_dir
         self.test_result_dst = test_result_dst
         self.auth_headers = auth_headers if auth_headers else {}
-        self.logger = set_logger(log_level)
+        self.logger = set_logger(log_level, basic_output)
         self.logger.info('APIFuzzer initialized')
 
     def prepare(self):
@@ -53,6 +53,16 @@ class Fuzzer(object):
         fuzzer.set_target(target)
         fuzzer.set_interface(interface)
         fuzzer.start()
+
+def str2bool(v):
+    if isinstance(v, bool):
+       return v
+    if v.lower() in ('yes', 'true', 't', 'y', '1', 'True', 'T'):
+        return True
+    elif v.lower() in ('no', 'false', 'f', 'n', '0', 'False', 'F'):
+        return False
+    else:
+        raise argparse.ArgumentTypeError('Boolean value expected.')
 
 
 if __name__ == '__main__':
@@ -104,6 +114,12 @@ if __name__ == '__main__':
                         dest='log_level',
                         default='warning',
                         choices=[level.lower() for level in levelNames if isinstance(level, str)])
+    parser.add_argument('--basic_output',
+                        type=str2bool,
+                        required=False,
+                        help='Use basic output for logging (useful if running in jenkins). Example --basic_output=True',
+                        dest='basic_output',
+                        default=False) # Useful if running in jenkins.
     parser.add_argument('--headers',
                         type=json_data,
                         required=False,
@@ -125,6 +141,7 @@ if __name__ == '__main__':
                   alternate_url=args.alternate_url,
                   test_result_dst=args.test_result_dst,
                   log_level=args.log_level,
+                  basic_output=args.basic_output,
                   auth_headers=args.headers
                   )
     prog.prepare()

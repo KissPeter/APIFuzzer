@@ -231,7 +231,10 @@ class FuzzerTarget(ServerTarget):
                     url_part = url_part.decode()
                 _req_url.append(url_part.strip('/'))
             kwargs.pop('url')
-            request_url = '/'.join(_req_url)
+            # Replace back the placeholder for '/'
+            # (this happens in expand_path_variables,
+            # but if we don't have any path_variables, it won't)
+            request_url = '/'.join(_req_url).replace('+', '/')
             query_params = None
             if kwargs.get('params') is not None:
                 query_params = self.format_pycurl_query_param(request_url, kwargs.get('params', {}))
@@ -239,7 +242,10 @@ class FuzzerTarget(ServerTarget):
             if kwargs.get('path_variables') is not None:
                 request_url = self.expand_path_variables(request_url, kwargs.get('path_variables'))
                 kwargs.pop('path_variables')
-            request_url = '{}{}'.format(request_url, query_params)
+            if kwargs.get('data') is not None:
+                kwargs['data'] = self.fix_data(kwargs.get('data'))
+            if query_params is not None:
+                request_url = '{}{}'.format(request_url, query_params)
             self.logger.info('Request URL : {}'.format(request_url))
             method = kwargs['method']
             if isinstance(method, Bits):
@@ -315,6 +321,14 @@ class FuzzerTarget(ServerTarget):
             return _return
         except (UnicodeDecodeError, UnicodeEncodeError) as e:  # request failure such as InvalidHeader
             self.report_add_basic_msg(('Failed to parse http response code, exception occurred: %s', e))
+
+    @staticmethod
+    def fix_data(data):
+        new_data = {}
+        for data_key, data_value in data.items():
+            new_key = data_key.split('|')[-1]
+            new_data[new_key] = data_value
+        return new_data
 
     def post_test(self, test_num):
         """Called after a test is completed, perform cleanup etc."""

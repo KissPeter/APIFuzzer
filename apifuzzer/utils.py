@@ -52,21 +52,25 @@ def get_sample_data_by_type(param_type):
         u'integer': 1,
         u'number': 667.5,
         u'boolean': False,
-        u'array': ['a', 'b', 'c']
+        u'array': [1, 2, 3] # transform_data_to_bytes complains when this array contains strings.
     }
     return types.get(param_type, b'\x00')
 
 
-def set_logger(level='warning'):
-    handler = logging.StreamHandler()
-    if os.path.exists('/dev/log'):
-        handler = SysLogHandler(address='/dev/log', facility=SysLogHandler.LOG_LOCAL2)
-    handler.setFormatter(Formatter('%(process)d [%(levelname)s] %(name)s: %(message)s'))
-    logger = logging.getLogger()
+def set_logger(level='warning', basic_output=False):
+    fmt = '%(process)d [%(levelname)s] %(name)s: %(message)s'
+    if (basic_output):
+        logging.basicConfig(format=fmt)
+        logger = logging.getLogger()
+    else:
+        handler = logging.StreamHandler()
+        if os.path.exists('/dev/log'):
+            handler = SysLogHandler(address='/dev/log', facility=SysLogHandler.LOG_LOCAL2)
+        handler.setFormatter(Formatter('%(process)d [%(levelname)s] %(name)s: %(message)s'))
+        logger = logging.getLogger()
+        logger.addHandler(handler)
     logger.setLevel(level=level.upper())
-    logger.addHandler(handler)
     return logger
-
 
 def transform_data_to_bytes(data_in):
     if isinstance(data_in, float):

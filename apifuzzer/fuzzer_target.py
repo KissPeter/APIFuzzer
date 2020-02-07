@@ -246,8 +246,10 @@ class FuzzerTarget(ServerTarget):
                 kwargs['data'] = self.fix_data(kwargs.get('data'))
             if query_params is not None:
                 request_url = '{}{}'.format(request_url, query_params)
-            self.logger.info('Request URL : {}'.format(request_url))
             method = kwargs['method']
+            self.logger.info('Request URL : {} {}'.format(method, request_url))
+            if kwargs.get('data') is not None:
+                self.logger.info('Request data:{}'.format(json.dumps(dict(kwargs.get('data')))))
             if isinstance(method, Bits):
                 method = method.tobytes()
             if isinstance(method, bytes):

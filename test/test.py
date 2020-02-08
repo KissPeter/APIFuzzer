@@ -54,6 +54,7 @@ class TestClass(object):
                           alternate_url=self.test_app_url,
                           test_result_dst=None,
                           log_level='Debug',
+                          basic_output=False,
                           auth_headers={}
                           )
             prog.prepare()
@@ -64,25 +65,70 @@ class TestClass(object):
         with open("{}/{}".format(self.report_dir, self.report_files[0]), mode='r', encoding='utf-8') as f:
             return json.loads(f.read())
 
-    def test_integer_status_code(self):
-        api_endpoint_to_test = self.swagger['paths']['/exception/{integer_id}']
-        print('API to test: {}'.format(api_endpoint_to_test))
+    def fuzz_and_get_last_call(self, api_path, api_def):
         self.swagger.pop('paths')
         self.swagger['paths'] = {}
-        self.swagger['paths']['/exception/{integer_id}'] = api_endpoint_to_test
+        self.swagger['paths'][api_path] = api_def
         self.fuzz(self.swagger)
         last_call = self.query_last_call()
-        # last_call field:
-        # "req_path": "/exception/\u001f/\u001c\u007f\u0000N@",
-        last_value_sent = last_call['req_path'].replace('/exception/', '')
-        assert not isinstance(last_value_sent, int), last_value_sent
-        assert last_call['resp_status'] == 500, last_call['resp_status'] + "Received"
-        # report file test
-        required_report_fields = ['status', 'sub_reports', 'name', 'request_body', 'request_headers', 'state',
-                                  'request_method', 'reason', 'request_url', 'response', 'test_number']
+        assert last_call['resp_status'] == 500, '{} received, full response: {}'.format(last_call['resp_status'],
+                                                                                        last_call)
+        print('api_path: {}, api_def: {} \nlast_call: {}'.format(api_path, api_def, last_call))
+        return last_call
+
+    def repot_basic_check(self):
+        required_report_fields = ['status', 'sub_reports', 'name', 'request_headers', 'state', 'request_method',
+                                  'reason', 'request_url', 'response', 'test_number']
         last_report = self.get_last_report_file()
         assert_msg = json.dumps(last_report, sort_keys=True, indent=2)
         for field in required_report_fields:
             assert field in last_report.keys(), assert_msg
         if last_report.get('parsed_status_code') is not None:
             assert last_report['parsed_status_code'] == 500, assert_msg
+
+    def test_single_path_parameter(self):
+        test_url = '/path_param'
+        api_path = "/".join([test_url, '{integer_id}'])
+        api_def = {
+            "get": {
+                "parameters": [
+                    {
+                        "name": "integer_id",
+                        "in": "path",
+                        "required": True,
+                        "type": "number",
+                        "format": "double"
+                    }
+
+                ]
+            }
+        }
+        last_call = self.fuzz_and_get_last_call(api_path, api_def)
+        # last_call test field sample:
+        # "req_path": "/path_param/\u001f/\u001c\u007f\u0000N@",
+        last_value_sent = last_call['req_path'].replace(test_url, '')
+        assert not isinstance(last_value_sent, int), last_value_sent
+        self.repot_basic_check()
+
+    def test_single_query_string(self):
+        api_path = '/query'
+        api_def = {
+            "get": {
+                "parameters": [
+                    {
+                        "name": "integer_id",
+                        "in": "query",
+                        "required": True,
+                        "type": "number",
+                        "format": "double"
+                    }
+
+                ]
+            }
+        }
+        # last_call test field sample:
+        # 'http://127.0.0.1:5000/query?integer_id=%10'
+        last_call = self.fuzz_and_get_last_call(api_path, api_def)
+        _, last_value_sent = last_call['req_url'].split("=")
+        assert not isinstance(last_value_sent, int), last_call['req_url']
+        self.repot_basic_check()

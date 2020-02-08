@@ -43,10 +43,16 @@ app = Flask(__name__)
 last_request_data = LastRequestData()
 
 
-@app.route('/exception/<integer_id>', methods=['GET'])
+@app.route('/path_param/<integer_id>', methods=['GET'])
 @catch_custom_exception
 def transform(integer_id):
     return 'ID: {}'.format(int(integer_id))
+
+
+@app.route('/query')
+@catch_custom_exception
+def data():
+    return 'ID: {}'.format(int(request.args.get('integer_id')))
 
 
 @app.route('/last_call', methods=['GET'])

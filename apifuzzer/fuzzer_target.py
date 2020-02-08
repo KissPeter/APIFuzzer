@@ -123,8 +123,8 @@ class FuzzerTarget(ServerTarget):
                     self.logger.exception(e)
                     self.logger.debug('{} Problem adding ({}) as query param. Issue was:{}'.format(iteration, k, e))
                     if len(v):
-                        self.logger.debug('Removing last character from query param, current length: %s', len(v))
-                        v = v[:-1]
+                        self.logger.debug('Removing first character from query param, current length: %s', len(v))
+                        v = v[1:]
                     else:
                         self.logger.info('The whole query param was removed, using empty string instead')
                         _tmp_query_params[_query_param_name] = ""
@@ -281,14 +281,12 @@ class FuzzerTarget(ServerTarget):
                 _curl.setopt(pycurl.POSTFIELDS, urllib.parse.urlencode(kwargs.get('data', {})))
                 _curl.setopt(pycurl.HEADERFUNCTION, resp_buff_hdrs.write)
                 _curl.setopt(pycurl.WRITEFUNCTION, resp_buff_body.write)
-                for retries in reversed(range(3)):
+                for retries in reversed(range(0, 3)):
                     try:
                         _curl.perform()
                     except Exception as e:
-                        # pycurl.error usually
-                        self.logger.error('{}: {}'.format(e.__class__.__name__, e))
                         if retries:
-                            self.logger.error('Retrying... ({})'.format(retries))
+                            self.logger.error('Retrying... ({}) because {}'.format(retries, e))
                         else:
                             raise e
                 _return = Return()

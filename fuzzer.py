@@ -3,19 +3,17 @@ from __future__ import print_function
 
 import argparse
 import json
-import sys
-
-from logging import _nameToLevel as levelNames
 import signal
+import sys
 import tempfile
-
+from logging import _nameToLevel as levelNames
 
 from kitty.interfaces import WebInterface
 from kitty.model import GraphModel
 
-from apifuzzer.swagger_template_generator import SwaggerTemplateGenerator
 from apifuzzer.fuzzer_target import FuzzerTarget
 from apifuzzer.server_fuzzer import OpenApiServerFuzzer
+from apifuzzer.swagger_template_generator import SwaggerTemplateGenerator
 from apifuzzer.utils import set_logger
 
 
@@ -119,7 +117,7 @@ if __name__ == '__main__':
                         required=False,
                         help='Use basic output for logging (useful if running in jenkins). Example --basic_output=True',
                         dest='basic_output',
-                        default=False) # Useful if running in jenkins.
+                        default=False)
     parser.add_argument('--headers',
                         type=json_data,
                         required=False,

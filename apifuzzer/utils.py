@@ -52,7 +52,7 @@ def get_sample_data_by_type(param_type):
         u'integer': 1,
         u'number': 667.5,
         u'boolean': False,
-        u'array': [1, 2, 3] # transform_data_to_bytes complains when this array contains strings.
+        u'array': [1, 2, 3]  # transform_data_to_bytes complains when this array contains strings.
     }
     return types.get(param_type, b'\x00')
 
@@ -71,6 +71,7 @@ def set_logger(level='warning', basic_output=False):
         logger.addHandler(handler)
     logger.setLevel(level=level.upper())
     return logger
+
 
 def transform_data_to_bytes(data_in):
     if isinstance(data_in, float):
@@ -93,3 +94,11 @@ def try_b64encode(data_in):
         return b64encode(data_in)
     except (TypeError, Error):
         return data_in
+
+
+def param_to_container_name(normalized_url, method, param):
+    return '{}|{}|{}'.format(normalized_url, method, param)
+
+
+def container_name_to_param(container_name):
+    return container_name.split('|')[-1]

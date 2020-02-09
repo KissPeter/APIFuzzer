@@ -32,11 +32,12 @@ class SwaggerTemplateGenerator(TemplateGenerator):
             normalized_url = self.normalize_url(resource)
             for method in self.api_resources['paths'][resource].keys():
                 self.logger.info('Resource: {} Method: {}'.format(resource, method))
+                template_container_name = '{}|{}'.format(normalized_url, method)
+                template = BaseTemplate(name=template_container_name)
+                template.url = normalized_url
+                template.method = method.upper()
+                self.logger.debug('Resource: {} Method: {}'.format(resource, method))
                 for param in self.api_resources['paths'][resource][method].get('parameters', {}):
-                    template_container_name = '{}|{}|{}'.format(normalized_url, method, param.get('name'))
-                    template = BaseTemplate(name=template_container_name)
-                    template.url = normalized_url
-                    template.method = method.upper()
                     type = param.get('type')
                     format = param.get('format')
                     if format is not None:
@@ -47,12 +48,11 @@ class SwaggerTemplateGenerator(TemplateGenerator):
                         fuzzer_type = None
                     fuzz_type = get_fuzz_type_by_param_type(fuzzer_type)
                     sample_data = get_sample_data_by_type(param.get('type'))
-
                     # get parameter placement(in): path, query, header, cookie
                     # get parameter type: integer, string
                     # get format if present
                     param_type = param.get('in')
-                    param_name = template_container_name
+                    param_name = '{}|{}'.format(template_container_name, param.get('name'))
                     self.logger.debug('Resource: {} Method: {} Parameter: {}, Parameter type: {}, Sample data: {},'
                                       'Param name: {}'
                                       .format(resource, method, param, param_type, sample_data, param_name))
@@ -68,7 +68,7 @@ class SwaggerTemplateGenerator(TemplateGenerator):
                         template.data.append(fuzz_type(name=param_name, value=transform_data_to_bytes(sample_data)))
                     else:
                         self.logger.error('Can not parse a definition from swagger.json: %s', param)
-                    self.templates.append(template)
+                self.templates.append(template)
 
     def compile_base_url(self, alternate_url):
         """

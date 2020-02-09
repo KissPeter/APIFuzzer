@@ -99,10 +99,6 @@ def try_b64encode(data_in):
         return data_in
 
 
-def param_to_container_name(normalized_url, method, param):
-    return '{}|{}|{}'.format(normalized_url, method, param)
-
-
 def container_name_to_param(container_name):
     return container_name.split('|')[-1]
 

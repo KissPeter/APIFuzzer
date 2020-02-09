@@ -1,4 +1,4 @@
-#!/usr/bin/env python2
+#!/usr/bin/env python3
 import os
 import sys
 
@@ -42,6 +42,7 @@ on_rtd = os.environ.get('READTHEDOCS', None) == 'True'
 # default anyway.  This block will use the same theme when building locally
 if not on_rtd:
     import sphinx_rtd_theme
+
     html_theme = 'sphinx_rtd_theme'
     html_theme_path = [sphinx_rtd_theme.get_html_theme_path()]
     html_style = 'css/custom.css'

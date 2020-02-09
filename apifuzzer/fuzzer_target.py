@@ -224,6 +224,22 @@ class FuzzerTarget(ServerTarget):
             _return.append('{}: {}'.format(k, v).encode())
         return _return
 
+    @staticmethod
+    def init_pycurl():
+        """
+        Provides an instances of pycurl with basic configuration
+        :return: pycurl instance
+        """
+        _curl = pycurl.Curl()
+        _curl.setopt(pycurl.SSL_OPTIONS, pycurl.SSLVERSION_TLSv1_2)
+        _curl.setopt(pycurl.SSL_VERIFYPEER, False)
+        _curl.setopt(pycurl.SSL_VERIFYHOST, False)
+        _curl.setopt(pycurl.VERBOSE, True)
+        _curl.setopt(pycurl.TIMEOUT, 10)
+        _curl.setopt(pycurl.COOKIEFILE, "")
+        _curl.setopt(pycurl.USERAGENT, 'APIFuzzer')
+        return _curl
+
     def transmit(self, **kwargs):
         """
         Prepares fuzz HTTP request, sends and processes the response
@@ -272,19 +288,11 @@ class FuzzerTarget(ServerTarget):
             try:
                 resp_buff_hdrs = BytesIO()
                 resp_buff_body = BytesIO()
-                _curl = pycurl.Curl()
                 b = BytesIO()
-                if request_url.startswith('https'):
-                    _curl.setopt(pycurl.SSL_OPTIONS, pycurl.SSLVERSION_TLSv1_2)
-                    _curl.setopt(pycurl.SSL_VERIFYPEER, False)
-                    _curl.setopt(pycurl.SSL_VERIFYHOST, False)
-                _curl.setopt(pycurl.VERBOSE, True)
-                _curl.setopt(pycurl.TIMEOUT, 10)
+                _curl = self.init_pycurl()
                 _curl.setopt(pycurl.URL, self.format_pycurl_url(request_url))
                 _curl.setopt(pycurl.HEADERFUNCTION, self.header_function)
                 _curl.setopt(pycurl.HTTPHEADER, self.format_pycurl_header(kwargs.get('headers', {})))
-                _curl.setopt(pycurl.COOKIEFILE, "")
-                _curl.setopt(pycurl.USERAGENT, 'APIFuzzer')
                 _curl.setopt(pycurl.POST, len(kwargs.get('data', {}).items()))
                 _curl.setopt(pycurl.CUSTOMREQUEST, method)
                 _curl.setopt(pycurl.POSTFIELDS, urllib.parse.urlencode(kwargs.get('data', {})))

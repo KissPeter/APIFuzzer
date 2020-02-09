@@ -1,15 +1,15 @@
 language: python
 python:
-- '3.4'
-- '3.6'
-- '3.7'
-- '3.8'
+  - '3.4'
+  - '3.6'
+  - '3.7'
+  - '3.8'
 before_install:
-    - sudo apt-get -y install libgnutls28-dev
+  - sudo apt-get -y install libgnutls28-dev
 install:
-    - pip3 install -r requirements.txt
+  - pip3 install -r requirements.txt
 script:
-- python fuzzer.py -h
-- pip3 install -r test/requirements_for_test.txt
-- cd test && python3 test_application.py&
-- cd test && pytest --durations=10 --show-capture=stdout -vv -rP test.py
+  - python fuzzer.py -h
+  - pip3 install -r test/requirements_for_test.txt
+  - cd test && python3 test_application.py&
+  - cd test && pytest --durations=10 --show-capture=stdout -vv -rP test.py

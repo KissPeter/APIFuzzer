@@ -1,11 +1,14 @@
+import json
 import logging
 import os
 from base64 import b64encode
 from binascii import Error
+from io import BytesIO
 from logging import Formatter
 from logging.handlers import SysLogHandler
 from random import randint
 
+import pycurl
 from bitstring import Bits
 
 from apifuzzer.custom_fuzzers import RandomBitsField
@@ -102,3 +105,48 @@ def param_to_container_name(normalized_url, method, param):
 
 def container_name_to_param(container_name):
     return container_name.split('|')[-1]
+
+
+def init_pycurl():
+    """
+    Provides an instances of pycurl with basic configuration
+    :return: pycurl instance
+    """
+    _curl = pycurl.Curl()
+    _curl.setopt(pycurl.SSL_OPTIONS, pycurl.SSLVERSION_TLSv1_2)
+    _curl.setopt(pycurl.SSL_VERIFYPEER, False)
+    _curl.setopt(pycurl.SSL_VERIFYHOST, False)
+    _curl.setopt(pycurl.VERBOSE, True)
+    _curl.setopt(pycurl.TIMEOUT, 10)
+    _curl.setopt(pycurl.COOKIEFILE, "")
+    _curl.setopt(pycurl.USERAGENT, 'APIFuzzer')
+    return _curl
+
+
+def download_file(url, dst_file):
+    _curl = init_pycurl()
+    buffer = BytesIO()
+    _curl = pycurl.Curl()
+    _curl.setopt(_curl.URL, url)
+    _curl.setopt(_curl.WRITEDATA, buffer)
+    _curl.perform()
+    _curl.close()
+    buffer.seek(0)
+    with open(dst_file, 'wb') as tmp_file:
+        tmp_file.write(buffer.getvalue())
+    buffer.close()
+
+
+def save_api_definition(url, temp_file):
+    download_file(url, temp_file)
+    return get_api_definition_from_file(temp_file)
+
+
+def get_api_definition_from_file(src_file):
+    try:
+        with open(src_file, mode='rb') as f:
+            api_definition_json = json.loads(f.read())
+    except Exception as e:
+        print('Failed to parse input file: {}'.format(e))
+        exit()
+    return api_definition_json

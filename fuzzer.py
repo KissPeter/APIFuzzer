@@ -14,12 +14,13 @@ from kitty.model import GraphModel
 from apifuzzer.fuzzer_target import FuzzerTarget
 from apifuzzer.server_fuzzer import OpenApiServerFuzzer
 from apifuzzer.swagger_template_generator import SwaggerTemplateGenerator
-from apifuzzer.utils import set_logger
+from apifuzzer.utils import set_logger, get_api_definition_from_file, save_api_definition
 
 
 class Fuzzer(object):
 
-    def __init__(self, api_resources, report_dir, test_level, log_level, basic_output, alternate_url=None, test_result_dst=None,
+    def __init__(self, api_resources, report_dir, test_level, log_level, basic_output, alternate_url=None,
+                 test_result_dst=None,
                  auth_headers=None):
         self.api_resources = api_resources
         self.base_url = None
@@ -52,9 +53,10 @@ class Fuzzer(object):
         fuzzer.set_interface(interface)
         fuzzer.start()
 
+
 def str2bool(v):
     if isinstance(v, bool):
-       return v
+        return v
     if v.lower() in ('yes', 'true', 't', 'y', '1', 'True', 'T'):
         return True
     elif v.lower() in ('no', 'false', 'f', 'n', '0', 'False', 'F'):
@@ -68,19 +70,26 @@ if __name__ == '__main__':
     def signal_handler(sig, frame):
         sys.exit(0)
 
+
     def json_data(arg_string):
         try:
             return json.loads(arg_string)
         except Exception as e:
-            raise argparse.ArgumentError()
+            raise argparse.ArgumentError('{} is not JSON'.format(arg_string))
+
 
     parser = argparse.ArgumentParser(description='API fuzzer configuration',
                                      formatter_class=lambda prog: argparse.HelpFormatter(prog, max_help_position=20))
     parser.add_argument('-s', '--src_file',
                         type=str,
-                        required=True,
+                        required=False,
                         help='API definition file path. Currently only JSON format is supported',
                         dest='src_file')
+    parser.add_argument('--src_url',
+                        type=str,
+                        required=False,
+                        help='API definition url. Currently only JSON format is supported',
+                        dest='src_url')
     parser.add_argument('-r', '--report_dir',
                         type=str,
                         required=False,
@@ -127,11 +136,12 @@ if __name__ == '__main__':
                         default=None)
     args = parser.parse_args()
     api_definition_json = dict()
-    try:
-        with open(args.src_file, mode='r', encoding='utf-8') as f:
-            api_definition_json = json.loads(f.read())
-    except Exception as e:
-        print('Failed to parse input file: {}'.format(e))
+    if args.src_file:
+        api_definition_json = get_api_definition_from_file(args.src_file)
+    elif args.src_url:
+        api_definition_json = save_api_definition(args.src_url, tempfile.mktemp())
+    else:
+        argparse.ArgumentTypeError('No API definition source provided -s, --src_file or --src_url should be defined')
         exit()
     prog = Fuzzer(api_resources=api_definition_json,
                   report_dir=args.report_dir,

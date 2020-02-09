@@ -11,7 +11,7 @@ from bitstring import Bits
 from kitty.targets.server import ServerTarget
 
 from apifuzzer.apifuzzer_report import Apifuzzer_Report as Report
-from apifuzzer.utils import set_class_logger, try_b64encode, container_name_to_param
+from apifuzzer.utils import set_class_logger, try_b64encode, container_name_to_param, init_pycurl
 
 
 class Return():
@@ -224,22 +224,6 @@ class FuzzerTarget(ServerTarget):
             _return.append('{}: {}'.format(k, v).encode())
         return _return
 
-    @staticmethod
-    def init_pycurl():
-        """
-        Provides an instances of pycurl with basic configuration
-        :return: pycurl instance
-        """
-        _curl = pycurl.Curl()
-        _curl.setopt(pycurl.SSL_OPTIONS, pycurl.SSLVERSION_TLSv1_2)
-        _curl.setopt(pycurl.SSL_VERIFYPEER, False)
-        _curl.setopt(pycurl.SSL_VERIFYHOST, False)
-        _curl.setopt(pycurl.VERBOSE, True)
-        _curl.setopt(pycurl.TIMEOUT, 10)
-        _curl.setopt(pycurl.COOKIEFILE, "")
-        _curl.setopt(pycurl.USERAGENT, 'APIFuzzer')
-        return _curl
-
     def transmit(self, **kwargs):
         """
         Prepares fuzz HTTP request, sends and processes the response
@@ -290,8 +274,8 @@ class FuzzerTarget(ServerTarget):
             try:
                 resp_buff_hdrs = BytesIO()
                 resp_buff_body = BytesIO()
-                b = BytesIO()
-                _curl = self.init_pycurl()
+                buffer = BytesIO()
+                _curl = init_pycurl()
                 _curl.setopt(pycurl.URL, self.format_pycurl_url(request_url))
                 _curl.setopt(pycurl.HEADERFUNCTION, self.header_function)
                 _curl.setopt(pycurl.HTTPHEADER, self.format_pycurl_header(kwargs.get('headers', {})))
@@ -311,7 +295,7 @@ class FuzzerTarget(ServerTarget):
                 _return = Return()
                 _return.status_code = _curl.getinfo(pycurl.RESPONSE_CODE)
                 _return.headers = self.resp_headers
-                _return.content = b.getvalue()
+                _return.content = buffer.getvalue()
                 _return.request = Return()
                 _return.request.headers = kwargs.get('headers', {})
                 _return.request.body = kwargs.get('data', {})

@@ -359,25 +359,15 @@ class FuzzerTarget(ServerTarget):
             self.logger.warn('Path_parameters {} does not in the desired format,received: {}'
                              .format(path_parameters, type(path_parameters)))
             return url
-        _temporally_url_list = list()
+        formattedUrl = url
         for path_key, path_value in path_parameters.items():
             self.logger.debug('Processing: path_key: {} , path_variable: {}'.format(path_key, path_value))
             path_parameter = path_key.split('|')[-1]
             url_path_paramter = '{%PATH_PARAM%}'.replace('%PATH_PARAM%', path_parameter)
-            splitter = '(%PATH_PARAM%)'.replace('%PATH_PARAM%', url_path_paramter)
-            url_list = re.split(splitter, url)
-            self.logger.debug('URL split: {} with: {}'.format(url_list, splitter))
-            if len(url_list) == 1:
+            tmpUrl = formattedUrl.replace(url_path_paramter, path_value)
+            if (tmpUrl == formattedUrl):
                 self.logger.warn('{} was not in the url: {}, adding it'.format(url_path_paramter, url))
-                url_list.extend(['/', url_path_paramter])
-            for url_part in url_list:
-                self.logger.debug('Processing url part: {}'.format(url_part))
-                if url_part == url_path_paramter:
-                    self.logger.debug('Replace path parameter marker ({}) with fuzz value: {}'
-                                      .format(url_path_paramter, path_value))
-                    _temporally_url_list.append(path_value)
-                else:
-                    _temporally_url_list.append(url_part)
-        _url = "".join(_temporally_url_list)
-        self.logger.info('Compiled url in {}, out: {}'.format(url, _url))
-        return _url.replace("{", "").replace("}", "").replace("+", "/")
+                tmpUrl += '&{}={}'.format(path_parameter,path_value)
+            formattedUrl = tmpUrl
+        self.logger.info('Compiled url in {}, out: {}'.format(url, formattedUrl))
+        return formattedUrl.replace("{", "").replace("}", "").replace("+", "/")

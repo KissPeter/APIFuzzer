@@ -1,6 +1,7 @@
-Flask==1.0.1
-pytest==3.6.3
-pytest-cov==2.5.1
-sphinx
+Flask==1.1.1
+pytest==5.3.5
+pytest-cov==2.8.1
+sphinx==2.4.1
 sphinx_rtd_theme
-psutil
+pytest-html==2.0.1
+coverage==5.0.3

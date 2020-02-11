@@ -33,9 +33,13 @@ build:
             idle_timeout: 10
     test:
       commands:
-        - command: 'pytest --durations=10 --show-capture=stdout -v -rP test'
+        - command: 'pytest --cov-report term --cov=apifuzzer --durations=10 --show-capture=stdout -vv -rP test'
           on_node: 1
           idle_timeout: 10
+          coverage:
+            file: '.coverage'
+            config_file: '.coveragerc'
+            format: 'py-cc'
 filter:
   excluded_paths:
     - "test/"

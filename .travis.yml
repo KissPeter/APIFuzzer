@@ -11,4 +11,4 @@ script:
   - python fuzzer.py -h
   - pip3 install -r test/requirements_for_test.txt
   - python3 test/test_application.py&
-  - pytest --durations=10 --show-capture=stdout -vv -rP test
+  - pytest --cov-report term --cov=apifuzzer --durations=10 --show-capture=stdout -vv -rP test

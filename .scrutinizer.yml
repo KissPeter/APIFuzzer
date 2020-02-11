@@ -33,7 +33,7 @@ build:
             idle_timeout: 10
     test:
       commands:
-        - command: 'cd test && pytest --durations=10 --show-capture=stdout -v -rP test.py'
+        - command: 'pytest --durations=10 --show-capture=stdout -v -rP test'
           on_node: 1
           idle_timeout: 10
 filter:

@@ -45,14 +45,26 @@ last_request_data = LastRequestData()
 
 @app.route('/path_param/<integer_id>', methods=['GET'])
 @catch_custom_exception
-def transform(integer_id):
+def path_param(integer_id):
     return 'ID: {}'.format(int(integer_id))
+
+
+@app.route('/multiple_path_params/<int_path_param1>/<int_path_param2>', methods=['GET'])
+@catch_custom_exception
+def transform(int_path_param1, int_path_param2):
+    return 'int_path_param1: {}, int_path_param2: {}'.format(int(int_path_param1), int(int_path_param2))
 
 
 @app.route('/query')
 @catch_custom_exception
-def data():
+def query():
     return 'ID: {}'.format(int(request.args.get('integer_id')))
+
+
+@app.route('/query_multiple_params')
+@catch_custom_exception
+def query_multiple_params():
+    return 'ID: {}'.format(int(request.args.get('int_query_param2')))
 
 
 @app.route('/last_call', methods=['GET'])

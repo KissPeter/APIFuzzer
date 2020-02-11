@@ -10,30 +10,27 @@ from kitty.targets.server import ServerTarget
 
 from apifuzzer.apifuzzer_report import Apifuzzer_Report as Report
 from apifuzzer.fuzzer_target.request_base_functions import FuzzerTargetBase
-from apifuzzer.utils import try_b64encode, init_pycurl, set_class_logger
+from apifuzzer.utils import try_b64encode, init_pycurl
 
 
 class Return:
     pass
 
 
-@set_class_logger
 class FuzzerTarget(FuzzerTargetBase, ServerTarget):
     def not_implemented(self, func_name):
         pass
 
-    def __init__(self, name, base_url, report_dir, auth_headers, logger):
-        super(ServerTarget, self).__init__(name, logger)
+    def __init__(self, name, base_url, report_dir, auth_headers):
+        super(ServerTarget, self).__init__(name)
+        super(FuzzerTargetBase, self).__init__(auth_headers)
         self.base_url = base_url
-        self._last_sent_request = None
         self.accepted_status_codes = list(range(200, 300)) + list(range(400, 500))
         self.auth_headers = auth_headers
         self.report_dir = report_dir
-        self.logger = logger
+        # self.logger = logger
         self.logger.info('Logger initialized')
         self.resp_headers = dict()
-        self.chop_left = True
-        self.chop_right = True
 
     def pre_test(self, test_num):
         """

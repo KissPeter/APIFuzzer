@@ -11,7 +11,7 @@ from logging import _nameToLevel as levelNames
 from kitty.interfaces import WebInterface
 from kitty.model import GraphModel
 
-from apifuzzer.fuzzer_target.send_request import FuzzerTarget
+from apifuzzer.fuzzer_target.fuzz_request_sender import FuzzerTarget
 from apifuzzer.server_fuzzer import OpenApiServerFuzzer
 from apifuzzer.swagger_template_generator import SwaggerTemplateGenerator
 from apifuzzer.utils import set_logger, get_api_definition_from_file, save_api_definition
@@ -42,7 +42,7 @@ class Fuzzer(object):
 
     def run(self):
         target = FuzzerTarget(name='target', base_url=self.base_url, report_dir=self.report_dir,
-                              auth_headers=self.auth_headers, logger=self.logger)
+                              auth_headers=self.auth_headers)
         interface = WebInterface()
         model = GraphModel()
         for template in self.templates:

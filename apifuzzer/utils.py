@@ -62,16 +62,17 @@ def get_sample_data_by_type(param_type):
 
 def set_logger(level='warning', basic_output=False):
     fmt = '%(process)d [%(levelname)s] %(name)s: %(message)s'
-    if (basic_output):
+    if basic_output:
         logging.basicConfig(format=fmt)
         logger = logging.getLogger()
     else:
-        handler = logging.StreamHandler()
-        if os.path.exists('/dev/log'):
-            handler = SysLogHandler(address='/dev/log', facility=SysLogHandler.LOG_LOCAL2)
-        handler.setFormatter(Formatter('%(process)d [%(levelname)s] %(name)s: %(message)s'))
         logger = logging.getLogger()
-        logger.addHandler(handler)
+        if not len(logger.handlers):
+            handler = logging.StreamHandler()
+            if os.path.exists('/dev/log'):
+                handler = SysLogHandler(address='/dev/log', facility=SysLogHandler.LOG_LOCAL2)
+            handler.setFormatter(Formatter('%(process)d [%(levelname)s] %(name)s: %(message)s'))
+            logger.addHandler(handler)
     logger.setLevel(level=level.upper())
     return logger
 
@@ -103,7 +104,7 @@ def container_name_to_param(container_name):
     return container_name.split('|')[-1]
 
 
-def init_pycurl():
+def init_pycurl(debug=False):
     """
     Provides an instances of pycurl with basic configuration
     :return: pycurl instance
@@ -112,7 +113,7 @@ def init_pycurl():
     _curl.setopt(pycurl.SSL_OPTIONS, pycurl.SSLVERSION_TLSv1_2)
     _curl.setopt(pycurl.SSL_VERIFYPEER, False)
     _curl.setopt(pycurl.SSL_VERIFYHOST, False)
-    _curl.setopt(pycurl.VERBOSE, True)
+    _curl.setopt(pycurl.VERBOSE, debug)
     _curl.setopt(pycurl.TIMEOUT, 10)
     _curl.setopt(pycurl.COOKIEFILE, "")
     _curl.setopt(pycurl.USERAGENT, 'APIFuzzer')

@@ -8,13 +8,9 @@ from apifuzzer.utils import set_class_logger, container_name_to_param
 @set_class_logger
 class FuzzerTargetBase:
 
-    def __init__(self, base_url, report_dir, auth_headers, logger):
-        self.base_url = base_url
+    def __init__(self, auth_headers):
         self._last_sent_request = None
-        self.accepted_status_codes = list(range(200, 300)) + list(range(400, 500))
         self.auth_headers = auth_headers
-        self.report_dir = report_dir
-        self.logger = logger
         self.logger.info('Logger initialized')
         self.resp_headers = dict()
         self.chop_left = True

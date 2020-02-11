@@ -1,2 +1,3 @@
 kittyfuzzer==0.7.4
-pycurl==7.43.0.1
+pycurl==7.43.0.5
+ruamel.yaml==0.16.7

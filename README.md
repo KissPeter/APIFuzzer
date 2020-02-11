@@ -20,7 +20,7 @@ if you application can cope with the fuzzed parameters. Does not require coding.
 
 ## Pre-requirements
 1. Python3
-2. libcurl4-openssl-dev libssl-dev (for pycurl)
+2. sudo apt install libcurl4-openssl-dev libssl-dev (on Ubuntu 18.04, required by pycurl)
 
 ## Installation
 

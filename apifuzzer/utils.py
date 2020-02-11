@@ -10,6 +10,8 @@ from random import randint
 
 import pycurl
 from bitstring import Bits
+from ruamel.yaml import YAML
+from ruamel.yaml.scanner import ScannerError
 
 from apifuzzer.custom_fuzzers import RandomBitsField
 
@@ -142,8 +144,17 @@ def save_api_definition(url, temp_file):
 def get_api_definition_from_file(src_file):
     try:
         with open(src_file, mode='rb') as f:
-            api_definition_json = json.loads(f.read())
-    except Exception as e:
-        print('Failed to parse input file: {}'.format(e))
+            api_definition = f.read()
+        try:
+            return json.loads(api_definition)
+        except ValueError as e:
+            print('Failed to load input as JSON, maybe YAML?')
+        try:
+            yaml = YAML(typ='safe')
+            return yaml.load(api_definition)
+        except (TypeError, ScannerError) as e:
+            print('Failed to load input as YAML:{}'.format(e))
+            raise e
+    except Exception:
+        print('Failed to parse input file, exit')
         exit()
-    return api_definition_json

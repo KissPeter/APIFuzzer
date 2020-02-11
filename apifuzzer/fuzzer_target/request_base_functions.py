@@ -197,8 +197,8 @@ class FuzzerTargetBase:
 
     def expand_path_variables(self, url, path_parameters):
         if not isinstance(path_parameters, dict):
-            self.logger.warn('Path_parameters {} does not in the desired format,received: {}'
-                             .format(path_parameters, type(path_parameters)))
+            self.logger.warning('Path_parameters {} does not in the desired format,received: {}'
+                                .format(path_parameters, type(path_parameters)))
             return url
         formatted_url = url
         for path_key, path_value in path_parameters.items():
@@ -207,7 +207,7 @@ class FuzzerTargetBase:
             url_path_parameter = '{%PATH_PARAM%}'.replace('%PATH_PARAM%', path_parameter)
             tmp_url = formatted_url.replace(url_path_parameter, path_value)
             if tmp_url == formatted_url:
-                self.logger.warn('{} was not in the url: {}, adding it'.format(url_path_parameter, url))
+                self.logger.warning('{} was not in the url: {}, adding it'.format(url_path_parameter, url))
                 tmp_url += '&{}={}'.format(path_parameter, path_value)
             formatted_url = tmp_url
         self.logger.info('Compiled url in {}, out: {}'.format(url, formatted_url))

@@ -57,7 +57,7 @@ class OpenApiServerFuzzer(ServerFuzzer):
                     # elif hasattr(param, 'render'):
                     #     payload[place] = param.render()
             except KittyException as e:
-                self.logger.warn('Exception occurred while processing {}: {}'.format(place, e.__str__()))
+                self.logger.warning('Exception occurred while processing {}: {}'.format(place, e.__str__()))
         # self.logger.info('Payload: {}'.format(payload))
         self._last_payload = payload
         try:

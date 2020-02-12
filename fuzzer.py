@@ -14,7 +14,7 @@ from kitty.model import GraphModel
 from apifuzzer.fuzzer_target.fuzz_request_sender import FuzzerTarget
 from apifuzzer.server_fuzzer import OpenApiServerFuzzer
 from apifuzzer.swagger_template_generator import SwaggerTemplateGenerator
-from apifuzzer.utils import set_logger, get_api_definition_from_file, save_api_definition
+from apifuzzer.utils import set_logger, get_api_definition_from_file, get_api_definition_from_url
 
 
 class Fuzzer(object):
@@ -139,7 +139,7 @@ if __name__ == '__main__':
     if args.src_file:
         api_definition_json = get_api_definition_from_file(args.src_file)
     elif args.src_url:
-        api_definition_json = save_api_definition(args.src_url, tempfile.mktemp())
+        api_definition_json = get_api_definition_from_url(args.src_url)
     else:
         argparse.ArgumentTypeError('No API definition source provided -s, --src_file or --src_url should be defined')
         exit()

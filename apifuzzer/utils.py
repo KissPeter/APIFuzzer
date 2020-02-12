@@ -1,6 +1,7 @@
 import json
 import logging
 import os
+import tempfile
 from base64 import b64encode
 from binascii import Error
 from io import BytesIO
@@ -136,7 +137,9 @@ def download_file(url, dst_file):
     buffer.close()
 
 
-def save_api_definition(url, temp_file):
+def get_api_definition_from_url(url, temp_file=None):
+    if temp_file is None:
+        temp_file = tempfile.mktemp()
     download_file(url, temp_file)
     return get_api_definition_from_file(temp_file)
 
@@ -158,3 +161,15 @@ def get_api_definition_from_file(src_file):
     except Exception:
         print('Failed to parse input file, exit')
         exit()
+
+
+def get_item(json_dict, json_path):
+    """
+    Get JSON item defined by path
+    :param json_dict: JSON dict contains the item we are looking for
+    :param json_path: defines the place of the object
+    :return: item
+    """
+    for item in json_path:
+        json_dict = json_dict[item]
+    return json_dict

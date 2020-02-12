@@ -42,3 +42,4 @@ build:
 filter:
   excluded_paths:
     - "test/"
+# https://github.com/scrutinizer-ci/ocular.py

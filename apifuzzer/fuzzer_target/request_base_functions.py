@@ -149,7 +149,7 @@ class FuzzerTargetBase:
         :return: fuzz value after chopping
         """
         if self.chop_left:
-            self.logger.debug('Remoe first character from value, current length: %s', len(fuzz_value))
+            self.logger.debug('Remove first character from value, current length: %s', len(fuzz_value))
             fuzz_value = fuzz_value[1:]
             if len(fuzz_value) == 0:
                 self.chop_left = False

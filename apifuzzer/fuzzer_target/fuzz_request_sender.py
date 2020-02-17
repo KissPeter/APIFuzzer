@@ -6,6 +6,7 @@ from time import time
 
 import pycurl
 from bitstring import Bits
+from junit_xml import TestSuite, TestCase
 from kitty.targets.server import ServerTarget
 
 from apifuzzer.apifuzzer_report import Apifuzzer_Report as Report
@@ -21,14 +22,15 @@ class FuzzerTarget(FuzzerTargetBase, ServerTarget):
     def not_implemented(self, func_name):
         pass
 
-    def __init__(self, name, base_url, report_dir, auth_headers):
+    def __init__(self, name, base_url, report_dir, auth_headers, junit_report_path):
         super(ServerTarget, self).__init__(name)
         super(FuzzerTargetBase, self).__init__(auth_headers)
         self.base_url = base_url
         self.accepted_status_codes = list(range(200, 300)) + list(range(400, 500))
         self.auth_headers = auth_headers
         self.report_dir = report_dir
-        # self.logger = logger
+        self.junit_report_path = junit_report_path
+        self.failed_test = list()
         self.logger.info('Logger initialized')
         self.resp_headers = dict()
 
@@ -150,6 +152,9 @@ class FuzzerTarget(FuzzerTargetBase, ServerTarget):
             self.report.add('reason', self.report.get_status())
         super(ServerTarget, self).post_test(test_num)
         if self.report.get_status() != Report.PASSED:
+            if self.junit_report_path:
+                self.failed_test.append(TestCase(name=self.test_number, status=self.report.get_status(),
+                                                 stderr=json.dumps(self.report.to_dict())))
             self.save_report_to_disc()
 
     def save_report_to_disc(self):
@@ -165,3 +170,10 @@ class FuzzerTarget(FuzzerTargetBase, ServerTarget):
         except Exception as e:
             self.logger.error(
                 'Failed to save report "{}" to {} because: {}'.format(self.report.to_dict(), self.report_dir, e))
+
+    def teardown(self):
+        test_suite = TestSuite("API Fuzzer", self.failed_test)
+        if self.junit_report_path:
+            with open(self.junit_report_path, 'w') as report_file:
+                TestSuite.to_file(report_file, [test_suite], prettyprint=True)
+        super(ServerTarget, self).teardown()

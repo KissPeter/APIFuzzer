@@ -3,6 +3,7 @@ from kitty.model import RandomBits, String
 
 # https://lcamtuf.blogspot.hu/2014/08/binary-fuzzing-strategies-what-works.html
 
+
 class RandomBitsField(RandomBits):
     """Creates a fields which compatible field with String and Delimiter"""
 
@@ -10,7 +11,8 @@ class RandomBitsField(RandomBits):
         pass
 
     def __init__(self, value, name, fuzzable=True):
-        super(RandomBitsField, self).__init__(name=name, value=value, min_length=20, max_length=100, fuzzable=fuzzable, num_mutations=80)
+        super(RandomBitsField, self).__init__(name=name, value=value, min_length=20, max_length=100, fuzzable=fuzzable,
+                                              num_mutations=80)
 
 
 class UnicodeStrings(String):

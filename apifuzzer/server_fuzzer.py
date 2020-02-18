@@ -1,20 +1,17 @@
-from __future__ import print_function
-
-import json
-import logging
-
 from kitty.data.report import Report
 from kitty.fuzzers import ServerFuzzer
 from kitty.model import Container, KittyException
 
-from utils import set_class_logger
+from apifuzzer.utils import set_class_logger, transform_data_to_bytes
 
 
 def _flatten_dict_entry(orig_key, v):
     entries = []
     if isinstance(v, list):
-        for i in range(len(v)):
-            entries.extend(_flatten_dict_entry('%s[%s]' % (orig_key, i), v[i]))
+        count = 0
+        for elem in v:
+            entries.extend(_flatten_dict_entry('%s[%s]' % (orig_key, count), elem))
+            count += 1
     elif isinstance(v, dict):
         for k in v:
             entries.extend(_flatten_dict_entry('%s/%s' % (orig_key, k), v[k]))
@@ -30,7 +27,7 @@ class OpenApiServerFuzzer(ServerFuzzer):
     def not_implemented(self, func_name):
         pass
 
-    def __init__(self,):
+    def __init__(self):
         self.logger.info('Logger initialized')
         super(OpenApiServerFuzzer, self).__init__()
 
@@ -46,13 +43,22 @@ class OpenApiServerFuzzer(ServerFuzzer):
     def _transmit(self, node):
         payload = {}
         for key in ['url', 'method']:
-            payload[key] = node.get_field_by_name(key).render().tobytes()
+            payload[key] = transform_data_to_bytes(node.get_field_by_name(key).render())
         fuzz_places = ['params', 'headers', 'data', 'path_variables']
         for place in fuzz_places:
+            # self.logger.info('Transmit place: {}'.format(place))
             try:
-                payload[place] = self._recurse_params(node.get_field_by_name(place))
+                if place in node._fields_dict:
+                    param = node.get_field_by_name(place)
+                    # if isinstance(param, Container):
+                    _result = self._recurse_params(param)
+                    # self.logger.info('Process param recursively: {} gives: {}'.format(param, _result))
+                    payload[place] = _result
+                    # elif hasattr(param, 'render'):
+                    #     payload[place] = param.render()
             except KittyException as e:
-                self.logger.warn('Exception occurred: {}'.format(e.message))
+                self.logger.warning('Exception occurred while processing {}: {}'.format(place, e.__str__()))
+        # self.logger.info('Payload: {}'.format(payload))
         self._last_payload = payload
         try:
             return self.target.transmit(**payload)
@@ -63,11 +69,11 @@ class OpenApiServerFuzzer(ServerFuzzer):
     @staticmethod
     def _recurse_params(param):
         _return = dict()
-        if type(param) != Container:
-            _return = param.render().tobytes()
-        else:
+        if isinstance(param, Container):
             for field in param._fields:
                 _return[field.get_name()] = OpenApiServerFuzzer._recurse_params(field)
+        elif hasattr(param, 'render'):
+            _return = transform_data_to_bytes(param.render()).decode(errors='ignore')
         return _return
 
     def _store_report(self, report):
@@ -85,14 +91,19 @@ class OpenApiServerFuzzer(ServerFuzzer):
         if payload is not None:
             data_report = Report('payload')
             data_report.add('raw', payload)
-            try:
-                data_report.add('hex', json.dumps(payload).encode('hex'))
-            except UnicodeDecodeError:
-                print('cant serialize payload: %', payload)
             data_report.add('length', len(payload))
             report.add('payload', data_report)
         else:
             report.add('payload', None)
 
         self.dataman.store_report(report, self.model.current_index())
-        self.dataman.get_report_by_id(self.model.current_index())
+        # TODO investigate:
+        #  self.dataman.get_report_by_id(self.model.current_index())
+
+    def _test_environment(self):
+        sequence = self.model.get_sequence()
+        try:
+            if self._run_sequence(sequence):
+                self.logger.info('Environment test failed')
+        except Exception:
+            self.logger.info('Environment test failed')

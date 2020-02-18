@@ -102,4 +102,5 @@ ENV/
 
 .idea
 kittylogs
-*.json
+/.pytest_cache/
+/coverage_html_report/

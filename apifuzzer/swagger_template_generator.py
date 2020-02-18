@@ -1,6 +1,6 @@
-from base_template import BaseTemplate
-from template_generator_base import TemplateGenerator
-from utils import get_sample_data_by_type, get_fuzz_type_by_param_type, set_class_logger
+from apifuzzer.base_template import BaseTemplate
+from apifuzzer.template_generator_base import TemplateGenerator
+from apifuzzer.utils import get_sample_data_by_type, get_fuzz_type_by_param_type, transform_data_to_bytes
 
 
 class ParamTypes(object):
@@ -12,46 +12,63 @@ class ParamTypes(object):
     FORM_DATA = 'formData'
 
 
-@set_class_logger
 class SwaggerTemplateGenerator(TemplateGenerator):
 
-    def __init__(self, api_resources):
+    def __init__(self, api_resources, logger):
         self.api_resources = api_resources
         self.templates = list()
+        self.logger = logger
         self.logger.info('Logger initialized')
+
+    @staticmethod
+    def normalize_url(url_in):
+        # Kitty doesn't support some characters as template name so need to be cleaned, but it is necessary, so
+        # we will change back later
+        return url_in.strip('/').replace('/', '+')
 
     def process_api_resources(self):
         self.logger.info('Start preparation')
         for resource in self.api_resources['paths'].keys():
-            normalized_url = resource.lstrip('/').replace('/', '_')
+            normalized_url = self.normalize_url(resource)
             for method in self.api_resources['paths'][resource].keys():
                 self.logger.info('Resource: {} Method: {}'.format(resource, method))
+                template_container_name = '{}|{}'.format(normalized_url, method)
+                template = BaseTemplate(name=template_container_name)
+                template.url = normalized_url
+                template.method = method.upper()
+                self.logger.debug('Resource: {} Method: {}'.format(resource, method))
                 for param in self.api_resources['paths'][resource][method].get('parameters', {}):
-                    template_container_name = '{}_{}_{}'.format(normalized_url, method, param.get('name'))
-                    template = BaseTemplate(name=template_container_name)
-                    template.url = resource
-                    template.method = method.upper()
-                    self.logger.info('Resource: {} Method: {} Parameter: {}'.format(resource, method, param))
-                    fuzz_type = get_fuzz_type_by_param_type(param.get('type'))
+                    type = param.get('type')
+                    format = param.get('format')
+                    if format is not None:
+                        fuzzer_type = format.lower()
+                    elif type is not None:
+                        fuzzer_type = type.lower()
+                    else:
+                        fuzzer_type = None
+                    fuzz_type = get_fuzz_type_by_param_type(fuzzer_type)
                     sample_data = get_sample_data_by_type(param.get('type'))
                     # get parameter placement(in): path, query, header, cookie
                     # get parameter type: integer, string
                     # get format if present
                     param_type = param.get('in')
-                    param_name = template_container_name
+                    param_name = '{}|{}'.format(template_container_name, param.get('name'))
+                    self.logger.debug('Resource: {} Method: {} Parameter: {}, Parameter type: {}, Sample data: {},'
+                                      'Param name: {}'
+                                      .format(resource, method, param, param_type, sample_data, param_name))
                     if param_type == ParamTypes.PATH:
-                        template.path_variables.append(fuzz_type(name=param_name, value=sample_data))
+                        template.path_variables.append(fuzz_type(name=param_name, value=str(sample_data)))
                     elif param_type == ParamTypes.HEADER:
-                        template.headers.append(fuzz_type(name=param_name, value=sample_data))
+                        template.headers.append(fuzz_type(name=param_name, value=transform_data_to_bytes(sample_data)))
                     elif param_type == ParamTypes.COOKIE:
                         template.cookies.append(fuzz_type(name=param_name, value=sample_data))
                     elif param_type == ParamTypes.QUERY:
-                        template.params.append(fuzz_type(name=param_name, value=sample_data))
+                        template.params.append(fuzz_type(name=param_name, value=str(sample_data)))
                     elif param_type in [ParamTypes.BODY, ParamTypes.FORM_DATA]:
-                        template.data.append(fuzz_type(name=param_name, value=sample_data))
+                        template.data.append(fuzz_type(name=param_name, value=transform_data_to_bytes(sample_data)))
                     else:
-                        self.logger.error('Cant parse a definition from swagger.json: %s', param)
-                    self.templates.append(template)
+                        self.logger.error('Can not parse a definition from swagger.json: %s', param)
+                self.templates.append(template)
 
     def compile_base_url(self, alternate_url):
         """
@@ -59,10 +76,7 @@ class SwaggerTemplateGenerator(TemplateGenerator):
         :type alternate_url: string
         """
         if alternate_url:
-            _base_url = "/".join([
-                alternate_url.strip('/'),
-                self.api_resources['basePath'].strip('/')
-            ])
+            _base_url = "/".join([alternate_url.strip('/'), self.api_resources.get('basePath', '').strip('/')])
         else:
             if 'http' in self.api_resources['schemes']:
                 _protocol = 'http'

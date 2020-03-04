@@ -53,18 +53,17 @@ class BaseTest:
         Call APIFuzzer with the given api definition
         :type api_resources: dict
         """
-        with pytest.raises(SystemExit):
-            prog = Fuzzer(api_resources=api_resources,
-                          report_dir=self.report_dir,
-                          test_level=1,
-                          alternate_url=self.test_app_url,
-                          test_result_dst=None,
-                          log_level='Debug',
-                          basic_output=False,
-                          auth_headers={}
-                          )
-            prog.prepare()
-            prog.run()
+        prog = Fuzzer(api_resources=api_resources,
+                      report_dir=self.report_dir,
+                      test_level=1,
+                      alternate_url=self.test_app_url,
+                      test_result_dst=None,
+                      log_level='Debug',
+                      basic_output=False,
+                      auth_headers={}
+                      )
+        prog.prepare()
+        prog.run()
 
     def get_last_report_file(self):
         self.report_files = os.listdir(self.report_dir)

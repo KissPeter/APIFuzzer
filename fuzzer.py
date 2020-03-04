@@ -52,6 +52,7 @@ class Fuzzer(object):
         fuzzer.set_target(target)
         fuzzer.set_interface(interface)
         fuzzer.start()
+        fuzzer.stop()
 
 
 def str2bool(v):

@@ -31,15 +31,6 @@ class OpenApiServerFuzzer(ServerFuzzer):
         self.logger.info('Logger initialized')
         super(OpenApiServerFuzzer, self).__init__()
 
-    def _end_message(self):
-        super(OpenApiServerFuzzer, self)._end_message()
-        # Sometimes Kitty has stopped the fuzzer before it has finished the work. We can't continue, but can log
-        self.logger.info('Stop fuzzing session_info: {}'.format(self.session_info.as_dict()))
-        test_list_str_end = self.session_info.as_dict().get('test_list_str', '0-0').split('-', 1)[1].strip()
-        if self.session_info.as_dict().get('end_index') != int(test_list_str_end):
-            self.logger.error('Fuzzer want to exit before the end of the tests')
-        self._exit_now(None, None)
-
     def _transmit(self, node):
         payload = {}
         for key in ['url', 'method']:

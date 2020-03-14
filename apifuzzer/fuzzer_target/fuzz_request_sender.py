@@ -153,8 +153,9 @@ class FuzzerTarget(FuzzerTargetBase, ServerTarget):
         super(ServerTarget, self).post_test(test_num)
         if self.report.get_status() != Report.PASSED:
             if self.junit_report_path:
-                self.failed_test.append(TestCase(name=self.test_number, status=self.report.get_status(),
-                                                 stderr=json.dumps(self.report.to_dict())))
+                test_case = TestCase(name=self.test_number, status=self.report.get_status())
+                test_case.add_failure_info(message=json.dumps(self.report.to_dict()))
+                self.failed_test.append(test_case)
             self.save_report_to_disc()
 
     def save_report_to_disc(self):
@@ -168,12 +169,16 @@ class FuzzerTarget(FuzzerTargetBase, ServerTarget):
             with open('{}/{}_{}.json'.format(self.report_dir, self.test_number, time()), 'w') as report_dump_file:
                 report_dump_file.write(json.dumps(self.report.to_dict()))
         except Exception as e:
-            self.logger.error(
-                'Failed to save report "{}" to {} because: {}'.format(self.report.to_dict(), self.report_dir, e))
+            self.logger.error('Failed to save report "{}" to {} because: {}'
+                              .format(self.report.to_dict(), self.report_dir, e))
 
     def teardown(self):
-        test_suite = TestSuite("API Fuzzer", self.failed_test)
+        if len(self.failed_test):
+            test_cases = self.failed_test
+        else:
+            test_cases = list()
+            test_cases.append(TestCase(name='Fuzz test succeed', status='Pass'))
         if self.junit_report_path:
             with open(self.junit_report_path, 'w') as report_file:
-                TestSuite.to_file(report_file, [test_suite], prettyprint=True)
+                TestSuite.to_file(report_file, [TestSuite("API Fuzzer", test_cases)], prettyprint=True)
         super(ServerTarget, self).teardown()

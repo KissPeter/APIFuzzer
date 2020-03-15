@@ -2,8 +2,24 @@
 import os
 import sys
 
+from mock import Mock as MagicMock
+
 path = os.path.abspath(os.path.join(os.path.dirname(os.path.realpath(__file__)), os.pardir))
 sys.path.insert(0, path)
+
+
+class Mock(MagicMock):
+    @classmethod
+    def __getattr__(cls, name):
+        return Mock()
+
+    @classmethod
+    def __getitem__(cls, name):
+        return Mock()
+
+
+MOCK_MODULES = ['pycurl']
+sys.modules.update((mod_name, Mock()) for mod_name in MOCK_MODULES)
 
 project = 'APIfuzzer'
 version = '0.9'

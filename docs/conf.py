@@ -62,3 +62,9 @@ if not on_rtd:
     html_theme = 'sphinx_rtd_theme'
     html_theme_path = [sphinx_rtd_theme.get_html_theme_path()]
     html_style = 'css/custom.css'
+
+"""
+Documentation update:
+- remove *.rst under docs except index.rst
+- run: sphinx-apidoc apifuzzer/ -o docs/
+"""

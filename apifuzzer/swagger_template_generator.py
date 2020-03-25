@@ -44,38 +44,67 @@ class SwaggerTemplateGenerator(TemplateGenerator):
             "schema": {
               "$ref": "#/definitions/Pet"
             }
+        Doc: https://swagger.io/docs/specification/using-ref/
+
+        Local Reference
+          - $ref: '#/definitions/myElement' # means go to the root of the current document and then find elements definitions and myElement one after one.
+
+        Remote Reference
+          - $ref: 'document.json' Uses the whole document located on the same server and in the same location.
+          - The element of the document located on the same server – $ref: 'document.json#/myElement'
+          - The element of the document located in the parent folder – $ref: '../document.json#/myElement'
+          - The element of the document located in another folder – $ref: '../another-folder/document.json#/myElement'
+
+        URL Reference
+          - $ref: 'http://path/to/your/resource' Uses the whole document located on the different server.
+          - The specific element of the document stored on the different server – $ref: 'http://path/to/your/resource.json#myElement'
+          - The document on the different server, which uses the same protocol (for example, HTTP or HTTPS) – $ref: '//anotherserver.com/files/example.json'
         """
         schema_properties = None
+        self.logger.info('Received schema definition: {}'.format(param))
         schema_ref = param.get('schema', {}).get('$ref')
+        if not schema_ref:
+            self.logger.warning('Faild to find shema ref in {}'.format(param))
+            return None
         self.logger.debug('Processing param id {}, reference for schema: {}'.format(param.get('id'), schema_ref))
+        # Local reference:
+        # Example: $ref: '#/definitions/myElement'
         if schema_ref.startswith('#'):
             self.logger.debug('Looking for reference in local file: {}'.format(schema_ref))
             schema_path = schema_ref.split('/')
-            # dropping first element of the list as it defines it is local reference
+            # dropping first element of the list as it defines it is local reference (#)
             schema_path.pop(0)
             schema_definition = get_item(self.api_resources, schema_path)
             schema_properties = self.get_properties_from_schema_definition(schema_definition)
+        # URL Reference
+        # Example: $ref: 'http://path/to/your/resource.json#myElement''
         elif schema_ref.startswith('http'):
-            # https://swagger.io/docs/specification/using-ref/
             self.logger.debug('Looking for remote reference: {}'.format(schema_ref))
             resource_reference, item_location = schema_ref.split('#', 1)
             self.logger.info('Downloading resource from: {} and using {}'.format(resource_reference, item_location))
             schema_definition = get_api_definition_from_url(resource_reference)
             schema_properties = self.get_properties_from_schema_definition(schema_definition, item_location)
         elif schema_ref.startswith('//'):
-            self.logger.debug('Not implemented import: {}'.format(schema_ref))
+            self.logger.warning('Not implemented import: {}'.format(schema_ref))
+            # The document on the different server, which uses the same protocol (for example, HTTP or HTTPS) – $ref: '//anotherserver.com/files/example.json'
+        # Remote (file) reference
+        # Example: $ref: 'document.json#/myElement'
         else:
             file_reference, item_location = schema_ref.split('#', 1)
-            self.logger.debug('It seems the schema is stored in local file? {}'.format(file_reference))
+            self.logger.debug('It seems the schema is stored in local file {}'.format(file_reference))
             schema_definition = get_api_definition_from_file(file_reference)
             schema_properties = self.get_properties_from_schema_definition(schema_definition, item_location)
         self.logger.info('Schema definition: {} discovered from {}'.format(schema_properties, param))
         return schema_properties
 
-    def process_api_resources(self):
+    def process_api_resources(self, paths=None):
         self.logger.info('Start preparation')
-        tmp_api_resource = self.api_resources['paths']
-        for resource in self.api_resources['paths'].keys():
+        tmp_api_resource = {
+                            'paths': {}
+                            }
+        if not paths:
+            paths = self.api_resources['paths']
+        for resource in paths.keys():
             normalized_url = self.normalize_url(resource)
             for method in self.api_resources['paths'][resource].keys():
                 self.logger.info('Resource: {} Method: {}'.format(resource, method))
@@ -112,13 +141,24 @@ class SwaggerTemplateGenerator(TemplateGenerator):
                     elif param_type == ParamTypes.QUERY:
                         template.params.append(fuzz_type(name=param_name, value=str(sample_data)))
                     elif param_type in [ParamTypes.BODY, ParamTypes.FORM_DATA]:
-                        tmp_api_resource.update(self.get_schema(param))
-                        template.data.append(fuzz_type(name=param_name, value=transform_data_to_bytes(sample_data)))
+                        if not tmp_api_resource.get('paths', {}).get(resource, {}).get(method, {}).get('parameters'):
+                            tmp_api_resource['paths'][resource] = dict()
+                            tmp_api_resource['paths'][resource][method] = dict()
+                            tmp_api_resource['paths'][resource][method]['parameters'] = list()
+                        tmp_api_resource['paths'][resource][method]['parameters'].append({param: self.get_schema(param)})
+                        # template.data.append(fuzz_type(name=param_name, value=transform_data_to_bytes(sample_data)))
                     else:
                         self.logger.error('Can not parse a definition from swagger.json: %s', param)
                     if param.get('schema'):
-                        tmp_api_resource.update(self.get_schema(param))
+                        if not tmp_api_resource.get('paths', {}).get(resource,{}).get(method, {}).get('parameters'):
+                            tmp_api_resource['paths'][resource] = dict()
+                            tmp_api_resource['paths'][resource][method] = dict()
+                            tmp_api_resource['paths'][resource][method]['parameters'] = list()
+                        tmp_api_resource['paths'][resource][method]['parameters'].append({param: self.get_schema(param)})
                 self.templates.append(template)
+        if len(tmp_api_resource.items()):
+            self.logger.info('Additional resources were found, starting new iteration')
+            self.process_api_resources(paths=tmp_api_resource)
 
     def compile_base_url(self, alternate_url):
         """

@@ -1,3 +1,5 @@
+import json
+
 from apifuzzer.base_template import BaseTemplate
 from apifuzzer.template_generator_base import TemplateGenerator
 from apifuzzer.utils import get_sample_data_by_type, get_fuzz_type_by_param_type, transform_data_to_bytes, \
@@ -11,6 +13,10 @@ class ParamTypes(object):
     COOKIE = 'cookie'
     BODY = 'body'
     FORM_DATA = 'formData'
+
+
+class FailedToProcessSchemaException(Exception):
+    pass
 
 
 class SwaggerTemplateGenerator(TemplateGenerator):
@@ -64,8 +70,7 @@ class SwaggerTemplateGenerator(TemplateGenerator):
         self.logger.info('Received schema definition: {}'.format(param))
         schema_ref = param.get('schema', {}).get('$ref')
         if not schema_ref:
-            self.logger.warning('Faild to find shema ref in {}'.format(param))
-            return None
+            raise FailedToProcessSchemaException('Faild to find shema ref in {}'.format(param))
         self.logger.debug('Processing param id {}, reference for schema: {}'.format(param.get('id'), schema_ref))
         # Local reference:
         # Example: $ref: '#/definitions/myElement'
@@ -97,23 +102,39 @@ class SwaggerTemplateGenerator(TemplateGenerator):
         self.logger.info('Schema definition: {} discovered from {}'.format(schema_properties, param))
         return schema_properties
 
+    def process_schema(self, resource, method, param, tmp_api_resource):
+        if not tmp_api_resource.get('paths', {}).get(resource, {}).get(method, {}).get('parameters'):
+            tmp_api_resource['paths'][resource] = dict()
+            tmp_api_resource['paths'][resource][method] = dict()
+            tmp_api_resource['paths'][resource][method]['parameters'] = list()
+        try:
+            tmp_api_resource['paths'][resource][method]['parameters'].append({param: self.get_schema(param)})
+        except FailedToProcessSchemaException as e:
+            self.logger.warning(e)
+        return tmp_api_resource
+
     def process_api_resources(self, paths=None):
         self.logger.info('Start preparation')
         tmp_api_resource = {
-                            'paths': {}
-                            }
+            'paths': {}
+        }
         if not paths:
             paths = self.api_resources['paths']
+        else:
+            self.logger.info('Processing extra parameter: {}'.format(paths))
         for resource in paths.keys():
             normalized_url = self.normalize_url(resource)
-            for method in self.api_resources['paths'][resource].keys():
+            for method in paths[resource].keys():
                 self.logger.info('Resource: {} Method: {}'.format(resource, method))
                 template_container_name = '{}|{}'.format(normalized_url, method)
                 template = BaseTemplate(name=template_container_name)
                 template.url = normalized_url
                 template.method = method.upper()
-                self.logger.debug('Resource: {} Method: {}'.format(resource, method))
-                for param in self.api_resources['paths'][resource][method].get('parameters', {}):
+                for param in paths[resource][method].get('parameters', {}):
+                    self.logger.info('Processing parameter: {}'.format(param))
+                    if not isinstance(param, dict):
+                        self.logger.warning('{} type mismatch, dict expected, got: {}'.format(param, type(param)))
+                        param = json.loads(param)
                     param_type = param.get('type')
                     param_format = param.get('format')
                     if param_format is not None:
@@ -140,24 +161,18 @@ class SwaggerTemplateGenerator(TemplateGenerator):
                         template.cookies.append(fuzz_type(name=param_name, value=sample_data))
                     elif param_type == ParamTypes.QUERY:
                         template.params.append(fuzz_type(name=param_name, value=str(sample_data)))
-                    elif param_type in [ParamTypes.BODY, ParamTypes.FORM_DATA]:
-                        if not tmp_api_resource.get('paths', {}).get(resource, {}).get(method, {}).get('parameters'):
-                            tmp_api_resource['paths'][resource] = dict()
-                            tmp_api_resource['paths'][resource][method] = dict()
-                            tmp_api_resource['paths'][resource][method]['parameters'] = list()
-                        tmp_api_resource['paths'][resource][method]['parameters'].append({param: self.get_schema(param)})
+                    elif param_type == ParamTypes.BODY:
+                        tmp_api_resource = self.process_schema(resource, method, param, tmp_api_resource)
                         # template.data.append(fuzz_type(name=param_name, value=transform_data_to_bytes(sample_data)))
+                    elif param_type == ParamTypes.FORM_DATA:
+                        template.params.append(fuzz_type(name=param_name, value=str(sample_data)))
                     else:
                         self.logger.error('Can not parse a definition from swagger.json: %s', param)
                     if param.get('schema'):
-                        if not tmp_api_resource.get('paths', {}).get(resource,{}).get(method, {}).get('parameters'):
-                            tmp_api_resource['paths'][resource] = dict()
-                            tmp_api_resource['paths'][resource][method] = dict()
-                            tmp_api_resource['paths'][resource][method]['parameters'] = list()
-                        tmp_api_resource['paths'][resource][method]['parameters'].append({param: self.get_schema(param)})
+                        tmp_api_resource = self.process_schema(resource, method, param, tmp_api_resource)
                 self.templates.append(template)
-        if len(tmp_api_resource.items()):
-            self.logger.info('Additional resources were found, starting new iteration')
+        if len(tmp_api_resource.get('paths')):
+            self.logger.info('Additional resources were found, processing these: {}'.format(tmp_api_resource))
             self.process_api_resources(paths=tmp_api_resource)
 
     def compile_base_url(self, alternate_url):

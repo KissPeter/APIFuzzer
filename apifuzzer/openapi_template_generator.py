@@ -36,18 +36,28 @@ class OpenAPITemplateGenerator(TemplateGenerator):
         # we will change back later
         return url_in.strip('/').replace('/', '+')
 
-    def get_properties_from_schema_definition(self, schema, element=None):
+    def get_properties_from_schema_definition(self, schema_def, schema_path=None):
         """
-        :param schema: schema definition
-        :type schema: dict
-        :param element: parameters path in schema
-        :type element: list, None
+        :param schema_def: schema definition
+        :type schema_def: dict
+        :param schema_path: parameters path in schema
+        :type schema_path: list, None
         """
-        if isinstance(element, str):
-            element = [element]
-        element_path = element.append('properties') if element else ['properties']
-        self.logger.debug('Getting {} from {}'.format(element_path, pretty_print(schema)))
-        _return = get_item(schema, element_path)
+        # handle case when heading string is /
+        if isinstance(schema_path, str):
+            _tmp_list = schema_path.split('/')
+            schema_path = list()
+            for item in _tmp_list:
+                if len(item):
+                    schema_path.append(item)
+        # if reference is for a file, but no internal path:
+        if len(schema_path):
+            schema_path_extended = schema_path
+            schema_path_extended.append('properties')
+        else:
+            schema_path_extended = ['properties']
+        self.logger.debug('Getting {} (former {}) from {}'.format(schema_path_extended, schema_path, schema_def))
+        _return = get_item(schema_def, schema_path_extended)
         self.logger.debug('Parameters found in schema: {}'.format(pretty_print(_return)))
         return _return
 
@@ -111,7 +121,8 @@ class OpenAPITemplateGenerator(TemplateGenerator):
         # Example: $ref: 'document.json#/myElement'
         else:
             file_reference, item_location = schema_ref.split('#', 1)
-            self.logger.debug('It seems the schema is stored in local file {}'.format(file_reference))
+            self.logger.debug('It seems the schema is stored in local file {}, schema location: {}'
+                              .format(file_reference, item_location))
             try:
                 schema_definition = get_api_definition_from_file(file_reference)
             except FailedToParseFileException:

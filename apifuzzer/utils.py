@@ -181,9 +181,9 @@ def get_item(json_dict, json_path):
     return json_dict
 
 
-def pretty_print(printable):
+def pretty_print(printable, limit=100):
     if isinstance(printable, dict):
-        return json.dumps(printable, indent=2, sort_keys=True)
+        return json.dumps(printable, indent=2, sort_keys=True)[0:limit]
     else:
         return printable
 

@@ -3,7 +3,7 @@ import json
 from apifuzzer.base_template import BaseTemplate
 from apifuzzer.template_generator_base import TemplateGenerator
 from apifuzzer.utils import get_sample_data_by_type, get_fuzz_type_by_param_type, transform_data_to_bytes, \
-    get_api_definition_from_url, get_api_definition_from_file, get_item, pretty_print
+    get_api_definition_from_url, get_api_definition_from_file, get_item, pretty_print, set_class_logger
 
 
 class ParamTypes(object):
@@ -19,6 +19,7 @@ class FailedToProcessSchemaException(Exception):
     pass
 
 
+@set_class_logger
 class SwaggerTemplateGenerator(TemplateGenerator):
 
     def __init__(self, api_resources, logger):
@@ -108,25 +109,25 @@ class SwaggerTemplateGenerator(TemplateGenerator):
             self.logger.debug('It seems the schema is stored in local file {}'.format(file_reference))
             schema_definition = get_api_definition_from_file(file_reference)
             schema_properties = self.get_properties_from_schema_definition(schema_definition, item_location)
-        self.logger.info('Schema definition: {} discovered from {}'.format(schema_properties, param))
+        self.logger.info('Parameter definition: {} discovered from {}'.format(schema_properties, param))
         return schema_properties
 
     def process_schema(self, resource, method, param, tmp_api_resource):
-        if not tmp_api_resource.get('paths', {}).get(resource, {}).get(method, {}).get('parameters'):
-            tmp_api_resource['paths'][resource] = dict()
-            tmp_api_resource['paths'][resource][method] = dict()
-            tmp_api_resource['paths'][resource][method]['parameters'] = list()
+        if not tmp_api_resource.get(resource, {}).get(method, {}).get('parameters'):
+            tmp_api_resource[resource] = dict()
+            tmp_api_resource[resource][method] = dict()
+            tmp_api_resource[resource][method]['parameters'] = list()
         try:
-            tmp_api_resource['paths'][resource][method]['parameters'].append(self.get_schema(param))
+            received_schema_def = self.get_schema(param)
+            if received_schema_def not in tmp_api_resource[resource][method]['parameters']:
+                tmp_api_resource[resource][method]['parameters'].append(received_schema_def)
         except FailedToProcessSchemaException as e:
             self.logger.warning(e)
         return tmp_api_resource
 
     def process_api_resources(self, paths=None):
         self.logger.info('Start preparation')
-        tmp_api_resource = {
-            'paths': {}
-        }
+        tmp_api_resource = dict()
         if not paths:
             paths = self.api_resources['paths']
         else:
@@ -180,7 +181,7 @@ class SwaggerTemplateGenerator(TemplateGenerator):
                     if param.get('schema'):
                         tmp_api_resource = self.process_schema(resource, method, param, tmp_api_resource)
                 self.templates.append(template)
-        if len(tmp_api_resource.get('paths')):
+        if len(tmp_api_resource):
             self.logger.info(
                 'Additional resources were found, processing these: {}'.format(pretty_print(tmp_api_resource)))
             self.process_api_resources(paths=tmp_api_resource)

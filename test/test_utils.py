@@ -2,7 +2,6 @@ import json
 import os
 import tempfile
 
-import pytest
 import requests
 
 from fuzzer import Fuzzer
@@ -53,23 +52,23 @@ class BaseTest:
         Call APIFuzzer with the given api definition
         :type api_resources: dict
         """
-        with pytest.raises(SystemExit):
-            prog = Fuzzer(api_resources=api_resources,
-                          report_dir=self.report_dir,
-                          test_level=1,
-                          alternate_url=self.test_app_url,
-                          test_result_dst=None,
-                          log_level='Debug',
-                          basic_output=False,
-                          auth_headers={}
-                          )
-            prog.prepare()
-            prog.run()
+        prog = Fuzzer(api_resources=api_resources,
+                      report_dir=self.report_dir,
+                      test_level=1,
+                      alternate_url=self.test_app_url,
+                      test_result_dst=None,
+                      log_level='Debug',
+                      basic_output=False,
+                      auth_headers={}
+                      )
+        prog.prepare()
+        prog.run()
 
     def get_last_report_file(self):
-        self.report_files = os.listdir(self.report_dir)
-        with open("{}/{}".format(self.report_dir, self.report_files[0]), mode='r', encoding='utf-8') as f:
-            return json.loads(f.read())
+        os.chdir(self.report_dir)
+        self.report_files = sorted(filter(os.path.isfile, os.listdir('.')), key=os.path.getmtime)
+        with open("{}/{}".format(self.report_dir, self.report_files[-1]), mode='r', encoding='utf-8') as f:
+            return json.load(f)
 
     def fuzz_and_get_last_call(self, api_path, api_def):
         self.swagger.pop('paths')

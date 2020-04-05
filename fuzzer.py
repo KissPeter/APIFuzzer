@@ -22,7 +22,8 @@ class Fuzzer(object):
     def __init__(self, api_resources, report_dir, test_level, log_level, basic_output, alternate_url=None,
                  test_result_dst=None,
                  auth_headers=None,
-                 api_definition_url=None):
+                 api_definition_url=None,
+                 junit_report_path=None):
         self.api_resources = api_resources
         self.base_url = None
         self.alternate_url = alternate_url
@@ -31,6 +32,7 @@ class Fuzzer(object):
         self.report_dir = report_dir
         self.test_result_dst = test_result_dst
         self.auth_headers = auth_headers if auth_headers else {}
+        self.junit_report_path = junit_report_path
         self.logger = set_logger(log_level, basic_output)
         self.logger.info('APIFuzzer initialized')
         self.api_definition_url = api_definition_url
@@ -46,7 +48,7 @@ class Fuzzer(object):
 
     def run(self):
         target = FuzzerTarget(name='target', base_url=self.base_url, report_dir=self.report_dir,
-                              auth_headers=self.auth_headers)
+                              auth_headers=self.auth_headers, junit_report_path=self.junit_report_path)
         interface = WebInterface()
         model = GraphModel()
         for template in self.templates:
@@ -55,7 +57,8 @@ class Fuzzer(object):
         fuzzer.set_model(model)
         fuzzer.set_target(target)
         fuzzer.set_interface(interface)
-        # fuzzer.start()
+        fuzzer.start()
+        fuzzer.stop()
 
 
 def str2bool(v):
@@ -115,7 +118,7 @@ if __name__ == '__main__':
     parser.add_argument('-t', '--test_report',
                         type=str,
                         required=False,
-                        help='JUnit test result xml save path !!!Not implemented!!!',
+                        help='JUnit test result xml save path ',
                         dest='test_result_dst',
                         default=None)
     parser.add_argument('--log',
@@ -155,7 +158,8 @@ if __name__ == '__main__':
                   log_level=args.log_level,
                   basic_output=args.basic_output,
                   auth_headers=args.headers,
-                  api_definition_url=args.src_url
+                  api_definition_url=args.src_url,
+                  junit_report_path=args.test_result_dst
                   )
     prog.prepare()
     signal.signal(signal.SIGINT, signal_handler)

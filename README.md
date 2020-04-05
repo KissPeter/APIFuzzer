@@ -12,10 +12,12 @@ APIFuzzer reads your API description and step by step fuzzes the fields to valid
 if you application can cope with the fuzzed parameters. Does not require coding.
 
 ### Supported API Description Formats
-
 - [Swagger][]
 
 ### Work in progress
+- [OpenAPI][]
+
+### Planned
 - [API Blueprint][]
 
 ## Pre-requirements
@@ -37,17 +39,21 @@ $ pip3 install -r APIFuzzer/requirements.txt
 Check the help (some of them are not implemented yet):
 ```
 $$ python3 fuzzer.py -h
-usage: fuzzer.py [-h] -s SRC_FILE [-r REPORT_DIR] [--level LEVEL]
-                 [-u ALTERNATE_URL] [-t TEST_RESULT_DST]
+usage: fuzzer.py [-h] [-s SRC_FILE] [--src_url SRC_URL] [-r REPORT_DIR]
+                 [--level LEVEL] [-u ALTERNATE_URL] [-t TEST_RESULT_DST]
                  [--log {critical,fatal,error,warn,warning,info,debug,notset}]
-                 [--headers HEADERS]
+                 [--basic_output BASIC_OUTPUT] [--headers HEADERS]
 
 API fuzzer configuration
 
 optional arguments:
   -h, --help        show this help message and exit
   -s SRC_FILE, --src_file SRC_FILE
-                    API definition file path. Currently only JSON format is supported
+                    API definition file path. Currently only JSON format is
+                    supported
+  --src_url SRC_URL
+                    API definition url. Currently only JSON format is
+                    supported
   -r REPORT_DIR, --report_dir REPORT_DIR
                     Directory where error reports will be saved. Default is
                     temporally generated directory
@@ -57,9 +63,12 @@ optional arguments:
                     Use CLI defined url instead compile the url from the API
                     definition. Useful for testing
   -t TEST_RESULT_DST, --test_report TEST_RESULT_DST
-                    JUnit test result xml save path !!!Not implemented!!!
+                    JUnit test result xml save path
   --log {critical,fatal,error,warn,warning,info,debug,notset}
                     Use different log level than the default WARNING
+  --basic_output BASIC_OUTPUT
+                    Use basic output for logging (useful if running in
+                    jenkins). Example --basic_output=True
   --headers HEADERS
                     Http request headers added to all request. Example:
                     '[{"Authorization": "SuperSecret"}, {"Auth2": "asd"}]'
@@ -98,3 +107,4 @@ $ json_pp < /tmp/reports/79_1573993485.5391517.json
 
 [API Blueprint]: https://apiblueprint.org/
 [Swagger]: http://swagger.io/
+[OpenAPI]: https://swagger.io/docs/specification/about/

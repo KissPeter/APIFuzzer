@@ -167,9 +167,18 @@ def get_item(json_dict, json_path):
     """
     Get JSON item defined by path
     :param json_dict: JSON dict contains the item we are looking for
+    :type json_dict: dict
     :param json_path: defines the place of the object
-    :return: item
+    :type json_path: list
+    :return: dict
     """
     for item in json_path:
         json_dict = json_dict[item]
     return json_dict
+
+
+def pretty_print(printable):
+    if isinstance(printable, dict):
+        return json.dumps(printable, indent=2, sort_keys=True)
+    else:
+        return printable

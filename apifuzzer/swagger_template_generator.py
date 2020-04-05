@@ -3,7 +3,7 @@ import json
 from apifuzzer.base_template import BaseTemplate
 from apifuzzer.template_generator_base import TemplateGenerator
 from apifuzzer.utils import get_sample_data_by_type, get_fuzz_type_by_param_type, transform_data_to_bytes, \
-    get_api_definition_from_url, get_api_definition_from_file, get_item
+    get_api_definition_from_url, get_api_definition_from_file, get_item, pretty_print
 
 
 class ParamTypes(object):
@@ -34,8 +34,17 @@ class SwaggerTemplateGenerator(TemplateGenerator):
         return url_in.strip('/').replace('/', '+')
 
     def get_properties_from_schema_definition(self, schema, element=None):
-        self.logger.info('Getting {} from {}'.format([element, 'properties'], schema))
-        return get_item(schema, '/'.join([element, 'properties']))
+        """
+        :param schema: schema definition
+        :type schema: dict
+        :param element: parameters path in schema
+        :type element: list, None
+        """
+        element_path = element.append('properties') if element else ['properties']
+        self.logger.debug('Getting {} from {}'.format(element_path, pretty_print(schema)))
+        _return = get_item(schema, element_path)
+        self.logger.debug('Parameters found in schema: {}'.format(pretty_print(_return)))
+        return _return
 
     def get_schema(self, param):
         """
@@ -67,7 +76,7 @@ class SwaggerTemplateGenerator(TemplateGenerator):
           - The document on the different server, which uses the same protocol (for example, HTTP or HTTPS) – $ref: '//anotherserver.com/files/example.json'
         """
         schema_properties = None
-        self.logger.info('Received schema definition: {}'.format(param))
+        self.logger.info('Received schema definition: {}'.format(pretty_print(param)))
         schema_ref = param.get('schema', {}).get('$ref')
         if not schema_ref:
             raise FailedToProcessSchemaException('Faild to find shema ref in {}'.format(param))
@@ -108,7 +117,7 @@ class SwaggerTemplateGenerator(TemplateGenerator):
             tmp_api_resource['paths'][resource][method] = dict()
             tmp_api_resource['paths'][resource][method]['parameters'] = list()
         try:
-            tmp_api_resource['paths'][resource][method]['parameters'].append({param: self.get_schema(param)})
+            tmp_api_resource['paths'][resource][method]['parameters'].append(self.get_schema(param))
         except FailedToProcessSchemaException as e:
             self.logger.warning(e)
         return tmp_api_resource
@@ -121,7 +130,7 @@ class SwaggerTemplateGenerator(TemplateGenerator):
         if not paths:
             paths = self.api_resources['paths']
         else:
-            self.logger.info('Processing extra parameter: {}'.format(paths))
+            self.logger.info('Processing extra parameter: {}'.format(pretty_print(paths)))
         for resource in paths.keys():
             normalized_url = self.normalize_url(resource)
             for method in paths[resource].keys():
@@ -172,7 +181,8 @@ class SwaggerTemplateGenerator(TemplateGenerator):
                         tmp_api_resource = self.process_schema(resource, method, param, tmp_api_resource)
                 self.templates.append(template)
         if len(tmp_api_resource.get('paths')):
-            self.logger.info('Additional resources were found, processing these: {}'.format(tmp_api_resource))
+            self.logger.info(
+                'Additional resources were found, processing these: {}'.format(pretty_print(tmp_api_resource)))
             self.process_api_resources(paths=tmp_api_resource)
 
     def compile_base_url(self, alternate_url):

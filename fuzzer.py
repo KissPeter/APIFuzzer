@@ -12,8 +12,8 @@ from kitty.interfaces import WebInterface
 from kitty.model import GraphModel
 
 from apifuzzer.fuzzer_target.fuzz_request_sender import FuzzerTarget
+from apifuzzer.openapi_template_generator import OpenAPITemplateGenerator
 from apifuzzer.server_fuzzer import OpenApiServerFuzzer
-from apifuzzer.swagger_template_generator import SwaggerTemplateGenerator
 from apifuzzer.utils import set_logger, get_api_definition_from_file, get_api_definition_from_url
 
 
@@ -21,7 +21,8 @@ class Fuzzer(object):
 
     def __init__(self, api_resources, report_dir, test_level, log_level, basic_output, alternate_url=None,
                  test_result_dst=None,
-                 auth_headers=None):
+                 auth_headers=None,
+                 api_definition_url=None):
         self.api_resources = api_resources
         self.base_url = None
         self.alternate_url = alternate_url
@@ -32,10 +33,13 @@ class Fuzzer(object):
         self.auth_headers = auth_headers if auth_headers else {}
         self.logger = set_logger(log_level, basic_output)
         self.logger.info('APIFuzzer initialized')
+        self.api_definition_url = api_definition_url
 
     def prepare(self):
-        # here we will be able to branch the template generator if we will support other than Swagger
-        template_generator = SwaggerTemplateGenerator(self.api_resources, logger=self.logger)
+        # here we will be able to branch the template generator if we will support other than Swagger / OpenAPI
+        template_generator = OpenAPITemplateGenerator(self.api_resources,
+                                                      logger=self.logger,
+                                                      api_definition_url=self.api_definition_url)
         template_generator.process_api_resources()
         self.templates = template_generator.templates
         self.base_url = template_generator.compile_base_url(self.alternate_url)
@@ -51,7 +55,7 @@ class Fuzzer(object):
         fuzzer.set_model(model)
         fuzzer.set_target(target)
         fuzzer.set_interface(interface)
-        fuzzer.start()
+        # fuzzer.start()
 
 
 def str2bool(v):
@@ -150,7 +154,8 @@ if __name__ == '__main__':
                   test_result_dst=args.test_result_dst,
                   log_level=args.log_level,
                   basic_output=args.basic_output,
-                  auth_headers=args.headers
+                  auth_headers=args.headers,
+                  api_definition_url=args.src_url
                   )
     prog.prepare()
     signal.signal(signal.SIGINT, signal_handler)

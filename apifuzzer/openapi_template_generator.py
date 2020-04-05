@@ -3,7 +3,8 @@ import json
 from apifuzzer.base_template import BaseTemplate
 from apifuzzer.template_generator_base import TemplateGenerator
 from apifuzzer.utils import get_sample_data_by_type, get_fuzz_type_by_param_type, transform_data_to_bytes, \
-    get_api_definition_from_url, get_api_definition_from_file, get_item, pretty_print, set_class_logger
+    get_api_definition_from_url, get_api_definition_from_file, get_item, pretty_print, set_class_logger, \
+    get_base_url_form_api_src, FailedToParseFileException
 
 
 class ParamTypes(object):
@@ -20,13 +21,14 @@ class FailedToProcessSchemaException(Exception):
 
 
 @set_class_logger
-class SwaggerTemplateGenerator(TemplateGenerator):
+class OpenAPITemplateGenerator(TemplateGenerator):
 
-    def __init__(self, api_resources, logger):
+    def __init__(self, api_resources, logger, api_definition_url):
         self.api_resources = api_resources
         self.templates = list()
         self.logger = logger
         self.logger.info('Logger initialized')
+        self.api_definition_url = api_definition_url
 
     @staticmethod
     def normalize_url(url_in):
@@ -41,6 +43,8 @@ class SwaggerTemplateGenerator(TemplateGenerator):
         :param element: parameters path in schema
         :type element: list, None
         """
+        if isinstance(element, str):
+            element = [element]
         element_path = element.append('properties') if element else ['properties']
         self.logger.debug('Getting {} from {}'.format(element_path, pretty_print(schema)))
         _return = get_item(schema, element_path)
@@ -101,13 +105,27 @@ class SwaggerTemplateGenerator(TemplateGenerator):
             schema_properties = self.get_properties_from_schema_definition(schema_definition, item_location)
         elif schema_ref.startswith('//'):
             self.logger.warning('Not implemented import: {}'.format(schema_ref))
-            # The document on the different server, which uses the same protocol (for example, HTTP or HTTPS) – $ref: '//anotherserver.com/files/example.json'
+            # The document on the different server, which uses the same protocol (for example, HTTP or HTTPS)
+            # – $ref: '//anotherserver.com/files/example.json'
         # Remote (file) reference
         # Example: $ref: 'document.json#/myElement'
         else:
             file_reference, item_location = schema_ref.split('#', 1)
             self.logger.debug('It seems the schema is stored in local file {}'.format(file_reference))
-            schema_definition = get_api_definition_from_file(file_reference)
+            try:
+                schema_definition = get_api_definition_from_file(file_reference)
+            except FailedToParseFileException:
+                # This part is necessary only because some of the API definitions doesn't follow the standard
+                if len(self.api_definition_url):
+                    self.logger.debug('Local file is not available, but API definition was defined as URL ({}).'
+                                      'Trying to fetch {} from the same location'
+                                      .format(self.api_definition_url, file_reference))
+                    api_definition_url = "/".join([get_base_url_form_api_src(self.api_definition_url), file_reference])
+                    self.logger.debug('Trying to fetch api definition from: {}'.format(api_definition_url))
+                    schema_definition = get_api_definition_from_url(api_definition_url)
+                else:
+                    self.logger.warning('Local file reference was found in API definition, but file is not available')
+                    schema_definition = dict()
             schema_properties = self.get_properties_from_schema_definition(schema_definition, item_location)
         self.logger.info('Parameter definition: {} discovered from {}'.format(schema_properties, param))
         return schema_properties
@@ -115,13 +133,16 @@ class SwaggerTemplateGenerator(TemplateGenerator):
     @staticmethod
     def transform_schema_definition_to_swagger_param_definition(param, schema_def):
         _return = list()
+        param_in = param.get('in')
+        param_required = param.get('required')
+        param_descr = param.get('description')
         for schema_def_key in schema_def.keys():
             _return.append(
                 {'name': schema_def_key,
-                 'in': param.get('in'),
-                 'required': param.get('required'),
+                 'in': param_in if param_in else schema_def[schema_def_key].get('in'),
+                 'required': param_required if param_required else schema_def[schema_def_key].get('required'),
                  'type': schema_def[schema_def_key].get('type'),
-                 'description': schema_def[schema_def_key].get('description')
+                 'description': param_descr if param_descr else schema_def[schema_def_key].get('description')
                  }
             )
         return _return
@@ -190,8 +211,12 @@ class SwaggerTemplateGenerator(TemplateGenerator):
                         # template.data.append(fuzz_type(name=param_name, value=transform_data_to_bytes(sample_data)))
                     elif param_type == ParamTypes.FORM_DATA:
                         template.params.append(fuzz_type(name=param_name, value=str(sample_data)))
+                    elif len(param.get('$ref')):
+                        self.logger.info('Only schema reference found in the parameter description: {}'.format(param))
+                        tweaked_param = {'schema': param}
+                        tmp_api_resource = self.process_schema(resource, method, tweaked_param, tmp_api_resource)
                     else:
-                        self.logger.error('Can not parse a definition from swagger.json: %s', param)
+                        self.logger.error('Can not parse a definition: %s', param)
                     if param.get('schema'):
                         tmp_api_resource = self.process_schema(resource, method, param, tmp_api_resource)
                 self.templates.append(template)

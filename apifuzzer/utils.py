@@ -144,6 +144,10 @@ def get_api_definition_from_url(url, temp_file=None):
     return get_api_definition_from_file(temp_file)
 
 
+class FailedToParseFileException(Exception):
+    pass
+
+
 def get_api_definition_from_file(src_file):
     try:
         with open(src_file, mode='rb') as f:
@@ -158,9 +162,9 @@ def get_api_definition_from_file(src_file):
         except (TypeError, ScannerError) as e:
             print('Failed to load input as YAML:{}'.format(e))
             raise e
-    except Exception:
+    except (Exception, FileNotFoundError):
         print('Failed to parse input file, exit')
-        exit()
+        raise FailedToParseFileException
 
 
 def get_item(json_dict, json_path):
@@ -182,3 +186,13 @@ def pretty_print(printable):
         return json.dumps(printable, indent=2, sort_keys=True)
     else:
         return printable
+
+
+def get_base_url_form_api_src(url):
+    """
+    provides base url from api definition source url.
+    :param url: url like https://example.com/api/v1/api.json
+    :return: url like https://example.com/api/v1
+    """
+    splitted_url = url.split('/')
+    return "/".join(splitted_url[:len(splitted_url) - 1])

@@ -177,11 +177,11 @@ def get_item(json_dict, json_path):
     :return: dict
     """
     for item in json_path:
-        json_dict = json_dict[item]
+        json_dict = json_dict.get(item, {})
     return json_dict
 
 
-def pretty_print(printable, limit=100):
+def pretty_print(printable, limit=200):
     if isinstance(printable, dict):
         return json.dumps(printable, indent=2, sort_keys=True)[0:limit]
     else:
@@ -194,5 +194,5 @@ def get_base_url_form_api_src(url):
     :param url: url like https://example.com/api/v1/api.json
     :return: url like https://example.com/api/v1
     """
-    splitted_url = url.split('/')
-    return "/".join(splitted_url[:len(splitted_url) - 1])
+    splited_url = url.split('/')
+    return "/".join(splited_url[:len(splited_url) - 1])

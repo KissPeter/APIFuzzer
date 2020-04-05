@@ -1,4 +1,5 @@
 import json
+from urllib.parse import urlparse
 
 from apifuzzer.base_template import BaseTemplate
 from apifuzzer.template_generator_base import TemplateGenerator
@@ -56,8 +57,14 @@ class OpenAPITemplateGenerator(TemplateGenerator):
             schema_path_extended.append('properties')
         else:
             schema_path_extended = ['properties']
-        self.logger.debug('Getting {} (former {}) from {}'.format(schema_path_extended, schema_path, schema_def))
-        _return = get_item(schema_def, schema_path_extended)
+        self.logger.debug('Getting {} from {}'.format(schema_path_extended, pretty_print(schema_def)))
+        try:
+            _return = get_item(schema_def, schema_path_extended)
+        except KeyError as e:
+            self.logger.debug('{} trying "parameters" key'.format(e))
+            schema_path_extended.pop(len(schema_path_extended) - 1)
+            schema_path_extended.append('parameters')
+            _return = get_item(schema_def, schema_path_extended)
         self.logger.debug('Parameters found in schema: {}'.format(pretty_print(_return)))
         return _return
 
@@ -191,7 +198,12 @@ class OpenAPITemplateGenerator(TemplateGenerator):
                     if not isinstance(param, dict):
                         self.logger.warning('{} type mismatch, dict expected, got: {}'.format(param, type(param)))
                         param = json.loads(param)
-                    param_type = param.get('type')
+                    if param.get('type'):
+                        param_type = param.get('type')
+                    elif param.get('schema', {}).get('type'):
+                        param_type = param.get('schema', {}).get('type')
+                    else:
+                        param_type = 'string'
                     param_format = param.get('format')
                     if param_format is not None:
                         fuzzer_type = param_format.lower()
@@ -200,7 +212,12 @@ class OpenAPITemplateGenerator(TemplateGenerator):
                     else:
                         fuzzer_type = None
                     fuzz_type = get_fuzz_type_by_param_type(fuzzer_type)
-                    sample_data = get_sample_data_by_type(param.get('type'))
+                    if param.get('example'):
+                        sample_data = param.get('example')
+                    elif param.get('schema', {}).get('example'):
+                        sample_data = param.get('schema', {}).get('example')
+                    else:
+                        sample_data = get_sample_data_by_type(param.get('type'))
                     # get parameter placement(in): path, query, header, cookie
                     # get parameter type: integer, string
                     # get format if present
@@ -236,11 +253,7 @@ class OpenAPITemplateGenerator(TemplateGenerator):
                 'Additional resources were found, processing these: {}'.format(pretty_print(tmp_api_resource)))
             self.process_api_resources(paths=tmp_api_resource)
 
-    def compile_base_url(self, alternate_url):
-        """
-        :param alternate_url: alternate protocol and base url to be used instead of the one defined in swagger
-        :type alternate_url: string
-        """
+    def compile_base_url_for_swagger(self, alternate_url):
         if alternate_url:
             _base_url = "/".join([alternate_url.strip('/'), self.api_resources.get('basePath', '').strip('/')])
         else:
@@ -253,4 +266,28 @@ class OpenAPITemplateGenerator(TemplateGenerator):
                 self.api_resources['host'],
                 self.api_resources['basePath']
             )
+        return _base_url
+
+    def compile_base_url_for_openapi(self, alternate_url):
+        uri = urlparse(self.api_resources.get('servers')[0].get('url'))
+        if alternate_url:
+            _base_url = "/".join([alternate_url.strip('/'), uri.path.strip('/')])
+        else:
+            _base_url = self.api_resources.get('servers')[0].get('url')
+        return _base_url
+
+    def compile_base_url(self, alternate_url):
+        """
+        :param alternate_url: alternate protocol and base url to be used instead of the one defined in swagger
+        :type alternate_url: string
+        """
+        if self.api_resources.get('swagger', "").startswith('2'):
+            _base_url = self.compile_base_url_for_swagger(alternate_url)
+            self.logger.debug('Using swagger style url: {}'.format(_base_url))
+        elif self.api_resources.get('openapi', "").startswith('3'):
+            _base_url = self.compile_base_url_for_swagger(alternate_url)
+            self.logger.debug('Using openapi style url: {}'.format(_base_url))
+        else:
+            self.logger.warning('Failed to find base url, using the alternative one ({})'.format(alternate_url))
+            _base_url = alternate_url
         return _base_url

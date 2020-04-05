@@ -69,7 +69,7 @@ optional arguments:
                     Use different log level than the default WARNING
   --basic_output BASIC_OUTPUT
                     Use basic output for logging (useful if running in
-                    jenkins). Example --basic_output=True
+                    jenkins). Example: --basic_output=True
   --headers HEADERS
                     Http request headers added to all request. Example:
                     '[{"Authorization": "SuperSecret"}, {"Auth2": "asd"}]'

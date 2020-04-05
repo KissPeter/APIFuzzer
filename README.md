@@ -18,6 +18,7 @@ if you application can cope with the fuzzed parameters. Does not require coding.
 - [OpenAPI][]
 
 ### Planned
+- [GraphQL][]
 - [API Blueprint][]
 
 ## Pre-requirements
@@ -108,3 +109,4 @@ $ json_pp < /tmp/reports/79_1573993485.5391517.json
 [API Blueprint]: https://apiblueprint.org/
 [Swagger]: http://swagger.io/
 [OpenAPI]: https://swagger.io/docs/specification/about/
+[GraphQL]: https://graphql.org/

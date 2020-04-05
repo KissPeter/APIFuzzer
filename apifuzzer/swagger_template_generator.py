@@ -112,6 +112,20 @@ class SwaggerTemplateGenerator(TemplateGenerator):
         self.logger.info('Parameter definition: {} discovered from {}'.format(schema_properties, param))
         return schema_properties
 
+    @staticmethod
+    def transform_schema_definition_to_swagger_param_definition(param, schema_def):
+        _return = list()
+        for schema_def_key in schema_def.keys():
+            _return.append(
+                {'name': schema_def_key,
+                 'in': param.get('in'),
+                 'required': param.get('required'),
+                 'type': schema_def[schema_def_key].get('type'),
+                 'description': schema_def[schema_def_key].get('description')
+                 }
+            )
+        return _return
+
     def process_schema(self, resource, method, param, tmp_api_resource):
         if not tmp_api_resource.get(resource, {}).get(method, {}).get('parameters'):
             tmp_api_resource[resource] = dict()
@@ -119,8 +133,8 @@ class SwaggerTemplateGenerator(TemplateGenerator):
             tmp_api_resource[resource][method]['parameters'] = list()
         try:
             received_schema_def = self.get_schema(param)
-            if received_schema_def not in tmp_api_resource[resource][method]['parameters']:
-                tmp_api_resource[resource][method]['parameters'].append(received_schema_def)
+            processed_schema = self.transform_schema_definition_to_swagger_param_definition(param, received_schema_def)
+            tmp_api_resource[resource][method]['parameters'].extend(processed_schema)
         except FailedToProcessSchemaException as e:
             self.logger.warning(e)
         return tmp_api_resource

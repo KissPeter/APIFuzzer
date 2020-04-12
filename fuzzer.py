@@ -40,6 +40,7 @@ class Fuzzer(object):
     def prepare(self):
         # here we will be able to branch the template generator if we will support other than Swagger / OpenAPI
         template_generator = OpenAPITemplateGenerator(self.api_resources,
+                                                      logger=self.logger,
                                                       api_definition_url=self.api_definition_url)
         template_generator.process_api_resources()
         self.templates = template_generator.templates

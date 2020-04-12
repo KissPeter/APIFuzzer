@@ -4,8 +4,8 @@ from urllib.parse import urlparse
 from apifuzzer.base_template import BaseTemplate
 from apifuzzer.template_generator_base import TemplateGenerator
 from apifuzzer.utils import get_sample_data_by_type, get_fuzz_type_by_param_type, transform_data_to_bytes, \
-    get_api_definition_from_url, get_api_definition_from_file, get_item, pretty_print, set_class_logger, \
-    get_base_url_form_api_src, FailedToParseFileException
+    get_api_definition_from_url, get_api_definition_from_file, get_item, pretty_print, get_base_url_form_api_src, \
+    FailedToParseFileException
 
 
 class ParamTypes(object):
@@ -21,12 +21,12 @@ class FailedToProcessSchemaException(Exception):
     pass
 
 
-@set_class_logger
 class OpenAPITemplateGenerator(TemplateGenerator):
 
-    def __init__(self, api_resources, api_definition_url):
+    def __init__(self, api_resources, logger, api_definition_url):
         self.api_resources = api_resources
         self.templates = list()
+        self.logger = logger
         self.logger.info('Logger initialized')
         self.api_definition_url = api_definition_url
 
@@ -148,21 +148,28 @@ class OpenAPITemplateGenerator(TemplateGenerator):
         return schema_properties
 
     def transform_schema_definition_key_to_swagger_param_definition(self, param, schema_def_key, schema_def_data):
+        self.logger.debug('Processing schema param: {}'.format(schema_def_data))
         _return = list()
         param_in = param.get('in')
         param_required = param.get('required', True)
-        param_descr = param.get('description')
         schema_name = schema_def_data.get('name') if schema_def_data.get('name') else schema_def_key
         _schema_definition = {'name': schema_name,
                               'in': schema_def_data.get('in') if schema_def_data.get('in')
                               else param_in,
                               'required': schema_def_data.get('required') if schema_def_data.get('required')
                               else param_required,
-                              'type': schema_def_data.get('type', "string"),
-                              'description': param_descr if param_descr else schema_def_data.get('description')
+                              'type': schema_def_data.get('type', "string")
                               }
+
+        if schema_def_data.get('schema'):
+            self.logger.debug('Adding sample data ({}) to {}'
+                              .format(schema_def_data.get('schema').items(), schema_def_key))
+            for k, v in schema_def_data.get('schema').items():
+                if not _schema_definition.get(k):
+                    _schema_definition[k] = v
         if schema_def_data.get('$ref'):
             _schema_definition['schema'] = {'$ref': schema_def_data.get('$ref')}
+        self.logger.debug('Processed schema: {}'.format(pretty_print(_schema_definition)))
         _return.append(_schema_definition)
         return _return
 
@@ -194,7 +201,7 @@ class OpenAPITemplateGenerator(TemplateGenerator):
         if not paths:
             paths = self.api_resources['paths']
         else:
-            self.logger.info('Processing extra parameter: {}'.format(pretty_print(paths)))
+            self.logger.info('Processing extra parameter: {}'.format(pretty_print(paths, limit=300)))
         for resource in paths.keys():
             normalized_url = self.normalize_url(resource)
             for method in paths[resource].keys():
@@ -203,7 +210,9 @@ class OpenAPITemplateGenerator(TemplateGenerator):
                 template = BaseTemplate(name=template_container_name)
                 template.url = normalized_url
                 template.method = method.upper()
-                for param in paths[resource][method].get('parameters', {}):
+                params_to_process = list(paths[resource][method].get('parameters', {}))
+                params_to_process.append(paths[resource][method].get('requestBody', {}))
+                for param in params_to_process:
                     self.logger.info('Processing parameter: {}'.format(param))
                     if not isinstance(param, dict):
                         self.logger.warning('{} type mismatch, dict expected, got: {}'.format(param, type(param)))
@@ -248,7 +257,7 @@ class OpenAPITemplateGenerator(TemplateGenerator):
                         template.data.append(fuzz_type(name=param_name, value=transform_data_to_bytes(sample_data)))
                     elif param_type == ParamTypes.FORM_DATA:
                         template.params.append(fuzz_type(name=param_name, value=str(sample_data)))
-                    elif len(param.get('$ref')):
+                    elif len(param.get('$ref', "")):
                         self.logger.info('Only schema reference found in the parameter description: {}'.format(param))
                         tweaked_param = {'schema': param}
                         tmp_api_resource = self.process_schema(resource, method, tweaked_param, tmp_api_resource)

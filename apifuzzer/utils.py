@@ -93,6 +93,7 @@ def transform_data_to_bytes(data_in):
 
 def set_class_logger(class_name):
     class_name.logger = logging.getLogger(class_name.__class__.__name__)
+    class_name.logger.getChild(class_name.__class__.__name__)
     return class_name
 
 

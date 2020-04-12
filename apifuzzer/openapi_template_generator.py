@@ -24,10 +24,9 @@ class FailedToProcessSchemaException(Exception):
 @set_class_logger
 class OpenAPITemplateGenerator(TemplateGenerator):
 
-    def __init__(self, api_resources, logger, api_definition_url):
+    def __init__(self, api_resources, api_definition_url):
         self.api_resources = api_resources
         self.templates = list()
-        self.logger = logger
         self.logger.info('Logger initialized')
         self.api_definition_url = api_definition_url
 
@@ -52,7 +51,7 @@ class OpenAPITemplateGenerator(TemplateGenerator):
                 if len(item):
                     schema_path.append(item)
         # if reference is for a file, but no internal path:
-        if len(schema_path):
+        if schema_path and len(schema_path):
             schema_path_extended = schema_path
             schema_path_extended.append('properties')
         else:
@@ -98,7 +97,7 @@ class OpenAPITemplateGenerator(TemplateGenerator):
           - The document on the different server, which uses the same protocol (for example, HTTP or HTTPS) – $ref: '//anotherserver.com/files/example.json'
         """
         schema_properties = None
-        self.logger.info('Received schema definition: {}'.format(pretty_print(param)))
+        self.logger.info('Received schema definition: {}'.format(pretty_print(param, limit=500)))
         schema_ref = param.get('schema', {}).get('$ref')
         if not schema_ref:
             raise FailedToProcessSchemaException('Faild to find shema ref in {}'.format(param))
@@ -148,21 +147,31 @@ class OpenAPITemplateGenerator(TemplateGenerator):
         self.logger.info('Parameter definition: {} discovered from {}'.format(schema_properties, param))
         return schema_properties
 
-    @staticmethod
-    def transform_schema_definition_to_swagger_param_definition(param, schema_def):
+    def transform_schema_definition_key_to_swagger_param_definition(self, param, schema_def_key, schema_def_data):
         _return = list()
         param_in = param.get('in')
-        param_required = param.get('required')
+        param_required = param.get('required', True)
         param_descr = param.get('description')
+        schema_name = schema_def_data.get('name') if schema_def_data.get('name') else schema_def_key
+        _schema_definition = {'name': schema_name,
+                              'in': schema_def_data.get('in') if schema_def_data.get('in')
+                              else param_in,
+                              'required': schema_def_data.get('required') if schema_def_data.get('required')
+                              else param_required,
+                              'type': schema_def_data.get('type', "string"),
+                              'description': param_descr if param_descr else schema_def_data.get('description')
+                              }
+        if schema_def_data.get('$ref'):
+            _schema_definition['schema'] = {'$ref': schema_def_data.get('$ref')}
+        _return.append(_schema_definition)
+        return _return
+
+    def transform_schema_definition_to_swagger_param_definition(self, param, schema_def):
+        _return = list()
         for schema_def_key in schema_def.keys():
-            _return.append(
-                {'name': schema_def_key,
-                 'in': param_in if param_in else schema_def[schema_def_key].get('in'),
-                 'required': param_required if param_required else schema_def[schema_def_key].get('required'),
-                 'type': schema_def[schema_def_key].get('type'),
-                 'description': param_descr if param_descr else schema_def[schema_def_key].get('description')
-                 }
-            )
+            self.logger.debug('Processing schema definition: {}'.format(schema_def_key))
+            _return.extend(self.transform_schema_definition_key_to_swagger_param_definition(
+                param, schema_def_key, schema_def[schema_def_key]))
         return _return
 
     def process_schema(self, resource, method, param, tmp_api_resource):
@@ -173,9 +182,10 @@ class OpenAPITemplateGenerator(TemplateGenerator):
         try:
             received_schema_def = self.get_schema(param)
             processed_schema = self.transform_schema_definition_to_swagger_param_definition(param, received_schema_def)
-            tmp_api_resource[resource][method]['parameters'].extend(processed_schema)
         except FailedToProcessSchemaException as e:
-            self.logger.warning(e)
+            self.logger.warning('{}, trying to find details directly from parameter: {}'.format(e, param))
+            processed_schema = self.transform_schema_definition_key_to_swagger_param_definition(param, '', param)
+        tmp_api_resource[resource][method]['parameters'].extend(processed_schema)
         return tmp_api_resource
 
     def process_api_resources(self, paths=None):
@@ -235,8 +245,7 @@ class OpenAPITemplateGenerator(TemplateGenerator):
                     elif param_type == ParamTypes.QUERY:
                         template.params.append(fuzz_type(name=param_name, value=str(sample_data)))
                     elif param_type == ParamTypes.BODY:
-                        tmp_api_resource = self.process_schema(resource, method, param, tmp_api_resource)
-                        # template.data.append(fuzz_type(name=param_name, value=transform_data_to_bytes(sample_data)))
+                        template.data.append(fuzz_type(name=param_name, value=transform_data_to_bytes(sample_data)))
                     elif param_type == ParamTypes.FORM_DATA:
                         template.params.append(fuzz_type(name=param_name, value=str(sample_data)))
                     elif len(param.get('$ref')):
@@ -247,6 +256,8 @@ class OpenAPITemplateGenerator(TemplateGenerator):
                         self.logger.error('Can not parse a definition: %s', param)
                     if param.get('schema'):
                         tmp_api_resource = self.process_schema(resource, method, param, tmp_api_resource)
+                self.logger.info('Adding template to list: {}, templates list: {}'
+                                 .format(template.name, len(self.templates) + 1))
                 self.templates.append(template)
         if len(tmp_api_resource):
             self.logger.info(

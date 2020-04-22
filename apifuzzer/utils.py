@@ -146,7 +146,7 @@ def get_api_definition_from_file(src_file):
         with open(src_file, mode='rb') as f:
             api_definition = f.read()
         try:
-            return json.loads(api_definition)
+            return json.loads(api_definition.decode('utf-8'))
         except ValueError as e:
             print('Failed to load input as JSON, maybe YAML?')
         try:

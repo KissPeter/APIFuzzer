@@ -243,8 +243,9 @@ class OpenAPITemplateGenerator(TemplateGenerator):
                     param_type = param.get('in')
                     param_name = '{}|{}'.format(template_container_name, param.get('name'))
                     self.logger.debug('Resource: {} Method: {} Parameter: {}, Parameter type: {}, Sample data: {},'
-                                      'Param name: {}'
-                                      .format(resource, method, param, param_type, sample_data, param_name))
+                                      'Param name: {}, fuzzer: {}'
+                                      .format(resource, method, param, param_type, sample_data, param_name,
+                                              fuzz_type.__name__))
                     if param_type == ParamTypes.PATH:
                         template.path_variables.append(fuzz_type(name=param_name, value=str(sample_data)))
                     elif param_type == ParamTypes.HEADER:

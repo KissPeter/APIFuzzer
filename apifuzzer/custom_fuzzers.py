@@ -24,7 +24,7 @@ class Utf8Chars(BaseField):
         self.min_length = min_length
         self.max_length = max_length
         self._num_mutations = num_mutations
-        self.position = randint(0, self.MAX)
+        self.position = self.init_postition()
         self._initialized = False
         self._default_value = self.to_bits(chr(self.MAX))
         self._encoder = ENC_BITS_DEFAULT
@@ -33,6 +33,9 @@ class Utf8Chars(BaseField):
         self._fuzzable = fuzzable
         self._need_second_pass = False
         self._controlled = False
+
+    def init_postition(self):
+        return randint(0, self.MAX)
 
     def strToBytes(self, value):
         """
@@ -49,12 +52,6 @@ class Utf8Chars(BaseField):
     def to_bits(self, val):
         return Bits(self.strToBytes(val))
 
-    def _exhausted(self):
-        """
-        :return: True if field exhusted, False otherwise
-        """
-        return self.position > self.MAX
-
     def _mutate(self):
 
         current_value = list()
@@ -63,6 +60,8 @@ class Utf8Chars(BaseField):
             current_value.append(chr(st))
         self._current_value = self.to_bits("".join(current_value))
         self.position += current_mutation_length
+        if self.position > self.MAX:
+            self.position = self.init_postition()
 
 
 class RandomBitsField(RandomBits):

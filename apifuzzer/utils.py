@@ -14,7 +14,7 @@ from bitstring import Bits
 from ruamel.yaml import YAML
 from ruamel.yaml.scanner import ScannerError
 
-from apifuzzer.custom_fuzzers import RandomBitsField
+from apifuzzer.custom_fuzzers import Utf8Chars
 
 
 def get_field_type_by_method(http_method):
@@ -29,8 +29,8 @@ def get_field_type_by_method(http_method):
 def get_fuzz_type_by_param_type(fuzz_type):
     # https://kitty.readthedocs.io/en/latest/data_model/big_list_of_fields.html#atomic-fields
     # https://swagger.io/docs/specification/data-models/data-types/
-    string_types = [RandomBitsField]
-    number_types = [RandomBitsField]
+    string_types = [Utf8Chars]  # was RandomBitsField
+    number_types = [Utf8Chars]
     types = {
         'integer': number_types,
         'float': number_types,

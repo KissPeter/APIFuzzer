@@ -2,8 +2,24 @@
 import os
 import sys
 
+from mock import Mock as MagicMock
+
 path = os.path.abspath(os.path.join(os.path.dirname(os.path.realpath(__file__)), os.pardir))
 sys.path.insert(0, path)
+
+
+class Mock(MagicMock):
+    @classmethod
+    def __getattr__(cls, name):
+        return Mock()
+
+    @classmethod
+    def __getitem__(cls, name):
+        return Mock()
+
+
+MOCK_MODULES = ['pycurl']
+sys.modules.update((mod_name, Mock()) for mod_name in MOCK_MODULES)
 
 project = 'APIfuzzer'
 version = '0.9'
@@ -46,3 +62,9 @@ if not on_rtd:
     html_theme = 'sphinx_rtd_theme'
     html_theme_path = [sphinx_rtd_theme.get_html_theme_path()]
     html_style = 'css/custom.css'
+
+"""
+Documentation update:
+- remove *.rst under docs except index.rst
+- run: sphinx-apidoc apifuzzer/ -o docs/
+"""

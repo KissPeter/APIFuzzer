@@ -4,7 +4,7 @@ import tempfile
 from ruamel.yaml import YAML
 from ruamel.yaml.scanner import ScannerError
 
-from apifuzzer.custom_fuzzers import Utf8Chars
+from apifuzzer.custom_fuzzers import RandomBitsField, Utf8Chars, UnicodeStrings
 from apifuzzer.exceptions import FailedToParseFileException
 from apifuzzer.utils import download_file, secure_randint
 
@@ -33,8 +33,8 @@ def get_field_type_by_method(http_method):
 def get_fuzz_type_by_param_type(fuzz_type):
     # https://kitty.readthedocs.io/en/latest/data_model/big_list_of_fields.html#atomic-fields
     # https://swagger.io/docs/specification/data-models/data-types/
-    string_types = [Utf8Chars]  # was RandomBitsField
-    number_types = [Utf8Chars]
+    string_types = [UnicodeStrings, RandomBitsField, Utf8Chars]
+    number_types = [UnicodeStrings, RandomBitsField]
     types = {
         'integer': number_types,
         'float': number_types,
@@ -52,7 +52,7 @@ def get_fuzz_type_by_param_type(fuzz_type):
         'boolean': string_types
     }
     fuzzer_list = types.get(fuzz_type, string_types)
-    return fuzzer_list[secure_randint(0, len(fuzzer_list))]
+    return fuzzer_list[secure_randint(0, max(len(fuzzer_list) - 1, 1))]
 
 
 def container_name_to_param(container_name):

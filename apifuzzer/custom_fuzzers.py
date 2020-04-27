@@ -87,11 +87,9 @@ class UnicodeStrings(String):
     def __init__(self, value, name, min_length=20, max_length=100, num_mutations=80, fuzzable=True):
         self.min_length = min_length
         self.max_length = max_length
-        self.num_mutations = num_mutations
+        self._num_mutations = num_mutations
         super(UnicodeStrings, self).__init__(name=name, value=value, fuzzable=fuzzable)
 
     def not_implemented(self, func_name):
         pass
 
-    def _mutate(self):
-        pass

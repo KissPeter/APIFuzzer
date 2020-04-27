@@ -29,7 +29,7 @@ class BaseTemplate(object):
         :param bytes url: URL for the new :class:`Request` object.
         :param params: (optional) Dictionary or bytes to be sent in the query string for the :class:`Request`.
         :param data: (optional) Dictionary, bytes, or file-like object to send in the body of the :class:`Request`.
-        :param query: (optional) query stringsto send in url of the :class:`Request`.
+        :param query: (optional) query strings to send in url of the :class:`Request`.
         :param headers: (optional) Dictionary of HTTP Headers to send with the :class:`Request`.
         :param cookies: (optional) Dict or CookieJar object to send with the :class:`Request`.
         """

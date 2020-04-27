@@ -12,17 +12,17 @@ import pycurl
 from bitstring import Bits
 
 
-def secure_randint(min, max):
+def secure_randint(minimum, maximum):
     """
     Provides solution for B311 "Standard pseudo-random generators are not suitable for security/cryptographic purposes."
-    :param min: minimum value
-    :type min: int
-    :param max: maximum value
-    :type max: int
-    :return: random integer value between min and max
+    :param minimum: minimum value
+    :type minimum: int
+    :param maximum: maximum value
+    :type maximum: int
+    :return: random integer value between min and maximum
     """
     rand = SystemRandom()
-    return rand.randrange(start=min, stop=max)
+    return rand.randrange(start=minimum, stop=maximum)
 
 
 def set_logger(level='warning', basic_output=False):

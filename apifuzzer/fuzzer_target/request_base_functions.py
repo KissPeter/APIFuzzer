@@ -100,7 +100,9 @@ class FuzzerTargetBase:
                         self.logger.info('The whole query param was removed, using empty string instead')
                         _tmp_query_params[_query_param_name] = ""
                         break
-
+                except Exception as e:
+                    self.logger.error('Unexpected exception ({}) while processing: {}'.format(e, k))
+        self.logger.warning('Returning: {}'.format(_tmp_query_params))
         return self.dict_to_query_string(_tmp_query_params)
 
     def format_pycurl_url(self, url):

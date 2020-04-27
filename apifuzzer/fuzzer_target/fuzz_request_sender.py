@@ -11,15 +11,15 @@ from kitty.targets.server import ServerTarget
 
 from apifuzzer.apifuzzer_report import Apifuzzer_Report as Report
 from apifuzzer.fuzzer_target.request_base_functions import FuzzerTargetBase
-from apifuzzer.utils import try_b64encode, init_pycurl, set_class_logger
+from apifuzzer.utils import try_b64encode, init_pycurl
 
 
 class Return:
     pass
 
 
-@set_class_logger
 class FuzzerTarget(FuzzerTargetBase, ServerTarget):
+
     def not_implemented(self, func_name):
         pass
 
@@ -69,7 +69,9 @@ class FuzzerTarget(FuzzerTargetBase, ServerTarget):
             # but if we don't have any path_variables, it won't)
             request_url = '/'.join(_req_url).replace('+', '/')
             query_params = None
+
             if kwargs.get('params') is not None:
+                self.logger.debug(('Adding query params: {}'.format(kwargs.get('params', {}))))
                 query_params = self.format_pycurl_query_param(request_url, kwargs.get('params', {}))
                 kwargs.pop('params')
             if kwargs.get('path_variables') is not None:

@@ -218,16 +218,16 @@ class OpenAPITemplateGenerator(TemplateGenerator):
                         self.logger.warning('{} type mismatch, dict expected, got: {}'.format(param, type(param)))
                         param = json.loads(param)
                     if param.get('type'):
-                        param_type = param.get('type')
+                        parameter_data_type = param.get('type')
                     elif param.get('schema', {}).get('type'):
-                        param_type = param.get('schema', {}).get('type')
+                        parameter_data_type = param.get('schema', {}).get('type')
                     else:
-                        param_type = 'string'
+                        parameter_data_type = 'string'
                     param_format = param.get('format')
                     if param_format is not None:
                         fuzzer_type = param_format.lower()
-                    elif param_type is not None:
-                        fuzzer_type = param_type.lower()
+                    elif parameter_data_type is not None:
+                        fuzzer_type = parameter_data_type.lower()
                     else:
                         fuzzer_type = None
                     fuzz_type = get_fuzz_type_by_param_type(fuzzer_type)
@@ -240,23 +240,23 @@ class OpenAPITemplateGenerator(TemplateGenerator):
                     # get parameter placement(in): path, query, header, cookie
                     # get parameter type: integer, string
                     # get format if present
-                    param_type = param.get('in')
+                    parameter_place_in_request = param.get('in')
                     param_name = '{}|{}'.format(template_container_name, param.get('name'))
                     self.logger.debug('Resource: {} Method: {} Parameter: {}, Parameter type: {}, Sample data: {},'
                                       'Param name: {}, fuzzer: {}'
-                                      .format(resource, method, param, param_type, sample_data, param_name,
-                                              fuzz_type.__name__))
-                    if param_type == ParamTypes.PATH:
+                                      .format(resource, method, param, parameter_place_in_request, sample_data,
+                                              param_name, fuzz_type.__name__))
+                    if parameter_place_in_request == ParamTypes.PATH:
                         template.path_variables.append(fuzz_type(name=param_name, value=str(sample_data)))
-                    elif param_type == ParamTypes.HEADER:
+                    elif parameter_place_in_request == ParamTypes.HEADER:
                         template.headers.append(fuzz_type(name=param_name, value=transform_data_to_bytes(sample_data)))
-                    elif param_type == ParamTypes.COOKIE:
+                    elif parameter_place_in_request == ParamTypes.COOKIE:
                         template.cookies.append(fuzz_type(name=param_name, value=sample_data))
-                    elif param_type == ParamTypes.QUERY:
+                    elif parameter_place_in_request == ParamTypes.QUERY:
                         template.params.append(fuzz_type(name=param_name, value=str(sample_data)))
-                    elif param_type == ParamTypes.BODY:
+                    elif parameter_place_in_request == ParamTypes.BODY:
                         template.data.append(fuzz_type(name=param_name, value=transform_data_to_bytes(sample_data)))
-                    elif param_type == ParamTypes.FORM_DATA:
+                    elif parameter_place_in_request == ParamTypes.FORM_DATA:
                         template.params.append(fuzz_type(name=param_name, value=str(sample_data)))
                     elif len(param.get('$ref', "")):
                         self.logger.info('Only schema reference found in the parameter description: {}'.format(param))
@@ -269,9 +269,9 @@ class OpenAPITemplateGenerator(TemplateGenerator):
                 self.logger.info('Adding template to list: {}, templates list: {}'
                                  .format(template.name, len(self.templates) + 1))
                 self.templates.append(template)
-        if len(tmp_api_resource):
-            self.logger.info(
-                'Additional resources were found, processing these: {}'.format(pretty_print(tmp_api_resource)))
+        if len(tmp_api_resource) > 0:
+            self.logger.info('Additional resources were found, processing these: {}'
+                             .format(pretty_print(tmp_api_resource)))
             self.process_api_resources(paths=tmp_api_resource)
 
     def compile_base_url_for_swagger(self, alternate_url):

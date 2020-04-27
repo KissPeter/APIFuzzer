@@ -11,10 +11,11 @@ from logging import _nameToLevel as levelNames
 from kitty.interfaces import WebInterface
 from kitty.model import GraphModel
 
+from apifuzzer.fuzz_utils import get_api_definition_from_file, get_api_definition_from_url
 from apifuzzer.fuzzer_target.fuzz_request_sender import FuzzerTarget
 from apifuzzer.openapi_template_generator import OpenAPITemplateGenerator
 from apifuzzer.server_fuzzer import OpenApiServerFuzzer
-from apifuzzer.utils import set_logger, get_api_definition_from_file, get_api_definition_from_url
+from apifuzzer.utils import set_logger
 
 
 class Fuzzer(object):

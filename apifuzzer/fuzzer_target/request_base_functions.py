@@ -2,7 +2,8 @@ import pycurl
 import requests
 
 from apifuzzer.apifuzzer_report import Apifuzzer_Report as Report
-from apifuzzer.utils import set_class_logger, container_name_to_param
+from apifuzzer.fuzz_utils import container_name_to_param
+from apifuzzer.utils import set_class_logger
 
 
 @set_class_logger

@@ -2,10 +2,11 @@ import json
 from urllib.parse import urlparse
 
 from apifuzzer.base_template import BaseTemplate
+from apifuzzer.exceptions import FailedToProcessSchemaException
+from apifuzzer.fuzz_utils import get_sample_data_by_type, get_api_definition_from_url, get_api_definition_from_file, \
+    get_base_url_form_api_src, FailedToParseFileException, get_fuzz_type_by_param_type
 from apifuzzer.template_generator_base import TemplateGenerator
-from apifuzzer.utils import get_sample_data_by_type, get_fuzz_type_by_param_type, transform_data_to_bytes, \
-    get_api_definition_from_url, get_api_definition_from_file, get_item, pretty_print, get_base_url_form_api_src, \
-    FailedToParseFileException
+from apifuzzer.utils import transform_data_to_bytes, get_item, pretty_print
 
 
 class ParamTypes(object):
@@ -15,10 +16,6 @@ class ParamTypes(object):
     COOKIE = 'cookie'
     BODY = 'body'
     FORM_DATA = 'formData'
-
-
-class FailedToProcessSchemaException(Exception):
-    pass
 
 
 class OpenAPITemplateGenerator(TemplateGenerator):
@@ -70,7 +67,8 @@ class OpenAPITemplateGenerator(TemplateGenerator):
     def get_schema(self, param):
         """
         Processes schema referenced if request method should be POST and request should contain body
-        :rtype: param section of api definition.
+        :type: param section of api definition.
+        
         Example:
             {
             "in": "body",

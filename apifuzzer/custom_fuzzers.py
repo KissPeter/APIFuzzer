@@ -1,6 +1,3 @@
-import logging
-from random import randint
-
 import six
 from bitstring import Bits
 from kitty.core import kassert
@@ -8,11 +5,7 @@ from kitty.model import RandomBits, String, BaseField
 from kitty.model.low_level.encoder import ENC_BITS_DEFAULT
 from kitty.model.low_level.encoder import strToBytes
 
-
-def set_class_logger(class_name):
-    class_name.logger = logging.getLogger(class_name.__class__.__name__)
-    class_name.logger.getChild(class_name.__class__.__name__)
-    return class_name
+from apifuzzer.utils import secure_randint, set_class_logger
 
 
 @set_class_logger
@@ -35,9 +28,9 @@ class Utf8Chars(BaseField):
         self._controlled = False
 
     def init_postition(self):
-        return randint(0, self.MAX)
+        return secure_randint(0, self.MAX)
 
-    def strToBytes(self, value):
+    def str_to_bytes(self, value):
         """
         :type value: ``str``
         :param value: value to encode
@@ -50,12 +43,12 @@ class Utf8Chars(BaseField):
         return value
 
     def to_bits(self, val):
-        return Bits(self.strToBytes(val))
+        return Bits(self.str_to_bytes(val))
 
     def _mutate(self):
 
         current_value = list()
-        current_mutation_length = randint(self.min_length, self.max_length)
+        current_mutation_length = secure_randint(self.min_length, self.max_length)
         for st in range(self.position, self.position + current_mutation_length):
             current_value.append(chr(st))
         self._current_value = self.to_bits("".join(current_value))

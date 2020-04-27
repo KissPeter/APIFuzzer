@@ -5,7 +5,7 @@ all: clean
 all: apidoc
 all: sphinx
 
-SPHINXOPTS=-W -j 8 -d _build/doctrees .
+SPHINXOPTS= -j 4 -d _build/doctrees .
 
 .PHONY: sphinx
 sphinx:

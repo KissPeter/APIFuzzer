@@ -67,32 +67,35 @@ class OpenAPITemplateGenerator(TemplateGenerator):
     def get_schema(self, param):
         """
         Processes schema referenced if request method should be POST and request should contain body
-        :type: param section of api definition.
-        
+        :type: param section of api definition
+
         Example:
             {
             "in": "body",
             "name": "body",
             "description": "Pet object that needs to be added to the store",
-            "required": false,
+            "required": False,
             "schema": {
-              "$ref": "#/definitions/Pet"
+                    "$ref": "#/definitions/Pet"
+                }
             }
         Doc: https://swagger.io/docs/specification/using-ref/
-
         Local Reference
-          - $ref: '#/definitions/myElement' # means go to the root of the current document and then find elements definitions and myElement one after one.
+            - $ref: '#/definitions/myElement' # means go to the root of the current document and then find elements
+            definitions and myElement one after one.
 
         Remote Reference
-          - $ref: 'document.json' Uses the whole document located on the same server and in the same location.
-          - The element of the document located on the same server – $ref: 'document.json#/myElement'
-          - The element of the document located in the parent folder – $ref: '../document.json#/myElement'
-          - The element of the document located in another folder – $ref: '../another-folder/document.json#/myElement'
+             - $ref: 'document.json' Uses the whole document located on the same server and in the same location.
+            - The element of the document located on the same server – $ref: 'document.json#/myElement'
+            - The element of the document located in the parent folder – $ref: '../document.json#/myElement'
+            - The element of the document located in another folder – $ref: '../another-folder/document.json#/myElement'
 
         URL Reference
-          - $ref: 'http://path/to/your/resource' Uses the whole document located on the different server.
-          - The specific element of the document stored on the different server – $ref: 'http://path/to/your/resource.json#myElement'
-          - The document on the different server, which uses the same protocol (for example, HTTP or HTTPS) – $ref: '//anotherserver.com/files/example.json'
+            - $ref: 'http://path/to/your/resource' Uses the whole document located on the different server.
+            - The specific element of the document stored on the different server:
+             – $ref: 'http://path/to/your/resource.json#myElement'
+            - The document on the different server, which uses the same protocol (for example, HTTP or HTTPS):
+             – $ref: '//anotherserver.com/files/example.json'
         """
         schema_properties = None
         self.logger.info('Received schema definition: {}'.format(pretty_print(param, limit=500)))

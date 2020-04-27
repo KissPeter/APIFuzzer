@@ -61,6 +61,12 @@ def query():
     return 'ID: {}'.format(int(request.args.get('integer_id')))
 
 
+@app.route('/post_param')
+@catch_custom_exception
+def post_params():
+    return 'ID: {}'.format(int(request.args.get('post_param')))
+
+
 @app.route('/query_multiple_params')
 @catch_custom_exception
 def query_multiple_params():
@@ -85,6 +91,7 @@ def log_the_status_code(response):
         'req_method': request.method,
         'req_headers': extract(request.headers),
         'req_form': extract(request.form),
+        'req_form2': request.form.to_dict(flat=False),
         'req_json': request.json,
         'req_data': request.data.decode(encoding='UTF-8')
     })

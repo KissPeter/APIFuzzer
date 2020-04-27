@@ -155,8 +155,7 @@ class OpenAPITemplateGenerator(TemplateGenerator):
         param_required = param.get('required', True)
         schema_name = schema_def_data.get('name') if schema_def_data.get('name') else schema_def_key
         _schema_definition = {'name': schema_name,
-                              'in': schema_def_data.get('in') if schema_def_data.get('in')
-                              else param_in,
+                              'in': schema_def_data.get('in') if schema_def_data.get('in') else param_in,
                               'required': schema_def_data.get('required') if schema_def_data.get('required')
                               else param_required,
                               'type': schema_def_data.get('type', "string")

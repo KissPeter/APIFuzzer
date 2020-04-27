@@ -17,7 +17,7 @@ class Utf8Chars(BaseField):
         self.min_length = min_length
         self.max_length = max_length
         self._num_mutations = num_mutations
-        self.position = self.init_postition()
+        self.position = self.init_position()
         self._initialized = False
         self._default_value = self.to_bits(chr(self.MAX))
         self._encoder = ENC_BITS_DEFAULT
@@ -27,7 +27,7 @@ class Utf8Chars(BaseField):
         self._need_second_pass = False
         self._controlled = False
 
-    def init_postition(self):
+    def init_position(self):
         return secure_randint(0, self.MAX)
 
     def str_to_bytes(self, value):
@@ -54,7 +54,7 @@ class Utf8Chars(BaseField):
         self._current_value = self.to_bits("".join(current_value))
         self.position += current_mutation_length
         if self.position > self.MAX:
-            self.position = self.init_postition()
+            self.position = self.init_position()
 
 
 class RandomBitsField(RandomBits):

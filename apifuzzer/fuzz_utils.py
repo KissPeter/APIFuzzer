@@ -80,7 +80,7 @@ def get_api_definition_from_file(src_file):
 
 def get_api_definition_from_url(url, temp_file=None):
     if temp_file is None:
-        temp_file = tempfile.mktemp()
+        temp_file = tempfile.NamedTemporaryFile().name
     download_file(url, temp_file)
     return get_api_definition_from_file(temp_file)
 

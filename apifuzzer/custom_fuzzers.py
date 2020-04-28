@@ -2,14 +2,26 @@ import six
 from bitstring import Bits
 from kitty.core import kassert
 from kitty.model import RandomBits, String, BaseField
-from kitty.model.low_level.encoder import ENC_BITS_DEFAULT
-from kitty.model.low_level.encoder import strToBytes
+from kitty.model.low_level.encoder import ENC_BITS_DEFAULT, strToBytes
 
 from apifuzzer.utils import secure_randint, set_class_logger
 
 
 @set_class_logger
 class Utf8Chars(BaseField):
+    """
+    This custom fuzzer iterates through the UTF8 chars and gives back random section between min and max length
+    Highly relies on random numbers so most probably will give you different values each time to run it.
+
+    You can generate the chars like this:
+    for st in range(0, 1114111):
+    try:
+        print('{}-> {}'.format(st, chr(st)))
+    except (UnicodeEncodeError, ValueError):
+        pass
+    Above 1114111 chars started to getting unprocessable so this is the upper limit for now.
+
+    """
     MAX = 1114111
 
     def __init__(self, value, name, fuzzable=True, min_length=20, max_length=100, num_mutations=80):
@@ -30,7 +42,8 @@ class Utf8Chars(BaseField):
     def init_position(self):
         return secure_randint(0, self.MAX)
 
-    def str_to_bytes(self, value):
+    @staticmethod
+    def str_to_bytes(value):
         """
         :type value: ``str``
         :param value: value to encode

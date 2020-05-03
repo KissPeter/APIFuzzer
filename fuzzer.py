@@ -2,7 +2,6 @@
 from __future__ import print_function
 
 import argparse
-import json
 import signal
 import sys
 import tempfile
@@ -14,7 +13,7 @@ from kitty.model import GraphModel
 from apifuzzer.fuzzer_target.fuzz_request_sender import FuzzerTarget
 from apifuzzer.server_fuzzer import OpenApiServerFuzzer
 from apifuzzer.swagger_template_generator import SwaggerTemplateGenerator
-from apifuzzer.utils import set_logger, get_api_definition_from_file, save_api_definition
+from apifuzzer.utils import set_logger, get_api_definition_from_file, save_api_definition, json_data
 
 
 class Fuzzer(object):
@@ -70,13 +69,6 @@ if __name__ == '__main__':
 
     def signal_handler(sig, frame):
         sys.exit(0)
-
-
-    def json_data(arg_string):
-        try:
-            return json.loads(arg_string)
-        except Exception as e:
-            raise argparse.ArgumentError('{} is not JSON'.format(arg_string))
 
 
     parser = argparse.ArgumentParser(description='API fuzzer configuration',

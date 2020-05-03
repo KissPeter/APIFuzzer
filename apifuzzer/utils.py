@@ -1,3 +1,4 @@
+import argparse
 import json
 import logging
 import os
@@ -7,6 +8,7 @@ from io import BytesIO
 from logging import Formatter
 from logging.handlers import SysLogHandler
 from random import randint
+from typing import Optional
 
 import pycurl
 from bitstring import Bits
@@ -158,3 +160,23 @@ def get_api_definition_from_file(src_file):
     except Exception:
         print('Failed to parse input file, exit')
         exit()
+
+
+def json_data(arg_string: Optional[str]) -> dict:
+    """
+    Transforms input string to JSON. Input must be dict or list of dicts like string
+    :type arg_string: str
+    :rtype dict
+    """
+    if isinstance(arg_string, dict) or isinstance(arg_string, list):  # support testing
+        arg_string = json.dumps(arg_string)
+    try:
+        _return = json.loads(arg_string)
+        if hasattr(_return, 'append') or hasattr(_return, 'keys'):
+            return _return
+        else:
+            raise TypeError('not list or dict')
+    except (TypeError, json.decoder.JSONDecodeError):
+        msg = '%s is not JSON', arg_string
+        print('Debugging: %s', arg_string.replace(' ', '_'))
+        raise argparse.ArgumentTypeError(msg)

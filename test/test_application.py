@@ -73,6 +73,12 @@ def query_multiple_params():
     return 'ID: {}'.format(int(request.args.get('int_query_param2')))
 
 
+@app.route('/post_param', methods=['POST'])
+@catch_custom_exception
+def post_param():
+    return 'ID: {}'.format(int(request.form.get('param_int', 0)))
+
+
 @app.route('/last_call', methods=['GET'])
 def last_call():
     _return = last_request_data.get_data()

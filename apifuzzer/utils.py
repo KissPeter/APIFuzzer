@@ -8,6 +8,7 @@ from io import BytesIO
 from logging import Formatter
 from logging.handlers import SysLogHandler
 from random import SystemRandom
+from typing import Optional
 
 import pycurl
 from bitstring import Bits

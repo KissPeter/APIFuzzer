@@ -1,0 +1,4 @@
+#!/bin/bash
+pytest  -x --hypothesis-show-statistics --cov-report html --cov=apifuzzer  --html=pytest_result_report.html --self-contained-html --durations=10 --show-capture=stdout -vv -rP test
+coverage html
+

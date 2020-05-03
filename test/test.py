@@ -1,4 +1,4 @@
-#!/usr/bin/env python3 -X utf8
+#!/usr/bin/env python3
 
 from test.test_utils import BaseTest
 

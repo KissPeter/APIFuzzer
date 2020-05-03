@@ -6,7 +6,7 @@ import tempfile
 
 import requests
 
-from fuzzer import Fuzzer
+from apifuzzer.fuzzer import Fuzzer
 
 
 class BaseTest:

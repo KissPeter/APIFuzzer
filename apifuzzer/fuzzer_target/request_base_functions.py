@@ -4,6 +4,7 @@ import requests
 from apifuzzer.apifuzzer_report import Apifuzzer_Report as Report
 from apifuzzer.fuzz_utils import container_name_to_param
 from apifuzzer.utils import set_class_logger
+from apifuzzer.version import get_version
 
 
 @set_class_logger
@@ -26,7 +27,7 @@ class FuzzerTargetBase:
         _header = requests.utils.default_headers()
         _header.update(
             {
-                'User-Agent': 'APIFuzzer',
+                'User-Agent': get_version(),
             }
         )
         if isinstance(fuzz_header, dict):

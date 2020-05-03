@@ -102,5 +102,5 @@ ENV/
 
 .idea
 kittylogs
-/.pytest_cache/
-/coverage_html_report/
+.hypothesis
+.pytest_cache

@@ -4,6 +4,9 @@ import sys
 
 from mock import Mock as MagicMock
 
+from apifuzzer.__init__ import __version__ as version
+from apifuzzer.version import PROJECT
+
 path = os.path.abspath(os.path.join(os.path.dirname(os.path.realpath(__file__)), os.pardir))
 sys.path.insert(0, path)
 
@@ -21,8 +24,8 @@ class Mock(MagicMock):
 MOCK_MODULES = ['pycurl']
 sys.modules.update((mod_name, Mock()) for mod_name in MOCK_MODULES)
 
-project = 'APIfuzzer'
-version = '0.9'
+project = PROJECT
+version = version
 master_doc = "index"
 copyright = "All rights reserved"
 extensions = [

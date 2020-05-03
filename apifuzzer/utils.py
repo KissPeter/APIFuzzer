@@ -13,6 +13,8 @@ from typing import Optional
 import pycurl
 from bitstring import Bits
 
+from apifuzzer.version import get_version
+
 
 def secure_randint(minimum, maximum):
     """
@@ -84,7 +86,7 @@ def init_pycurl(debug=False):
     _curl.setopt(pycurl.VERBOSE, debug)
     _curl.setopt(pycurl.TIMEOUT, 10)
     _curl.setopt(pycurl.COOKIEFILE, "")
-    _curl.setopt(pycurl.USERAGENT, 'APIFuzzer')
+    _curl.setopt(pycurl.USERAGENT, get_version())
     return _curl
 
 

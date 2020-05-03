@@ -79,13 +79,6 @@ if __name__ == '__main__':
         sys.exit(0)
 
 
-    def json_data(arg_string):
-        try:
-            return json.loads(arg_string)
-        except Exception as e:
-            raise argparse.ArgumentError('{} is not JSON'.format(arg_string))
-
-
     parser = argparse.ArgumentParser(description='API fuzzer configuration',
                                      formatter_class=lambda prog: argparse.HelpFormatter(prog, max_help_position=20))
     parser.add_argument('-s', '--src_file',

@@ -1,3 +1,4 @@
+import argparse
 import json
 import logging
 import os
@@ -66,6 +67,10 @@ def try_b64encode(data_in):
         return data_in
 
 
+def container_name_to_param(container_name):
+    return container_name.split('|')[-1]
+
+
 def init_pycurl(debug=False):
     """
     Provides an instances of pycurl with basic configuration
@@ -115,3 +120,23 @@ def pretty_print(printable, limit=200):
         return json.dumps(printable, indent=2, sort_keys=True)[0:limit]
     else:
         return printable
+
+
+def json_data(arg_string: Optional[str]) -> dict:
+    """
+    Transforms input string to JSON. Input must be dict or list of dicts like string
+    :type arg_string: str
+    :rtype dict
+    """
+    if isinstance(arg_string, dict) or isinstance(arg_string, list):  # support testing
+        arg_string = json.dumps(arg_string)
+    try:
+        _return = json.loads(arg_string)
+        if hasattr(_return, 'append') or hasattr(_return, 'keys'):
+            return _return
+        else:
+            raise TypeError('not list or dict')
+    except (TypeError, json.decoder.JSONDecodeError):
+        msg = '%s is not JSON', arg_string
+        print('Debugging: %s', arg_string.replace(' ', '_'))
+        raise argparse.ArgumentTypeError(msg)

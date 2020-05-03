@@ -1,8 +1,6 @@
 #!/usr/bin/env python3 -X utf8
-from __future__ import print_function
 
 import argparse
-import json
 import signal
 import sys
 import tempfile
@@ -15,7 +13,7 @@ from apifuzzer.fuzz_utils import get_api_definition_from_file, get_api_definitio
 from apifuzzer.fuzzer_target.fuzz_request_sender import FuzzerTarget
 from apifuzzer.openapi_template_generator import OpenAPITemplateGenerator
 from apifuzzer.server_fuzzer import OpenApiServerFuzzer
-from apifuzzer.utils import set_logger
+from apifuzzer.utils import set_logger, json_data
 
 
 class Fuzzer(object):

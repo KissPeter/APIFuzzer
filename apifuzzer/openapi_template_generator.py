@@ -19,8 +19,19 @@ class ParamTypes(object):
 
 
 class OpenAPITemplateGenerator(TemplateGenerator):
+    """
+    This class processes the Swagger, OpenAPI v2 and OpenAPI v3 definitions. Generates Fuzz template from the params
+    discovered.
+    """
 
     def __init__(self, api_resources, logger, api_definition_url):
+        """
+        :param api_resources: API resources in JSON format
+        :type api_resources: dict
+        :param logger: logger
+        :param api_definition_url: URL where the request should be sent
+        :type api_definition_url: st
+        """
         self.api_resources = api_resources
         self.templates = list()
         self.logger = logger
@@ -29,12 +40,19 @@ class OpenAPITemplateGenerator(TemplateGenerator):
 
     @staticmethod
     def normalize_url(url_in):
-        # Kitty doesn't support some characters as template name so need to be cleaned, but it is necessary, so
-        # we will change back later
+        """
+        Kitty doesn't support some characters as template name so need to be cleaned, but it is necessary,
+        so we will change back later
+        :param url_in: url to process
+        :type url_in: str
+        :return: processed url
+        :rtype: str
+        """
         return url_in.strip('/').replace('/', '+')
 
     def get_properties_from_schema_definition(self, schema_def, schema_path=None):
         """
+        Process section of a schema definition
         :param schema_def: schema definition
         :type schema_def: dict
         :param schema_path: parameters path in schema
@@ -149,6 +167,17 @@ class OpenAPITemplateGenerator(TemplateGenerator):
         return schema_properties
 
     def transform_schema_definition_key_to_swagger_param_definition(self, param, schema_def_key, schema_def_data):
+        """
+        Extracts parameters from a schema definition
+        :param param: parameter of API resources
+        :type param: dict
+        :param schema_def_key: name of schema. Used only if not available in schema definition
+        :type schema_def_key: str
+        :param schema_def_data: schema definition to process
+        :type schema_def_data: dict
+        :return: extracted parameters
+        :rtype: list of dicts
+        """
         self.logger.debug('Processing schema param: {}'.format(schema_def_data))
         _return = list()
         param_in = param.get('in')
@@ -160,13 +189,14 @@ class OpenAPITemplateGenerator(TemplateGenerator):
                               else param_required,
                               'type': schema_def_data.get('type', "string")
                               }
-
+        # If the schema definition contains further parameters they are added to the extracted data
         if schema_def_data.get('schema'):
             self.logger.debug('Adding sample data ({}) to {}'
                               .format(schema_def_data.get('schema').items(), schema_def_key))
             for k, v in schema_def_data.get('schema').items():
                 if not _schema_definition.get(k):
                     _schema_definition[k] = v
+        # Another definition found, adding the reference. Further iteration is comming
         if schema_def_data.get('$ref'):
             _schema_definition['schema'] = {'$ref': schema_def_data.get('$ref')}
         self.logger.debug('Processed schema: {}'.format(pretty_print(_schema_definition)))
@@ -174,6 +204,15 @@ class OpenAPITemplateGenerator(TemplateGenerator):
         return _return
 
     def transform_schema_definition_to_swagger_param_definition(self, param, schema_def):
+        """
+        Iterates through the schema definition and extract the parameters by calling the related function
+        :param param: parameter of API resources
+        :type param: dict
+        :param schema_def: schema definition to process
+        :type schema_def: dict
+        :return: extracted parameters
+        :rtype: list of dicts
+        """
         _return = list()
         for schema_def_key in schema_def.keys():
             self.logger.debug('Processing schema definition: {}'.format(schema_def_key))
@@ -182,6 +221,19 @@ class OpenAPITemplateGenerator(TemplateGenerator):
         return _return
 
     def process_schema(self, resource, method, param, tmp_api_resource):
+        """
+        First level of schema processing
+        :param resource: API resource
+        :type resource: str
+        :param method: method of API resource
+        :type method: str
+        :param param: parameter of API resource we are processing. Some parts will be necessary
+        :type param: dict
+        :param tmp_api_resource: this is the place of resources to be extended
+        :type tmp_api_resource: dict
+        :return: tmp:api_resource
+        :rtype dict
+        """
         if not tmp_api_resource.get(resource, {}).get(method, {}).get('parameters'):
             tmp_api_resource[resource] = dict()
             tmp_api_resource[resource][method] = dict()

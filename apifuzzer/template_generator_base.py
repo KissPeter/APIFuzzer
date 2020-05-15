@@ -1,11 +1,13 @@
-from apifuzzer.utils import set_class_logger
+from apifuzzer.utils import get_logger
 
 
-@set_class_logger
 class TemplateGenerator(object):
     """
     Skeleton template generator
     """
+
+    def __init__(self):
+        self.logger = self.logger = get_logger(self.__class__.__name__)
 
     def process_api_resources(self):
         """

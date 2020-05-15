@@ -39,17 +39,17 @@ def set_logger(level='warning', basic_output=False):
     :rtype logger
     """
     fmt = '%(process)d [%(levelname)s] %(name)s: %(message)s'
+    logger = logging.getLogger()
     if basic_output:
         logging.basicConfig(format=fmt)
-        logger = logging.getLogger()
     else:
         logger = logging.getLogger()
-        if not len(logger.handlers):
+        if os.path.exists('/dev/log'):
+            handler = SysLogHandler(address='/dev/log', facility=SysLogHandler.LOG_LOCAL2)
+        else:
             handler = logging.StreamHandler()
-            if os.path.exists('/dev/log'):
-                handler = SysLogHandler(address='/dev/log', facility=SysLogHandler.LOG_LOCAL2)
-            handler.setFormatter(Formatter('%(process)d [%(levelname)s] %(name)s: %(message)s'))
-            logger.addHandler(handler)
+        handler.setFormatter(Formatter(fmt))
+        logger.addHandler(handler)
     logger.setLevel(level=level.upper())
     return logger
 
@@ -71,10 +71,14 @@ def transform_data_to_bytes(data_in):
         return bytes(data_in)
 
 
-def set_class_logger(class_name):
-    class_name.logger = logging.getLogger(class_name.__class__.__name__)
-    class_name.logger.getChild(class_name.__class__.__name__)
-    return class_name
+def get_logger(name):
+    """
+    Configure the logger
+    :param name: name of the new logger
+    :return: logger object
+    """
+    logger = logging.getLogger().getChild(name)
+    return logger
 
 
 def try_b64encode(data_in):
@@ -160,7 +164,7 @@ def pretty_print(printable, limit=200):
     """
     Format json data for logging
     :param printable: json data to dump
-    :type printable: json
+    :type printable: dict
     :param limit: this amount of chars will be written
     :type limit: int
     :return: formatted string

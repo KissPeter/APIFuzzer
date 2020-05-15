@@ -2,7 +2,7 @@ from kitty.data.report import Report
 from kitty.fuzzers import ServerFuzzer
 from kitty.model import Container, KittyException
 
-from apifuzzer.utils import set_class_logger, transform_data_to_bytes
+from apifuzzer.utils import get_logger, transform_data_to_bytes
 
 
 def _flatten_dict_entry(orig_key, v):
@@ -26,7 +26,6 @@ def _flatten_dict_entry(orig_key, v):
     return entries
 
 
-@set_class_logger
 class OpenApiServerFuzzer(ServerFuzzer):
     """Extends the ServerFuzzer with exit after the end message."""
 
@@ -34,6 +33,7 @@ class OpenApiServerFuzzer(ServerFuzzer):
         pass
 
     def __init__(self):
+        self.logger = self.logger = get_logger(self.__class__.__name__)
         self.logger.info('Logger initialized')
         super(OpenApiServerFuzzer, self).__init__()
 
@@ -73,6 +73,7 @@ class OpenApiServerFuzzer(ServerFuzzer):
         """
         Iterates trough parameters recursively
         :param param: param to process
+        :type param: object
         :rtype: dict
         """
         _return = dict()

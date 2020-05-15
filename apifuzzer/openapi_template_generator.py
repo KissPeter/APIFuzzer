@@ -6,7 +6,7 @@ from apifuzzer.exceptions import FailedToProcessSchemaException
 from apifuzzer.fuzz_utils import get_sample_data_by_type, get_api_definition_from_url, get_api_definition_from_file, \
     get_base_url_form_api_src, FailedToParseFileException, get_fuzz_type_by_param_type
 from apifuzzer.template_generator_base import TemplateGenerator
-from apifuzzer.utils import transform_data_to_bytes, get_item, pretty_print
+from apifuzzer.utils import transform_data_to_bytes, get_item, pretty_print, get_logger
 
 
 class ParamTypes(object):
@@ -24,17 +24,17 @@ class OpenAPITemplateGenerator(TemplateGenerator):
     discovered.
     """
 
-    def __init__(self, api_resources, logger, api_definition_url):
+    def __init__(self, api_resources, api_definition_url):
         """
         :param api_resources: API resources in JSON format
         :type api_resources: dict
-        :param logger: logger
         :param api_definition_url: URL where the request should be sent
         :type api_definition_url: st
         """
+        super().__init__()
         self.api_resources = api_resources
         self.templates = list()
-        self.logger = logger
+        self.logger = get_logger(self.__class__.__name__)
         self.logger.info('Logger initialized')
         self.api_definition_url = api_definition_url
 

@@ -113,6 +113,7 @@ class FuzzerTarget(FuzzerTargetBase, ServerTarget):
                 for retries in reversed(range(0, 3)):
                     try:
                         _curl.perform()
+                        # TODO: Handle this: pycurl.error: (3, 'Illegal characters found in URL')
                     except Exception as e:
                         if retries:
                             self.logger.error('Retrying... ({}) because {}'.format(retries, e))
@@ -174,6 +175,11 @@ class FuzzerTarget(FuzzerTargetBase, ServerTarget):
         except Exception as e:
             self.logger.error('Failed to save report "{}" to {} because: {}'
                               .format(self.report.to_dict(), self.report_dir, e))
+
+    def report_add_basic_msg(self, msg):
+        self.report.set_status(Report.FAILED)
+        self.logger.warning(msg)
+        self.report.failed(msg)
 
     def teardown(self):
         if len(self.failed_test):

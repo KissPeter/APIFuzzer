@@ -247,6 +247,19 @@ class OpenAPITemplateGenerator(TemplateGenerator):
         tmp_api_resource[resource][method]['parameters'].extend(processed_schema)
         return tmp_api_resource
 
+    def get_template(self, template_name):
+        """
+        Starts new template if it does not exist yet or retrun the existing one which has the required name
+        :param template_name: name of the template
+        :type template_name: str
+        :return: instance of BaseTemplate
+        """
+        _return = BaseTemplate(name=template_name)
+        for template in self.templates:
+            if template.name == template_name:
+                _return = template
+        return _return
+
     def process_api_resources(self, paths=None):
         self.logger.info('Start preparation')
         tmp_api_resource = dict()
@@ -258,8 +271,8 @@ class OpenAPITemplateGenerator(TemplateGenerator):
             normalized_url = self.normalize_url(resource)
             for method in paths[resource].keys():
                 self.logger.info('Resource: {} Method: {}'.format(resource, method))
-                template_container_name = '{}|{}'.format(normalized_url, method)
-                template = BaseTemplate(name=template_container_name)
+                template_name = '{}|{}'.format(normalized_url, method)
+                template = self.get_template(template_name)
                 template.url = normalized_url
                 template.method = method.upper()
                 params_to_process = list(paths[resource][method].get('parameters', {}))
@@ -293,7 +306,7 @@ class OpenAPITemplateGenerator(TemplateGenerator):
                     # get parameter type: integer, string
                     # get format if present
                     parameter_place_in_request = param.get('in')
-                    param_name = '{}|{}'.format(template_container_name, param.get('name'))
+                    param_name = '{}|{}'.format(template_name, param.get('name'))
                     self.logger.debug('Resource: {} Method: {} Parameter: {}, Parameter type: {}, Sample data: {},'
                                       'Param name: {}, fuzzer: {}'
                                       .format(resource, method, param, parameter_place_in_request, sample_data,
@@ -320,7 +333,8 @@ class OpenAPITemplateGenerator(TemplateGenerator):
                         tmp_api_resource = self.process_schema(resource, method, param, tmp_api_resource)
                 self.logger.info('Adding template to list: {}, templates list: {}'
                                  .format(template.name, len(self.templates) + 1))
-                self.templates.append(template)
+                if template not in self.templates:
+                    self.templates.append(template)
         if len(tmp_api_resource) > 0:
             self.logger.info('Additional resources were found, processing these: {}'
                              .format(pretty_print(tmp_api_resource)))

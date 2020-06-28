@@ -8,20 +8,8 @@ from logging import _nameToLevel as levelNames
 
 from apifuzzer.fuzz_utils import get_api_definition_from_file, get_api_definition_from_url
 from apifuzzer.fuzzer import Fuzzer
-from apifuzzer.utils import json_data
+from apifuzzer.utils import json_data, str2bool
 from apifuzzer.version import get_version
-
-
-def str2bool(v):
-    if isinstance(v, bool):
-        return v
-    if v.lower() in ('yes', 'true', 't', 'y', '1', 'True', 'T'):
-        return True
-    elif v.lower() in ('no', 'false', 'f', 'n', '0', 'False', 'F'):
-        return False
-    else:
-        raise argparse.ArgumentTypeError('Boolean value expected.')
-
 
 if __name__ == '__main__':
 

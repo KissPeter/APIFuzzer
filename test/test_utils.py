@@ -39,9 +39,9 @@ class BaseTest:
         :param method: test method
         """
         print('Removing {} report files...'.format(len(self.report_files)))
-        for f in self.report_files:
-            filepath = '{}/{}'.format(self.report_dir, f)
-            os.remove(filepath)
+        # for f in self.report_files:
+        #     filepath = '{}/{}'.format(self.report_dir, f)
+        #     os.remove(filepath)
 
     def query_last_call(self):
         """

@@ -193,3 +193,14 @@ def json_data(arg_string: Optional[str]) -> dict:
     except (TypeError, json.decoder.JSONDecodeError):
         msg = '%s is not JSON', arg_string
         raise argparse.ArgumentTypeError(msg)
+
+
+def str2bool(v):
+    if isinstance(v, bool):
+        return v
+    if v.lower() in ('yes', 'true', 't', 'y', '1', 'True', 'T'):
+        return True
+    elif v.lower() in ('no', 'false', 'f', 'n', '0', 'False', 'F'):
+        return False
+    else:
+        raise argparse.ArgumentTypeError('Boolean value expected.')

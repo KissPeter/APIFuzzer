@@ -1,11 +1,13 @@
-from __future__ import print_function
-
+from kitty.core import KittyException
 from kitty.model import Static, Template, Container
+
+from apifuzzer.utils import get_logger
 
 
 class BaseTemplate(object):
 
     def __init__(self, name):
+        self.logger = get_logger(self.__class__.__name__)
         self.name = name
         self.method = None
         self.url = None
@@ -40,5 +42,8 @@ class BaseTemplate(object):
         template = Template(name=self.name, fields=[_url, _method])
         for name, field in self.field_to_param.items():
             if list(field):
-                template.append_fields([Container(name=name, fields=field)])
+                try:
+                    template.append_fields([Container(name=name, fields=field)])
+                except KittyException as e:
+                    self.logger.warning('Failed to addd {} because {}, continue processing...'.format(name, e))
         return template

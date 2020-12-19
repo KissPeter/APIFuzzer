@@ -4,10 +4,9 @@ from kitty.core import kassert
 from kitty.model import RandomBits, String, BaseField
 from kitty.model.low_level.encoder import ENC_BITS_DEFAULT, strToBytes
 
-from apifuzzer.utils import secure_randint, set_class_logger
+from apifuzzer.utils import secure_randint, get_logger
 
 
-@set_class_logger
 class Utf8Chars(BaseField):
     """
     This custom fuzzer iterates through the UTF8 chars and gives back random section between min and max length
@@ -26,6 +25,7 @@ class Utf8Chars(BaseField):
 
     def __init__(self, value, name, fuzzable=True, min_length=20, max_length=100, num_mutations=80):
         super(BaseField, self).__init__(name=name)
+        self.logger = self.logger = get_logger(self.__class__.__name__)
         self.min_length = min_length
         self.max_length = max_length
         self._num_mutations = num_mutations

@@ -8,7 +8,7 @@ before_install:
 install:
   - pip3 install -r requirements.txt
 script:
-  - python fuzzer.py -h
+  - ./bin/APIFuzzer -h
   - pip3 install -r test/requirements_for_test.txt
   - python3 test/test_application.py&
   - pytest --cov-report term --cov=apifuzzer --durations=10 --show-capture=stdout -vv -rP test

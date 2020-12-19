@@ -13,6 +13,8 @@ from typing import Optional
 import pycurl
 from bitstring import Bits
 
+from apifuzzer.version import get_version
+
 
 def secure_randint(minimum, maximum):
     """
@@ -28,23 +30,37 @@ def secure_randint(minimum, maximum):
 
 
 def set_logger(level='warning', basic_output=False):
+    """
+    Setup logger
+    :param level: log level
+    :type level: log level
+    :param basic_output: If set to True, application logs to the terminal not to Syslog
+    :type basic_output: bool
+    :rtype logger
+    """
     fmt = '%(process)d [%(levelname)s] %(name)s: %(message)s'
+    logger = logging.getLogger()
     if basic_output:
         logging.basicConfig(format=fmt)
-        logger = logging.getLogger()
     else:
         logger = logging.getLogger()
-        if not len(logger.handlers):
+        if os.path.exists('/dev/log'):
+            handler = SysLogHandler(address='/dev/log', facility=SysLogHandler.LOG_LOCAL2)
+        else:
             handler = logging.StreamHandler()
-            if os.path.exists('/dev/log'):
-                handler = SysLogHandler(address='/dev/log', facility=SysLogHandler.LOG_LOCAL2)
-            handler.setFormatter(Formatter('%(process)d [%(levelname)s] %(name)s: %(message)s'))
-            logger.addHandler(handler)
+        handler.setFormatter(Formatter(fmt))
+        logger.addHandler(handler)
     logger.setLevel(level=level.upper())
     return logger
 
 
 def transform_data_to_bytes(data_in):
+    """
+    Transform data to bytes
+    :param data_in: data to transform
+    :type data_in: str, float, Bits
+    :rtype: bytearray
+    """
     if isinstance(data_in, float):
         return bytes(int(data_in))
     elif isinstance(data_in, str):
@@ -55,13 +71,24 @@ def transform_data_to_bytes(data_in):
         return bytes(data_in)
 
 
-def set_class_logger(class_name):
-    class_name.logger = logging.getLogger(class_name.__class__.__name__)
-    class_name.logger.getChild(class_name.__class__.__name__)
-    return class_name
+def get_logger(name):
+    """
+    Configure the logger
+    :param name: name of the new logger
+    :return: logger object
+    """
+    logger = logging.getLogger().getChild(name)
+    return logger
 
 
 def try_b64encode(data_in):
+    """
+    Encode string to base64
+    :param data_in: data to transform
+    :type data_in: str
+    :rtype str
+    :return base64 string
+    """
     try:
         return b64encode(data_in)
     except (TypeError, Error):
@@ -69,12 +96,21 @@ def try_b64encode(data_in):
 
 
 def container_name_to_param(container_name):
+    """
+    Split container name and provides name of related parameter
+    :param container_name: container name
+    :type container_name: str
+    :return: param
+    :rtype: str
+    """
     return container_name.split('|')[-1]
 
 
 def init_pycurl(debug=False):
     """
     Provides an instances of pycurl with basic configuration
+    :param debug: confugres verbosity of http client
+    :tpye debug: bool
     :return: pycurl instance
     """
     _curl = pycurl.Curl()
@@ -84,11 +120,19 @@ def init_pycurl(debug=False):
     _curl.setopt(pycurl.VERBOSE, debug)
     _curl.setopt(pycurl.TIMEOUT, 10)
     _curl.setopt(pycurl.COOKIEFILE, "")
-    _curl.setopt(pycurl.USERAGENT, 'APIFuzzer')
+    _curl.setopt(pycurl.USERAGENT, get_version())
     return _curl
 
 
 def download_file(url, dst_file):
+    """
+    Download file from the provided url to the defined file
+    :param url: url to download from
+    :type url: str
+    :param dst_file: name of destination file
+    :type dst_file: str
+    :return: None
+    """
     _curl = init_pycurl()
     buffer = BytesIO()
     _curl = pycurl.Curl()
@@ -117,6 +161,15 @@ def get_item(json_dict, json_path):
 
 
 def pretty_print(printable, limit=200):
+    """
+    Format json data for logging
+    :param printable: json data to dump
+    :type printable: dict
+    :param limit: this amount of chars will be written
+    :type limit: int
+    :return: formatted string
+    :rtype: str
+    """
     if isinstance(printable, dict):
         return json.dumps(printable, indent=2, sort_keys=True)[0:limit]
     else:
@@ -139,5 +192,15 @@ def json_data(arg_string: Optional[str]) -> dict:
             raise TypeError('not list or dict')
     except (TypeError, json.decoder.JSONDecodeError):
         msg = '%s is not JSON', arg_string
-        print('Debugging: %s', arg_string.replace(' ', '_'))
         raise argparse.ArgumentTypeError(msg)
+
+
+def str2bool(v):
+    if isinstance(v, bool):
+        return v
+    if v.lower() in ('yes', 'true', 't', 'y', '1', 'True', 'T'):
+        return True
+    elif v.lower() in ('no', 'false', 'f', 'n', '0', 'False', 'F'):
+        return False
+    else:
+        raise argparse.ArgumentTypeError('Boolean value expected.')

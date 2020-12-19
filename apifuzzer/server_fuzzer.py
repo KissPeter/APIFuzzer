@@ -2,10 +2,16 @@ from kitty.data.report import Report
 from kitty.fuzzers import ServerFuzzer
 from kitty.model import Container, KittyException
 
-from apifuzzer.utils import set_class_logger, transform_data_to_bytes
+from apifuzzer.utils import get_logger, transform_data_to_bytes
 
 
 def _flatten_dict_entry(orig_key, v):
+    """
+    This function is called recursively to list the params in template
+    :param orig_key: original key
+    :param v: list of params
+    :rtype: list
+    """
     entries = []
     if isinstance(v, list):
         count = 0
@@ -20,7 +26,6 @@ def _flatten_dict_entry(orig_key, v):
     return entries
 
 
-@set_class_logger
 class OpenApiServerFuzzer(ServerFuzzer):
     """Extends the ServerFuzzer with exit after the end message."""
 
@@ -28,10 +33,16 @@ class OpenApiServerFuzzer(ServerFuzzer):
         pass
 
     def __init__(self):
+        self.logger = self.logger = get_logger(self.__class__.__name__)
         self.logger.info('Logger initialized')
         super(OpenApiServerFuzzer, self).__init__()
 
     def _transmit(self, node):
+        """
+        Where the magic happens. This function prepares the request
+        :param node: dict of paramters compiled earlier
+        :type node: dict
+        """
         payload = {}
         for key in ['url', 'method']:
             payload[key] = transform_data_to_bytes(node.get_field_by_name(key).render())
@@ -59,6 +70,12 @@ class OpenApiServerFuzzer(ServerFuzzer):
 
     @staticmethod
     def _recurse_params(param):
+        """
+        Iterates trough parameters recursively
+        :param param: param to process
+        :type param: object
+        :rtype: dict
+        """
         _return = dict()
         if isinstance(param, Container):
             for field in param._fields:
@@ -68,6 +85,10 @@ class OpenApiServerFuzzer(ServerFuzzer):
         return _return
 
     def _store_report(self, report):
+        """
+        Enrich fuzz report
+        :param report: report to extend
+        """
         self.logger.debug('<in>')
         report.add('test_number', self.model.current_index())
         report.add('fuzz_path', self.model.get_sequence_str())
@@ -92,6 +113,9 @@ class OpenApiServerFuzzer(ServerFuzzer):
         #  self.dataman.get_report_by_id(self.model.current_index())
 
     def _test_environment(self):
+        """
+        Checks the test environment - not used
+        """
         sequence = self.model.get_sequence()
         try:
             if self._run_sequence(sequence):

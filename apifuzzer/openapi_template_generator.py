@@ -135,7 +135,7 @@ class OpenAPITemplateGenerator(TemplateGenerator):
             self.logger.debug('Looking for remote reference: {}'.format(schema_ref))
             resource_reference, item_location = schema_ref.split('#', 1)
             self.logger.info('Downloading resource from: {} and using {}'.format(resource_reference, item_location))
-            schema_definition = get_api_definition_from_url(resource_reference)
+            schema_definition = get_api_definition_from_url(resource_reference, logger=self.logger.debug)
             schema_properties = self.get_properties_from_schema_definition(schema_definition, item_location)
         elif schema_ref.startswith('//'):
             self.logger.warning('Not implemented import: {}'.format(schema_ref))
@@ -148,7 +148,7 @@ class OpenAPITemplateGenerator(TemplateGenerator):
             self.logger.debug('It seems the schema is stored in local file {}, schema location: {}'
                               .format(file_reference, item_location))
             try:
-                schema_definition = get_api_definition_from_file(file_reference)
+                schema_definition = get_api_definition_from_file(file_reference, logger=self.logger.debug)
             except FailedToParseFileException:
                 # This part is necessary only because some of the API definitions doesn't follow the standard
                 if len(self.api_definition_url):
@@ -157,7 +157,7 @@ class OpenAPITemplateGenerator(TemplateGenerator):
                                       .format(self.api_definition_url, file_reference))
                     api_definition_url = "/".join([get_base_url_form_api_src(self.api_definition_url), file_reference])
                     self.logger.debug('Trying to fetch api definition from: {}'.format(api_definition_url))
-                    schema_definition = get_api_definition_from_url(api_definition_url)
+                    schema_definition = get_api_definition_from_url(api_definition_url, logger=self.logger.debug)
                 else:
                     self.logger.warning('Local file reference was found in API definition, but file is not available')
                     schema_definition = dict()
@@ -273,7 +273,6 @@ class OpenAPITemplateGenerator(TemplateGenerator):
     def pre_process_api_resources(self):
         iteration = 0
         while True:
-            self.logger.debug(f'{iteration}')
             tmp_api_resource = dict()
             paths = self.api_resources['paths']
             for resource in paths.keys():
@@ -307,7 +306,7 @@ class OpenAPITemplateGenerator(TemplateGenerator):
                 template.url = normalized_url
                 template.method = method.upper()
                 params_to_process = list(paths[resource][method].get('parameters', {}))
-                params_to_process.append(paths[resource][method].get('requestBody', {}))
+                params_to_process.append(paths[resource][method].get('requestBody', {}).get('content', {}))
                 for param in params_to_process:
 
                     if not isinstance(param, dict):

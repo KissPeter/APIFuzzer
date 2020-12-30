@@ -59,30 +59,34 @@ def container_name_to_param(container_name):
     return container_name.split('|')[-1]
 
 
-def get_api_definition_from_file(src_file):
+def get_api_definition_from_file(src_file, logger=None):
+    if logger:
+        print_func = logger
+    else:
+        print_func = print
     try:
         with open(src_file, mode='rb') as f:
             api_definition = f.read()
         try:
             return json.loads(api_definition.decode('utf-8'))
         except ValueError as e:
-            print('Failed to load input as JSON, maybe YAML?')
+            print_func('Failed to load input as JSON, maybe YAML?')
         try:
             yaml = YAML(typ='safe')
             return yaml.load(api_definition)
         except (TypeError, ScannerError) as e:
-            print('Failed to load input as YAML:{}'.format(e))
+            print_func('Failed to load input as YAML:{}'.format(e))
             raise e
     except (Exception, FileNotFoundError):
-        print('Failed to parse input file, exit')
+        print_func('Failed to parse input file, exit')
         raise FailedToParseFileException
 
 
-def get_api_definition_from_url(url, temp_file=None):
+def get_api_definition_from_url(url, temp_file=None, logger=None):
     if temp_file is None:
         temp_file = tempfile.NamedTemporaryFile().name
     download_file(url, temp_file)
-    return get_api_definition_from_file(temp_file)
+    return get_api_definition_from_file(temp_file, logger=logger)
 
 
 def get_base_url_form_api_src(url):

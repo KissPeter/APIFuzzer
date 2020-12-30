@@ -344,12 +344,18 @@ class OpenAPITemplateGenerator(TemplateGenerator):
                                       f'{parameter_place_in_request}, Sample data: {sample_data}, Param name: '
                                       f'{param_name}, fuzzer: {fuzz_type.__name__}')
 
-                    if parameter_place_in_request in [ParamTypes.PATH, ParamTypes.FORM_DATA, ParamTypes.QUERY]:
+                    if parameter_place_in_request == ParamTypes.PATH:
                         template.path_variables.add(fuzz_type(name=param_name, value=str(sample_data)))
-                    elif parameter_place_in_request in [ParamTypes.HEADER, ParamTypes.BODY]:
+                    elif parameter_place_in_request == ParamTypes.HEADER:
                         template.headers.add(fuzz_type(name=param_name, value=transform_data_to_bytes(sample_data)))
                     elif parameter_place_in_request == ParamTypes.COOKIE:
                         template.cookies.add(fuzz_type(name=param_name, value=sample_data))
+                    elif parameter_place_in_request == ParamTypes.QUERY:
+                        template.params.add(fuzz_type(name=param_name, value=str(sample_data)))
+                    elif parameter_place_in_request == ParamTypes.BODY:
+                        template.data.add(fuzz_type(name=param_name, value=transform_data_to_bytes(sample_data)))
+                    elif parameter_place_in_request == ParamTypes.FORM_DATA:
+                        template.params.add(fuzz_type(name=param_name, value=str(sample_data)))
                     else:
                         self.logger.warning('Can not parse a definition: %s', param)
                 self._save_template(template)

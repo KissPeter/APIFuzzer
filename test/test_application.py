@@ -23,7 +23,6 @@ class LastRequestData(object):
         except TypeError as e:
             return 'Error: {}, latest data: {}'.format(e, self.last_request_data)
 
-
 def catch_custom_exception(func):
     @wraps(func)
     def decorated_function(*args, **kwargs):

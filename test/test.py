@@ -111,7 +111,7 @@ class TestSwagger(BaseTest):
         # 'req_path': '/multiple_path_params/667.5/\x10'
         _, test_url_reported, param1, param2 = last_call['req_path'].split("/", maxsplit=3)
         assert test_url[1:] == test_url_reported, last_call['req_path']  # heading / shall be removed
-        assert float(param1), 'req_path: {}, param1: {}'.format(last_call['req_url'], param1)
+        assert not isinstance(param1, int), 'req_path: {}, param1: {}'.format(last_call['req_url'], param1)
         assert not isinstance(param2, int), 'req_path: {}, param2: {}'.format(last_call['req_url'], param2)
         self.repot_basic_check()
 

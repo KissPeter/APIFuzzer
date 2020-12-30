@@ -7,4 +7,3 @@ pytest-html==2.0.1
 coverage==5.0.3
 hypothesis==5.10.4
 attrs>=19.2.0
-coverage

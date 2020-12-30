@@ -271,18 +271,6 @@ class OpenAPITemplateGenerator(TemplateGenerator):
         self.templates.add(template)
         self.logger.info(
             f'Adding template to list: {template.name}, size: {template.get_stat()} , templates list: {len(self.templates) + 1}')
-        # _to_be_added = True
-        # for _template in self.templates:
-        #     self.logger.debug(f'Checking {_template.name} vs {template.name}')
-        #     if template.name == _template.name:
-        #         self.logger.debug(f'Existing template: {_template.name}')
-        #         _to_be_added = False
-        # if _to_be_added:
-        #     self.logger.info(f'Adding template to list: {template.name}, size: {template.get_stat()} , '
-        #                      f'templates list: {len(self.templates) + 1}')
-        #     self.templates.add(template)
-        # else:
-        #     self.logger.warning(f'Not adding template to list: {template.name}, size: {template.get_stat()}')
 
     def process_api_resources(self, paths=None):
         self.logger.info('Start preparation')
@@ -336,7 +324,13 @@ class OpenAPITemplateGenerator(TemplateGenerator):
                                       .format(resource, method, param, parameter_place_in_request, sample_data,
                                               param_name, fuzz_type.__name__))
                     self.logger.debug(f'>>>>>>Add {param_name} to {parameter_place_in_request}')
-                    if parameter_place_in_request == ParamTypes.PATH:
+                    if param.get('schema'):
+                        tmp_api_resource = self.process_schema(resource, method, param, tmp_api_resource)
+                    if len(param.get('$ref', "")):
+                        self.logger.info('Only schema reference found in the parameter description: {}'.format(param))
+                        tweaked_param = {'schema': param}
+                        tmp_api_resource = self.process_schema(resource, method, tweaked_param, tmp_api_resource)
+                    elif parameter_place_in_request == ParamTypes.PATH:
                         template.path_variables.add(fuzz_type(name=param_name, value=str(sample_data)))
                     elif parameter_place_in_request == ParamTypes.HEADER:
                         template.headers.add(fuzz_type(name=param_name, value=transform_data_to_bytes(sample_data)))
@@ -348,14 +342,8 @@ class OpenAPITemplateGenerator(TemplateGenerator):
                         template.data.add(fuzz_type(name=param_name, value=transform_data_to_bytes(sample_data)))
                     elif parameter_place_in_request == ParamTypes.FORM_DATA:
                         template.params.add(fuzz_type(name=param_name, value=str(sample_data)))
-                    elif len(param.get('$ref', "")):
-                        self.logger.info('Only schema reference found in the parameter description: {}'.format(param))
-                        tweaked_param = {'schema': param}
-                        tmp_api_resource = self.process_schema(resource, method, tweaked_param, tmp_api_resource)
                     else:
                         self.logger.error('Can not parse a definition: %s', param)
-                    if param.get('schema'):
-                        tmp_api_resource = self.process_schema(resource, method, param, tmp_api_resource)
                 self._save_template(template)
         if len(tmp_api_resource) > 0:
             self.logger.info('Additional resources were found, processing these: {}'

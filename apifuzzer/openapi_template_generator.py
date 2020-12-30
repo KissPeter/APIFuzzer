@@ -35,7 +35,6 @@ class OpenAPITemplateGenerator(TemplateGenerator):
         self.api_resources = api_resources
         self.templates = set()
         self.logger = get_logger(self.__class__.__name__)
-        self.logger.info('Logger initialized')
         self.api_definition_url = api_definition_url
 
     @staticmethod
@@ -82,7 +81,7 @@ class OpenAPITemplateGenerator(TemplateGenerator):
         self.logger.debug('Parameters found in schema: {}'.format(pretty_print(_return)))
         return _return
 
-    def get_schema(self, param):
+    def resolve_json_reference(self, param):
         """
         Processes schema referenced if request method should be POST and request should contain body
         :type: param section of api definition
@@ -163,7 +162,7 @@ class OpenAPITemplateGenerator(TemplateGenerator):
                     self.logger.warning('Local file reference was found in API definition, but file is not available')
                     schema_definition = dict()
             schema_properties = self.get_properties_from_schema_definition(schema_definition, item_location)
-        self.logger.info('Parameter definition: {} discovered from {}'.format(schema_properties, param))
+        self.logger.debug('Parameter definition: {} discovered from {}'.format(schema_properties, param))
         return schema_properties
 
     def transform_schema_definition_key_to_swagger_param_definition(self, param, schema_def_key, schema_def_data):
@@ -239,10 +238,10 @@ class OpenAPITemplateGenerator(TemplateGenerator):
             tmp_api_resource[resource][method] = dict()
             tmp_api_resource[resource][method]['parameters'] = list()
         try:
-            received_schema_def = self.get_schema(param)
+            received_schema_def = self.resolve_json_reference(param)
             processed_schema = self.transform_schema_definition_to_swagger_param_definition(param, received_schema_def)
         except FailedToProcessSchemaException as e:
-            self.logger.warning('{}, trying to find details directly from parameter: {}'.format(e, param))
+            self.logger.debug('{}, trying to find details directly from parameter: {}'.format(e, param))
             processed_schema = self.transform_schema_definition_key_to_swagger_param_definition(param, '', param)
         tmp_api_resource[resource][method]['parameters'].extend(processed_schema)
         return tmp_api_resource
@@ -261,7 +260,7 @@ class OpenAPITemplateGenerator(TemplateGenerator):
                 self.logger.debug(f'Loading existing template: {template.name}')
                 _return = template
         if not _return:
-            self.logger.info(f'Open new Fuzz template for {template_name}')
+            self.logger.debug(f'Open new Fuzz template for {template_name}')
             _return = BaseTemplate(name=template_name)
         return _return
 
@@ -269,16 +268,36 @@ class OpenAPITemplateGenerator(TemplateGenerator):
         if template in self.templates:
             self.templates.remove(template)
         self.templates.add(template)
-        self.logger.info(
-            f'Adding template to list: {template.name}, size: {template.get_stat()} , templates list: {len(self.templates) + 1}')
+        self.logger.debug(f'Adding template to list: {template.name}, templates list: {len(self.templates)}')
+
+    def pre_process_api_resources(self):
+        iteration = 0
+        while True:
+            self.logger.debug(f'{iteration}')
+            tmp_api_resource = dict()
+            paths = self.api_resources['paths']
+            for resource in paths.keys():
+                for method in paths[resource].keys():
+                    self.logger.debug(f'{iteration}. Resource: {resource} Method: {method}')
+                    params_to_process = list(paths[resource][method].get('parameters', {}))
+                    params_to_process.append(paths[resource][method].get('requestBody', {}))
+                    for param in params_to_process:
+                        if param.get('schema'):
+                            tmp_api_resource = self.process_schema(resource, method, param, tmp_api_resource)
+                        if len(param.get('$ref', "")):
+                            self.logger.debug(f'{iteration}.Only schema reference found in the parameter: {param}')
+                            tweaked_param = {'schema': param}
+                            tmp_api_resource = self.process_schema(resource, method, tweaked_param, tmp_api_resource)
+            if not len(tmp_api_resource):
+                break
+            else:
+                self.api_resources['paths'].update(tmp_api_resource)
+            iteration += 1
 
     def process_api_resources(self, paths=None):
         self.logger.info('Start preparation')
-        tmp_api_resource = dict()
-        if not paths:
-            paths = self.api_resources['paths']
-        else:
-            self.logger.info('Processing extra parameter: {}'.format(pretty_print(paths, limit=300)))
+        self.pre_process_api_resources()
+        paths = self.api_resources['paths']
         for resource in paths.keys():
             normalized_url = self._normalize_url(resource)
             for method in paths[resource].keys():
@@ -290,10 +309,11 @@ class OpenAPITemplateGenerator(TemplateGenerator):
                 params_to_process = list(paths[resource][method].get('parameters', {}))
                 params_to_process.append(paths[resource][method].get('requestBody', {}))
                 for param in params_to_process:
-                    self.logger.info('Processing parameter: {}'.format(param))
+
                     if not isinstance(param, dict):
                         self.logger.warning('{} type mismatch, dict expected, got: {}'.format(param, type(param)))
                         param = json.loads(param)
+
                     if param.get('type'):
                         parameter_data_type = param.get('type')
                     elif param.get('schema', {}).get('type'):
@@ -301,6 +321,7 @@ class OpenAPITemplateGenerator(TemplateGenerator):
                     else:
                         parameter_data_type = 'string'
                     param_format = param.get('format')
+
                     if param_format is not None:
                         fuzzer_type = param_format.lower()
                     elif parameter_data_type is not None:
@@ -308,47 +329,30 @@ class OpenAPITemplateGenerator(TemplateGenerator):
                     else:
                         fuzzer_type = None
                     fuzz_type = get_fuzz_type_by_param_type(fuzzer_type)
+
                     if param.get('example'):
                         sample_data = param.get('example')
                     elif param.get('schema', {}).get('example'):
                         sample_data = param.get('schema', {}).get('example')
                     else:
                         sample_data = get_sample_data_by_type(param.get('type'))
-                    # get parameter placement(in): path, query, header, cookie
-                    # get parameter type: integer, string
-                    # get format if present
+
                     parameter_place_in_request = param.get('in')
                     param_name = '{}|{}'.format(template_name, param.get('name'))
-                    self.logger.debug('Resource: {} Method: {} Parameter: {}, Parameter type: {}, Sample data: {},'
-                                      'Param name: {}, fuzzer: {}'
-                                      .format(resource, method, param, parameter_place_in_request, sample_data,
-                                              param_name, fuzz_type.__name__))
-                    self.logger.debug(f'>>>>>>Add {param_name} to {parameter_place_in_request}')
-                    if param.get('schema'):
-                        tmp_api_resource = self.process_schema(resource, method, param, tmp_api_resource)
-                    if len(param.get('$ref', "")):
-                        self.logger.info('Only schema reference found in the parameter description: {}'.format(param))
-                        tweaked_param = {'schema': param}
-                        tmp_api_resource = self.process_schema(resource, method, tweaked_param, tmp_api_resource)
-                    elif parameter_place_in_request == ParamTypes.PATH:
+
+                    self.logger.debug(f'Resource: {resource} Method: {method} Parameter: {param}, Parameter type: '
+                                      f'{parameter_place_in_request}, Sample data: {sample_data}, Param name: '
+                                      f'{param_name}, fuzzer: {fuzz_type.__name__}')
+
+                    if parameter_place_in_request in [ParamTypes.PATH, ParamTypes.FORM_DATA, ParamTypes.QUERY]:
                         template.path_variables.add(fuzz_type(name=param_name, value=str(sample_data)))
-                    elif parameter_place_in_request == ParamTypes.HEADER:
+                    elif parameter_place_in_request in [ParamTypes.HEADER, ParamTypes.BODY]:
                         template.headers.add(fuzz_type(name=param_name, value=transform_data_to_bytes(sample_data)))
                     elif parameter_place_in_request == ParamTypes.COOKIE:
                         template.cookies.add(fuzz_type(name=param_name, value=sample_data))
-                    elif parameter_place_in_request == ParamTypes.QUERY:
-                        template.params.add(fuzz_type(name=param_name, value=str(sample_data)))
-                    elif parameter_place_in_request == ParamTypes.BODY:
-                        template.data.add(fuzz_type(name=param_name, value=transform_data_to_bytes(sample_data)))
-                    elif parameter_place_in_request == ParamTypes.FORM_DATA:
-                        template.params.add(fuzz_type(name=param_name, value=str(sample_data)))
                     else:
-                        self.logger.error('Can not parse a definition: %s', param)
+                        self.logger.warning('Can not parse a definition: %s', param)
                 self._save_template(template)
-        if len(tmp_api_resource) > 0:
-            self.logger.info('Additional resources were found, processing these: {}'
-                             .format(pretty_print(tmp_api_resource)))
-            self.process_api_resources(paths=tmp_api_resource)
 
     def _compile_base_url_for_swagger(self, alternate_url):
         if alternate_url:

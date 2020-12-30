@@ -143,4 +143,9 @@ class TestSwagger(BaseTest):
             }
         }
         last_call = self.fuzz_and_get_last_call(api_path, api_def, schema_definitions=schema)
+        # "req_form": {
+        #     "param_int": "\u0000",
+        #     "param_str": "65Y"
+        # },
+        assert not isinstance(last_call['req_form']['param_int'], int), last_call
         self.repot_basic_check()

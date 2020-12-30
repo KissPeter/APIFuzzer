@@ -3,12 +3,14 @@ python:
   - '3.6'
   - '3.7'
   - '3.8'
+before_script:
+  - export PYTHONPATH=$PYTHONPATH:$(pwd)
 before_install:
   - sudo apt-get -y install libgnutls28-dev
 install:
   - pip3 install -r requirements.txt
 script:
-  - ./bin/APIFuzzer -h
+  - ./APIFuzzer -h
   - pip3 install -r test/requirements_for_test.txt
   - python3 test/test_application.py&
   - pytest --cov-report term --cov=apifuzzer --durations=10 --show-capture=stdout -vv -rP test

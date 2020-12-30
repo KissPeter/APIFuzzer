@@ -11,12 +11,12 @@ class BaseTemplate(object):
         self.name = name
         self.method = None
         self.url = None
-        self.params = list()
-        self.data = list()
-        self.headers = list()
-        self.path_variables = list()
-        self.query = list()
-        self.cookies = list()
+        self.params = set()
+        self.data = set()
+        self.headers = set()
+        self.path_variables = set()
+        self.query = set()
+        self.cookies = set()
         self.field_to_param = {
             'params': self.params,
             'headers': self.headers,
@@ -36,6 +36,13 @@ class BaseTemplate(object):
         :param cookies: (optional) Dict or CookieJar object to send with the :class:`Request`.
         """
 
+    def get_stat(self):
+        total = 0
+        for field in self.field_to_param.values():
+            total += len(field)
+        self.logger.info(f'Template size: {total}, content: {self.field_to_param}')
+        return total
+
     def compile_template(self):
         _url = Static(name='url', value=self.url)
         _method = Static(name='method', value=self.method)
@@ -45,5 +52,5 @@ class BaseTemplate(object):
                 try:
                     template.append_fields([Container(name=name, fields=field)])
                 except KittyException as e:
-                    self.logger.warning('Failed to addd {} because {}, continue processing...'.format(name, e))
+                    self.logger.warning('Failed to add {} because {}, continue processing...'.format(name, e))
         return template

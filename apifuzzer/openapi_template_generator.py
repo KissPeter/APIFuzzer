@@ -33,13 +33,13 @@ class OpenAPITemplateGenerator(TemplateGenerator):
         """
         super().__init__()
         self.api_resources = api_resources
-        self.templates = list()
+        self.templates = set()
         self.logger = get_logger(self.__class__.__name__)
         self.logger.info('Logger initialized')
         self.api_definition_url = api_definition_url
 
     @staticmethod
-    def normalize_url(url_in):
+    def _normalize_url(url_in):
         """
         Kitty doesn't support some characters as template name so need to be cleaned, but it is necessary,
         so we will change back later
@@ -247,18 +247,42 @@ class OpenAPITemplateGenerator(TemplateGenerator):
         tmp_api_resource[resource][method]['parameters'].extend(processed_schema)
         return tmp_api_resource
 
-    def get_template(self, template_name):
+    def _get_template(self, template_name):
         """
         Starts new template if it does not exist yet or retrun the existing one which has the required name
         :param template_name: name of the template
         :type template_name: str
         :return: instance of BaseTemplate
         """
-        _return = BaseTemplate(name=template_name)
+        _return = None
         for template in self.templates:
+            self.logger.debug(f'Checking {template.name} vs {template_name}')
             if template.name == template_name:
+                self.logger.debug(f'Loading existing template: {template.name}')
                 _return = template
+        if not _return:
+            self.logger.info(f'Open new Fuzz template for {template_name}')
+            _return = BaseTemplate(name=template_name)
         return _return
+
+    def _save_template(self, template):
+        if template in self.templates:
+            self.templates.remove(template)
+        self.templates.add(template)
+        self.logger.info(
+            f'Adding template to list: {template.name}, size: {template.get_stat()} , templates list: {len(self.templates) + 1}')
+        # _to_be_added = True
+        # for _template in self.templates:
+        #     self.logger.debug(f'Checking {_template.name} vs {template.name}')
+        #     if template.name == _template.name:
+        #         self.logger.debug(f'Existing template: {_template.name}')
+        #         _to_be_added = False
+        # if _to_be_added:
+        #     self.logger.info(f'Adding template to list: {template.name}, size: {template.get_stat()} , '
+        #                      f'templates list: {len(self.templates) + 1}')
+        #     self.templates.add(template)
+        # else:
+        #     self.logger.warning(f'Not adding template to list: {template.name}, size: {template.get_stat()}')
 
     def process_api_resources(self, paths=None):
         self.logger.info('Start preparation')
@@ -268,11 +292,11 @@ class OpenAPITemplateGenerator(TemplateGenerator):
         else:
             self.logger.info('Processing extra parameter: {}'.format(pretty_print(paths, limit=300)))
         for resource in paths.keys():
-            normalized_url = self.normalize_url(resource)
+            normalized_url = self._normalize_url(resource)
             for method in paths[resource].keys():
                 self.logger.info('Resource: {} Method: {}'.format(resource, method))
                 template_name = '{}|{}'.format(normalized_url, method)
-                template = self.get_template(template_name)
+                template = self._get_template(template_name)
                 template.url = normalized_url
                 template.method = method.upper()
                 params_to_process = list(paths[resource][method].get('parameters', {}))
@@ -311,18 +335,19 @@ class OpenAPITemplateGenerator(TemplateGenerator):
                                       'Param name: {}, fuzzer: {}'
                                       .format(resource, method, param, parameter_place_in_request, sample_data,
                                               param_name, fuzz_type.__name__))
+                    self.logger.debug(f'>>>>>>Add {param_name} to {parameter_place_in_request}')
                     if parameter_place_in_request == ParamTypes.PATH:
-                        template.path_variables.append(fuzz_type(name=param_name, value=str(sample_data)))
+                        template.path_variables.add(fuzz_type(name=param_name, value=str(sample_data)))
                     elif parameter_place_in_request == ParamTypes.HEADER:
-                        template.headers.append(fuzz_type(name=param_name, value=transform_data_to_bytes(sample_data)))
+                        template.headers.add(fuzz_type(name=param_name, value=transform_data_to_bytes(sample_data)))
                     elif parameter_place_in_request == ParamTypes.COOKIE:
-                        template.cookies.append(fuzz_type(name=param_name, value=sample_data))
+                        template.cookies.add(fuzz_type(name=param_name, value=sample_data))
                     elif parameter_place_in_request == ParamTypes.QUERY:
-                        template.params.append(fuzz_type(name=param_name, value=str(sample_data)))
+                        template.params.add(fuzz_type(name=param_name, value=str(sample_data)))
                     elif parameter_place_in_request == ParamTypes.BODY:
-                        template.data.append(fuzz_type(name=param_name, value=transform_data_to_bytes(sample_data)))
+                        template.data.add(fuzz_type(name=param_name, value=transform_data_to_bytes(sample_data)))
                     elif parameter_place_in_request == ParamTypes.FORM_DATA:
-                        template.params.append(fuzz_type(name=param_name, value=str(sample_data)))
+                        template.params.add(fuzz_type(name=param_name, value=str(sample_data)))
                     elif len(param.get('$ref', "")):
                         self.logger.info('Only schema reference found in the parameter description: {}'.format(param))
                         tweaked_param = {'schema': param}
@@ -331,16 +356,13 @@ class OpenAPITemplateGenerator(TemplateGenerator):
                         self.logger.error('Can not parse a definition: %s', param)
                     if param.get('schema'):
                         tmp_api_resource = self.process_schema(resource, method, param, tmp_api_resource)
-                self.logger.info('Adding template to list: {}, templates list: {}'
-                                 .format(template.name, len(self.templates) + 1))
-                if template not in self.templates:
-                    self.templates.append(template)
+                self._save_template(template)
         if len(tmp_api_resource) > 0:
             self.logger.info('Additional resources were found, processing these: {}'
                              .format(pretty_print(tmp_api_resource)))
             self.process_api_resources(paths=tmp_api_resource)
 
-    def compile_base_url_for_swagger(self, alternate_url):
+    def _compile_base_url_for_swagger(self, alternate_url):
         if alternate_url:
             _base_url = "/".join([alternate_url.strip('/'), self.api_resources.get('basePath', '').strip('/')])
         else:
@@ -355,7 +377,7 @@ class OpenAPITemplateGenerator(TemplateGenerator):
             )
         return _base_url
 
-    def compile_base_url_for_openapi(self, alternate_url):
+    def _compile_base_url_for_openapi(self, alternate_url):
         uri = urlparse(self.api_resources.get('servers')[0].get('url'))
         if alternate_url:
             _base_url = "/".join([alternate_url.strip('/'), uri.path.strip('/')])
@@ -369,10 +391,10 @@ class OpenAPITemplateGenerator(TemplateGenerator):
         :type alternate_url: string
         """
         if self.api_resources.get('swagger', "").startswith('2'):
-            _base_url = self.compile_base_url_for_swagger(alternate_url)
+            _base_url = self._compile_base_url_for_swagger(alternate_url)
             self.logger.debug('Using swagger style url: {}'.format(_base_url))
         elif self.api_resources.get('openapi', "").startswith('3'):
-            _base_url = self.compile_base_url_for_swagger(alternate_url)
+            _base_url = self._compile_base_url_for_swagger(alternate_url)
             self.logger.debug('Using openapi style url: {}'.format(_base_url))
         else:
             self.logger.warning('Failed to find base url, using the alternative one ({})'.format(alternate_url))

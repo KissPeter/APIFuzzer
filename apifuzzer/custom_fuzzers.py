@@ -26,6 +26,8 @@ class Utf8Chars(BaseField):
     def __init__(self, value, name, fuzzable=True, min_length=20, max_length=100, num_mutations=80):
         super(BaseField, self).__init__(name=name)
         self.logger = self.logger = get_logger(self.__class__.__name__)
+        self.name = name
+        self.value = value
         self.min_length = min_length
         self.max_length = max_length
         self._num_mutations = num_mutations
@@ -69,6 +71,12 @@ class Utf8Chars(BaseField):
         if self.position > self.MAX:
             self.position = self.init_position()
 
+    def __str__(self):
+        return f'{self.name}->{self.value}'
+
+    def __repr__(self):
+        return f'{self.name}->{self.value}'
+
 
 class RandomBitsField(RandomBits):
     """
@@ -81,6 +89,8 @@ class RandomBitsField(RandomBits):
         pass
 
     def __init__(self, value, name, fuzzable=True):
+        self.name = name
+        self.value = value
         super(RandomBitsField, self).__init__(name=name, value=value, min_length=20, max_length=100, fuzzable=fuzzable,
                                               num_mutations=80)
 
@@ -94,6 +104,12 @@ class RandomBitsField(RandomBits):
             current_bytes += chr(self._random.randint(0, 255))
         self._current_value = Bits(bytes=strToBytes(current_bytes))[:length]
 
+    def __str__(self):
+        return f'{self.name}->{self.value}'
+
+    def __repr__(self):
+        return f'{self.name}->{self.value}'
+
 
 class UnicodeStrings(String):
 
@@ -101,8 +117,15 @@ class UnicodeStrings(String):
         self.min_length = min_length
         self.max_length = max_length
         self._num_mutations = num_mutations
+        self.name = name
+        self.value = value
         super(UnicodeStrings, self).__init__(name=name, value=value, fuzzable=fuzzable)
 
     def not_implemented(self, func_name):
         pass
 
+    def __str__(self):
+        return f'{self.name}->{self.value}'
+
+    def __repr__(self):
+        return f'{self.name}->{self.value}'

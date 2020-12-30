@@ -29,13 +29,11 @@ build:
             background: true
             on_node: 1
             idle_timeout: 10
-      command: 'pytest --cov-report term --cov=apifuzzer --durations=10 --show-capture=stdout -vv -rP test'
-        on_node: 1
-        idle_timeout: 10
-        coverage:
-          file: '.coverage'
-          config_file: '.coveragerc'
-          format: 'py-cc'
+    test:
+      commands:
+        - command: 'pytest --cov-report term --cov=apifuzzer --durations=10 --show-capture=stdout -vv -rP test'
+          on_node: 1
+          idle_timeout: 10
 filter:
   excluded_paths:
     - "test/"

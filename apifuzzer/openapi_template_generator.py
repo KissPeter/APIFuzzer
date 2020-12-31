@@ -116,6 +116,12 @@ class OpenAPITemplateGenerator(TemplateGenerator):
              – $ref: 'http://path/to/your/resource.json#myElement'
             - The document on the different server, which uses the same protocol (for example, HTTP or HTTPS):
              – $ref: '//anotherserver.com/files/example.json'
+
+        This is a bit messy now, but once https://github.com/jacksmith15/json-ref-dict/issues/14
+        resolved this can be added:
+        from jsonref import JsonRef
+        ref = RefDict(file)
+        resolved = materialize(ref)
         """
         schema_properties = None
         self.logger.info('Received schema definition: {}'.format(pretty_print(param, limit=500)))

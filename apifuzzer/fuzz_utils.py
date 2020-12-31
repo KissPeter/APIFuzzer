@@ -67,18 +67,19 @@ def get_api_definition_from_file(src_file, logger=None):
     try:
         with open(src_file, mode='rb') as f:
             api_definition = f.read()
+        # try loading as JSON first, then YAML
         try:
             return json.loads(api_definition.decode('utf-8'))
         except ValueError as e:
-            print_func('Failed to load input as JSON, maybe YAML?')
+            print_func(f'Failed to load input ({src_file}) as JSON because ({e}), maybe YAML?')
         try:
             yaml = YAML(typ='safe')
             return yaml.load(api_definition)
         except (TypeError, ScannerError) as e:
-            print_func('Failed to load input as YAML:{}'.format(e))
+            print_func(f'Failed to load input ({src_file}) as YAML:{e}')
             raise e
-    except (Exception, FileNotFoundError):
-        print_func('Failed to parse input file, exit')
+    except (Exception, FileNotFoundError) as e:
+        print_func(f'Failed to parse input file ({src_file}), because: ({e}) exit')
         raise FailedToParseFileException
 
 

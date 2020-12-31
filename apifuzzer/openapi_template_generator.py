@@ -64,20 +64,23 @@ class OpenAPITemplateGenerator(TemplateGenerator):
             for item in _tmp_list:
                 if len(item):
                     schema_path.append(item)
-        # if reference is for a file, but no internal path:
-        if schema_path and len(schema_path):
-            schema_path_extended = schema_path
-            schema_path_extended.append('properties')
-        else:
-            schema_path_extended = ['properties']
-        self.logger.debug('Getting {} from {}'.format(schema_path_extended, pretty_print(schema_def)))
-        try:
-            _return = get_item(schema_def, schema_path_extended)
-        except KeyError as e:
-            self.logger.debug('{} trying "parameters" key'.format(e))
+        _return = dict()
+        for key_to_look_for in ['properties', 'paramters', 'content']:
+            # if reference is for a file, but no internal path:
+            if schema_path and len(schema_path):
+                schema_path_extended = schema_path
+                schema_path_extended.append(key_to_look_for)
+            else:
+                schema_path_extended = [key_to_look_for]
+            self.logger.debug('Getting {} from {}'.format(schema_path_extended, pretty_print(schema_def, 500)))
+            try:
+                _return = get_item(schema_def, schema_path_extended)
+                if len(_return):
+                    break
+            except KeyError as e:
+                self.logger.debug(f'{key_to_look_for} not found:{e}')
+            # remove last bit -> key_to_look_for
             schema_path_extended.pop(len(schema_path_extended) - 1)
-            schema_path_extended.append('parameters')
-            _return = get_item(schema_def, schema_path_extended)
         self.logger.debug('Parameters found in schema: {}'.format(pretty_print(_return)))
         return _return
 
@@ -116,17 +119,17 @@ class OpenAPITemplateGenerator(TemplateGenerator):
         """
         schema_properties = None
         self.logger.info('Received schema definition: {}'.format(pretty_print(param, limit=500)))
-        schema_ref = param.get('schema', {}).get('$ref')
+        schema_ref = param.get('schema', {}).get('$ref', '').strip()
         if not schema_ref:
             raise FailedToProcessSchemaException('Faild to find shema ref in {}'.format(param))
-        self.logger.debug('Processing param id {}, reference for schema: {}'.format(param.get('id'), schema_ref))
+        self.logger.debug(f'Processing param id {param.get("id")}, reference for schema: {schema_ref}')
         # Local reference:
         # Example: $ref: '#/definitions/myElement'
         if schema_ref.startswith('#'):
-            self.logger.debug('Looking for reference in local file: {}'.format(schema_ref))
             schema_path = schema_ref.split('/')
             # dropping first element of the list as it defines it is local reference (#)
             schema_path.pop(0)
+            self.logger.debug(f'Looking for reference in local file: {schema_path}')
             schema_definition = get_item(self.api_resources, schema_path)
             schema_properties = self.get_properties_from_schema_definition(schema_definition)
         # URL Reference
@@ -136,6 +139,8 @@ class OpenAPITemplateGenerator(TemplateGenerator):
             resource_reference, item_location = schema_ref.split('#', 1)
             self.logger.info('Downloading resource from: {} and using {}'.format(resource_reference, item_location))
             schema_definition = get_api_definition_from_url(resource_reference, logger=self.logger.debug)
+            self.logger.debug(f'Update api definition with {pretty_print(schema_definition)}')
+            self.api_resources.update(schema_definition)
             schema_properties = self.get_properties_from_schema_definition(schema_definition, item_location)
         elif schema_ref.startswith('//'):
             self.logger.warning('Not implemented import: {}'.format(schema_ref))
@@ -149,6 +154,8 @@ class OpenAPITemplateGenerator(TemplateGenerator):
                               .format(file_reference, item_location))
             try:
                 schema_definition = get_api_definition_from_file(file_reference, logger=self.logger.debug)
+                self.logger.debug(f'Update api definition with {pretty_print(schema_definition)}')
+                self.api_resources.update(schema_definition)
             except FailedToParseFileException:
                 # This part is necessary only because some of the API definitions doesn't follow the standard
                 if len(self.api_definition_url):
@@ -158,6 +165,8 @@ class OpenAPITemplateGenerator(TemplateGenerator):
                     api_definition_url = "/".join([get_base_url_form_api_src(self.api_definition_url), file_reference])
                     self.logger.debug('Trying to fetch api definition from: {}'.format(api_definition_url))
                     schema_definition = get_api_definition_from_url(api_definition_url, logger=self.logger.debug)
+                    self.logger.debug(f'Update api definition with {pretty_print(schema_definition)}')
+                    self.api_resources.update(schema_definition)
                 else:
                     self.logger.warning('Local file reference was found in API definition, but file is not available')
                     schema_definition = dict()
@@ -275,6 +284,7 @@ class OpenAPITemplateGenerator(TemplateGenerator):
         while True:
             tmp_api_resource = dict()
             paths = self.api_resources['paths']
+
             for resource in paths.keys():
                 for method in paths[resource].keys():
                     self.logger.debug(f'{iteration}. Resource: {resource} Method: {method}')
@@ -283,9 +293,13 @@ class OpenAPITemplateGenerator(TemplateGenerator):
                     for param in params_to_process:
                         if param.get('schema'):
                             tmp_api_resource = self.process_schema(resource, method, param, tmp_api_resource)
-                        if len(param.get('$ref', "")):
-                            self.logger.debug(f'{iteration}.Only schema reference found in the parameter: {param}')
-                            tweaked_param = {'schema': param}
+                        if len(param.get("$ref", "")):
+                            self.logger.debug(f'{iteration}. Only schema reference found in the parameter: {param}')
+                            if param.get('schema'):
+                                tweaked_param = {'schema': param}
+                            else:
+                                tweaked_param = param
+                            self.logger.debug(f'Processing {tweaked_param}')
                             tmp_api_resource = self.process_schema(resource, method, tweaked_param, tmp_api_resource)
             if not len(tmp_api_resource):
                 break
@@ -305,10 +319,7 @@ class OpenAPITemplateGenerator(TemplateGenerator):
                 template = self._get_template(template_name)
                 template.url = normalized_url
                 template.method = method.upper()
-                params_to_process = list(paths[resource][method].get('parameters', {}))
-                params_to_process.append(paths[resource][method].get('requestBody', {}).get('content', {}))
-                for param in params_to_process:
-
+                for param in list(paths[resource][method].get('parameters', {})):
                     if not isinstance(param, dict):
                         self.logger.warning('{} type mismatch, dict expected, got: {}'.format(param, type(param)))
                         param = json.loads(param)

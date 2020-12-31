@@ -1,0 +1,989 @@
+# Copyright 2019 Sophos Limited. All rights reserved.
+openapi: "3.0.0"
+info:
+  version: 1.1.0
+  title: Dynamic File Analysis API
+servers:
+  - url: https://de.api.labs.sophos.com/analysis/file/dynamic/v1
+  - url: https://us.api.labs.sophos.com/analysis/file/dynamic/v1
+security:
+  - oAuthScheme: [ ]
+paths:
+  /:
+    post:
+      summary: Submit a file for dynamic analysis.
+      tags:
+        - Dynamic file analysis
+      parameters:
+        - $ref: 'common.yml#/components/parameters/AuthHeader'
+        - $ref: 'common.yml#/components/parameters/CorrelationIdHeader'
+      requestBody:
+        $ref: 'common.yml#/components/requestBodies/DynamicFileSubmit'
+      responses:
+        '200':
+          description: |
+            The file has been successfully submitted for analysis and the analysis is already finished successfully.
+
+            All successful file submissions above free tier are billed.
+          headers:
+            'X-Rate-Limit-Value':
+              $ref: 'common.yml#/components/headers/xRateLimitValue'
+            'X-Rate-Limit-Period':
+              $ref: 'common.yml#/components/headers/xRateLimitPeriod'
+            'X-Rate-Limit-Requests-Left':
+              $ref: 'common.yml#/components/headers/xRateLimitRequestsLeft'
+            'X-Rate-Limit-End':
+              $ref: 'common.yml#/components/headers/xRateLimitEnd'
+          content:
+            application/json SUCCESS:
+              schema:
+                $ref: '#/components/schemas/DynamicAnalysisReport'
+            text/html SUCCESS:
+              schema:
+                $ref: '#/components/schemas/DynamicAnalysisReportHtml'
+            application/json ERROR:
+              schema:
+                $ref: '#/components/schemas/AnalysisError'
+        '202':
+          description: |
+            The file has been successfully submitted for analysis.
+
+            All successful file submissions above free tier are billed.
+          headers:
+            'X-Rate-Limit-Value':
+              $ref: 'common.yml#/components/headers/xRateLimitValue'
+            'X-Rate-Limit-Period':
+              $ref: 'common.yml#/components/headers/xRateLimitPeriod'
+            'X-Rate-Limit-Requests-Left':
+              $ref: 'common.yml#/components/headers/xRateLimitRequestsLeft'
+            'X-Rate-Limit-End':
+              $ref: 'common.yml#/components/headers/xRateLimitEnd'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AnalysisInProgress'
+        '400':
+          $ref: 'common.yml#/components/responses/400'
+        '401':
+          description: |
+            The call has been rejected due to authentication error. Either no authentication information has been
+            provided, the access token has already been expired, the access token is not for the called service.
+          content:
+            application/json:
+              schema:
+                $ref: 'common.yml#/components/schemas/ErrorResponse'
+          $ref: ''
+          examples:
+            Expired token:
+              message: The incoming token has expired
+        '404':
+          description: |
+            The requested URL does not exist (Not Found).
+          content:
+            application/json:
+              schema:
+                $ref: 'common.yml#/components/schemas/ErrorResponse'
+          $ref: ''
+          examples:
+            Not found:
+              error: notFound
+        '405':
+          $ref: 'common.yml#/components/responses/405'
+        '415':
+          description: |
+            Unsupported Media Type. The request has not been assembled correctly.
+          content:
+            application/json:
+              schema:
+                $ref: 'common.yml#/components/schemas/ErrorResponse'
+          $ref: ''
+          examples:
+            Not found:
+              error: unsupportedMediaType
+        '429':
+          description: |
+            The caller has reached the rate limit on the specific URL. Please, check the **X-Rate-Limit-End** header for
+            when the next call should be made. You can find the actual rate limit values [here](/doc/index.html#rate-limit).
+          headers:
+            'X-Rate-Limit-Value':
+              $ref: 'common.yml#/components/headers/xRateLimitValue'
+            'X-Rate-Limit-Period':
+              $ref: 'common.yml#/components/headers/xRateLimitPeriod'
+            'X-Rate-Limit-Requests-Left':
+              $ref: 'common.yml#/components/headers/xRateLimitRequestsLeft'
+            'X-Rate-Limit-End':
+              $ref: 'common.yml#/components/headers/xRateLimitEnd'
+          content:
+            application/json:
+              schema:
+                $ref: 'common.yml#/components/schemas/ErrorResponse'
+          $ref: ''
+          examples:
+            Too Many Requests:
+              requestId: d4ae41c5-00bc-433b-8bc4-aafc49845ffb
+              createdAt: "2019-08-28T06:16:58.253839Z"
+              error: tooManyRequests
+        '5xx':
+          $ref: 'common.yml#/components/responses/500'
+  /reports:
+    get:
+      summary: Get a report by file hash.
+      description: |
+        Get a report by file hash. Currently only sha256 hashes are supported.
+
+        The caller is billed if SophosLabs returns a report for the file with status code 200.
+        The server returns with status code 404 in case of no report found for the requested file hash.
+      tags:
+        - Dynamic file analysis
+      parameters:
+        - name: sha256
+          in: query
+          description: |
+            The SHA256 hash of the file.
+          required: true
+          schema:
+            type: string
+            minLength: 64
+            maxLength: 64
+            example: d70a85f3ef7494f85a6bf35e60c666c8e2335563c7ad7e6d8ae69f058173ce2b
+        - name: report_format
+          in: query
+          description: |
+            The requested report format. Either 'json' (default) or 'html'.
+
+            HTML response may only be received in case of the jobStatus is SUCCESS. Otherwise the response
+            format is always JSON, even if HTML requested.
+
+            The 'Content-Type' response header is always set accordingly:
+
+             * application/json
+             * text/html
+
+          required: false
+          schema:
+            type: string
+            minLength: 4
+            maxLength: 4
+            example: json
+        - $ref: 'common.yml#/components/parameters/AuthHeader'
+        - $ref: 'common.yml#/components/parameters/CorrelationIdHeader'
+      responses:
+        '200':
+          description: |
+            A successful response contains the result of the most recent analysis. JobStatus can be SUCCESS or ERROR.
+          headers:
+            'X-Rate-Limit-Value':
+              $ref: 'common.yml#/components/headers/xRateLimitValue'
+            'X-Rate-Limit-Period':
+              $ref: 'common.yml#/components/headers/xRateLimitPeriod'
+            'X-Rate-Limit-Requests-Left':
+              $ref: 'common.yml#/components/headers/xRateLimitRequestsLeft'
+            'X-Rate-Limit-End':
+              $ref: 'common.yml#/components/headers/xRateLimitEnd'
+          content:
+            application/json SUCCESS:
+              schema:
+                $ref: '#/components/schemas/DynamicAnalysisReport'
+            text/html SUCCESS:
+              schema:
+                $ref: '#/components/schemas/DynamicAnalysisReportHtml'
+            application/json ERROR:
+              schema:
+                $ref: '#/components/schemas/AnalysisError'
+        '400':
+          $ref: 'common.yml#/components/responses/400'
+        '401':
+          description: |
+            The call has been rejected due to authentication error. Either no authentication information has been
+            provided, the access token has already been expired, the access token is not for the called service.
+          content:
+            application/json:
+              schema:
+                $ref: 'common.yml#/components/schemas/ErrorResponse'
+          $ref: ''
+          examples:
+            Expired token:
+              message: The incoming token has expired
+        '404':
+          description: |
+            No report found for the requested file hash.
+          content:
+            application/json:
+              schema:
+                $ref: 'common.yml#/components/schemas/ErrorResponse'
+          $ref: ''
+          examples:
+            Not found:
+              error: notFound
+        '405':
+          $ref: 'common.yml#/components/responses/405'
+        '429':
+          description: |
+            The caller has reached the rate limit on the specific URL. Please, check the **X-Rate-Limit-End** header for
+            when the next call should be made. You can find the actual rate limit values [here](/doc/index.html#rate-limit).
+          headers:
+            'X-Rate-Limit-Value':
+              $ref: 'common.yml#/components/headers/xRateLimitValue'
+            'X-Rate-Limit-Period':
+              $ref: 'common.yml#/components/headers/xRateLimitPeriod'
+            'X-Rate-Limit-Requests-Left':
+              $ref: 'common.yml#/components/headers/xRateLimitRequestsLeft'
+            'X-Rate-Limit-End':
+              $ref: 'common.yml#/components/headers/xRateLimitEnd'
+          content:
+            application/json:
+              schema:
+                $ref: 'common.yml#/components/schemas/ErrorResponse'
+          $ref: ''
+          examples:
+            Too Many Requests:
+              requestId: d4ae41c5-00bc-433b-8bc4-aafc49845ffb
+              createdAt: "2019-08-28T06:16:58.253839Z"
+              error: tooManyRequests
+        '5xx':
+          $ref: 'common.yml#/components/responses/500'
+  /reports/{job_id}:
+    get:
+      summary: Get a report by job id.
+      description: |
+        Get a report by job id.
+
+        In case of IN_PROGRESS jobStatus the client has to continue polling this endpoint to retrieve the report with
+        either SUCCES or ERROR jobStatus.
+        The proposed polling interval is 15 seconds. The proposed analysis timeout on the client side is 15 minutes.
+        If the server does not provide either SUCCESS or ERROR report within this time, most probably it faces with an unexpected error.
+
+        The caller is not billed for this call.
+
+        Example call to get report by Job ID:
+          ```bash
+          $ curl \
+                -X GET \
+                -H "Authorization: ${TOKEN}" \
+                -s https://de.api.labs.sophos.com/analysis/file/dynamic/v1/reports/${JOBID}?report_format=html`
+          ```
+      tags:
+        - Dynamic file analysis
+      parameters:
+        - name: job_id
+          in: path
+          description: |
+            The job id obtained in the submit call.
+          required: true
+          schema:
+            type: string
+            example: 949607c0b63a4a6fa2daad228380eca4
+        - name: report_format
+          in: query
+          description: |
+            The requested report format. Either 'json' (default) or 'html'.
+
+            HTML response may only be received in case of the jobStatus is SUCCESS. Otherwise the response
+            format is always JSON, even if HTML requested.
+
+            The 'Content-Type' response header is always set accordingly:
+
+             * application/json
+             * text/html
+
+          required: false
+          schema:
+            type: string
+            minLength: 4
+            maxLength: 4
+            example: json
+        - $ref: 'common.yml#/components/parameters/AuthHeader'
+        - $ref: 'common.yml#/components/parameters/CorrelationIdHeader'
+      responses:
+        '200':
+          description: |
+            A successful query.
+
+            Note: HTTP 404 will be returned upon querying a non-existing job id.
+          headers:
+            'X-Rate-Limit-Value':
+              $ref: 'common.yml#/components/headers/xRateLimitValue'
+            'X-Rate-Limit-Period':
+              $ref: 'common.yml#/components/headers/xRateLimitPeriod'
+            'X-Rate-Limit-Requests-Left':
+              $ref: 'common.yml#/components/headers/xRateLimitRequestsLeft'
+            'X-Rate-Limit-End':
+              $ref: 'common.yml#/components/headers/xRateLimitEnd'
+          content:
+            application/json SUCCESS:
+              schema:
+                $ref: '#/components/schemas/DynamicAnalysisReport'
+            text/html SUCCESS:
+              schema:
+                $ref: '#/components/schemas/DynamicAnalysisReportHtml'
+            application/json ERROR:
+              schema:
+                $ref: '#/components/schemas/AnalysisError'
+        '202':
+          description: |
+            The analysis is still in progress.
+
+            All successful file submissions above free tier are billed.
+          headers:
+            'X-Rate-Limit-Value':
+              $ref: 'common.yml#/components/headers/xRateLimitValue'
+            'X-Rate-Limit-Period':
+              $ref: 'common.yml#/components/headers/xRateLimitPeriod'
+            'X-Rate-Limit-Requests-Left':
+              $ref: 'common.yml#/components/headers/xRateLimitRequestsLeft'
+            'X-Rate-Limit-End':
+              $ref: 'common.yml#/components/headers/xRateLimitEnd'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AnalysisInProgress'
+        '400':
+          $ref: 'common.yml#/components/responses/400'
+        '401':
+          description: |
+            The call has been rejected due to authentication error. Either no authentication information has been
+            provided, the access token has already been expired, the access token is not for the called service.
+          content:
+            application/json:
+              schema:
+                $ref: 'common.yml#/components/schemas/ErrorResponse'
+          $ref: ''
+          examples:
+            Expired token:
+              message: The incoming token has expired
+        '404':
+          description: |
+            The given jobId in the URL is either invalid or unknown by the system.
+          content:
+            application/json:
+              schema:
+                $ref: 'common.yml#/components/schemas/ErrorResponse'
+          $ref: ''
+          examples:
+            Not found:
+              error: notFound
+        '405':
+          $ref: 'common.yml#/components/responses/405'
+        '429':
+          description: |
+            The caller has reached the rate limit on the specific URL. Please, check the **X-Rate-Limit-End** header for
+            when the next call should be made. You can find the actual rate limit values [here](/doc/index.html#rate-limit).
+          headers:
+            'X-Rate-Limit-Value':
+              $ref: 'common.yml#/components/headers/xRateLimitValue'
+            'X-Rate-Limit-Period':
+              $ref: 'common.yml#/components/headers/xRateLimitPeriod'
+            'X-Rate-Limit-Requests-Left':
+              $ref: 'common.yml#/components/headers/xRateLimitRequestsLeft'
+            'X-Rate-Limit-End':
+              $ref: 'common.yml#/components/headers/xRateLimitEnd'
+          content:
+            application/json:
+              schema:
+                $ref: 'common.yml#/components/schemas/ErrorResponse'
+          $ref: ''
+          examples:
+            Too Many Requests:
+              requestId: d4ae41c5-00bc-433b-8bc4-aafc49845ffb
+              createdAt: "2019-08-28T06:16:58.253839Z"
+              error: tooManyRequests
+        '5xx':
+          $ref: 'common.yml#/components/responses/500'
+
+components:
+  securitySchemes:
+    oAuthScheme:
+      $ref: 'common.yml#/components/securitySchemes/oAuthScheme'
+  schemas:
+    ErrorResponse:
+      type: object
+      $ref: 'common.yml#/components/schemas/ErrorResponse'
+
+    AnalysisInProgress:
+      type: object
+      $ref: 'common.yml#/components/schemas/AnalysisInProgress'
+
+    AnalysisError:
+      type: object
+      $ref: 'common.yml#/components/schemas/AnalysisError'
+
+    DynamicAnalysisReport:
+      type: object
+      allOf:
+        - $ref: 'common.yml#/components/schemas/GenericResponse'
+        - type: object
+          required:
+            - jobStatus
+            - report
+          properties:
+            jobStatus:
+              description: |
+                The status of the analysis job. Possible values:
+
+                * **IN_PROGRESS**: The analysis job is still running. No report provided.
+                * **SUCCESS**: The analysis job has already finished. Report is provided.
+                * **ERROR**: An error happend during the analysis. An AnalysisError object is provided.
+              type: string
+              example: SUCCESS
+            report:
+              $ref: '#/components/schemas/Report'
+            jobId:
+              type: string
+              description: |
+                The identifier assigned for this analysis job.
+                Only present in case of GET /reports/{job_id} and POST / responses.
+              example: 949607c0b63a4a6fa2daad228380eca4
+
+    Report:
+      type: object
+      description: |
+        Report of the dynamic analysis.
+        Not all reports will contain all sections/sub-sections (except the mandatory fields*).
+        Within each section/sub-section, not all fields will necessarily be present.
+        New fields may be added anytime.
+      required:
+        - submission
+        - analysis_type
+        - analysis_subject
+        - object_type
+        - score
+        - malicious_activity
+      properties:
+        submission:
+          description: The file submission date in UTC.
+          type: string
+          example: "2018-03-14T16:13:48Z"
+        analysis_type:
+          description: |
+            The type of the file analysis.
+
+            It's always **dynamic**.
+          type: string
+          example: dynamic
+        analysis_subject:
+          $ref: 'common.yml#/components/schemas/AnalysisSubject'
+        object_type:
+          description: |
+            The type of the submission.
+          type: string
+          enum:
+            - file
+        score:
+          description:
+            Maliciousness score of the analyzed file (0 = malicious, 100 = benign).
+          type: integer
+        malicious_activity:
+          description: |
+            Simple dictionary of descriptions associated with the medium and high severity signatures that fired
+            during analysis, grouped by type of signature.
+
+            example:
+
+              "malicious_activity": {
+                "Suspicious": [
+                  "Java process spawns a shell application",
+                  "Equation Editor spawns process",
+                  "An executable with low reputation",
+                  "Tries to end a running process",
+                  "Equation Editor process spawned in Office package",
+                  "Excessive number of file write operations by a process"
+                ],
+                "Network": [
+                  "Downloads an executable file",
+                  "Connects to remote server classified as high-risk"
+                ],
+                "Signature": [
+                  "Triggers malware detections by Sophos Anti-Virus"
+                ]
+              }
+          type: object
+          patternProperties:
+            ^[A-Z[a-z+$:
+              items:
+                type: string
+              type: array
+
+        malicious_classifications:
+          # TODO detailed malicious_classifications description
+          type: array
+          items:
+            required:
+              - classification
+              - classification_type
+              - artifact
+            type: object
+            properties:
+              classification:
+                description: Classification, Category or Mitigation name
+                type: string
+              classification_type:
+                description: |
+                  Type of classification. One of:
+                   * SAV detection
+                   * SAV detection (PUA)
+                   * Web reputation
+                   * Machine learning & reputation
+                   * Yara match
+                   * InterceptX
+                type: string
+              artifact:
+                description: Path / filename / application / URL / IP of detection
+                type: string
+              artifact_type:
+                description: |
+                  Type of artifact. One of:
+                   * file
+                   * process
+                   * URL
+                   * IP
+                type: string
+              threat_name:
+                type: string
+              pid:
+                description: Process PID for process (if available)
+                type: integer
+        detonation_info:
+          type: object
+          properties:
+            duration:
+              description: Duration of analysis (secs)
+              type: integer
+            start:
+              description: Analysis start time (UTC, yyyy-mm-ddThh:mm:ssZ)
+              type: string
+            version:
+              description: Analyzer version
+              type: string
+            target:
+              description: General information about de analysis
+              type: object
+              properties:
+                run_as:
+                  description: Analysis package used
+                  type: string
+                file_magic:
+                  description: file type information
+                  type: string
+                sha1:
+                  description: SHA1 hash of sample
+                  type: string
+                sha256:
+                  description: SHA256 hash of sample
+                  type: string
+        files:
+          type: object
+          properties:
+            written:
+              description: List of files created/written during analysis.
+              type: array
+              items:
+                required:
+                  - path
+                  - pid
+                  - process
+                type: object
+                properties:
+                  path:
+                    description: File path created/written
+                    type: string
+                  process:
+                    description: Path of process doing the file write
+                    type: string
+                  pid:
+                    description: Process PID of process doing the file write
+                    type: integer
+            deleted:
+              description: List of files deleted during analysis.
+              type: array
+              items:
+                required:
+                  path
+                type: object
+                properties:
+                  path:
+                    description: File path deleted
+                    type: string
+        processes:
+          description: List of spawned processes seen during analysis, sorted in time order (earliest first).
+          type: array
+          items:
+            required:
+              - pid
+              - process
+            type: object
+            properties:
+              start_time:
+                description: Process start time (UTC, yyyy-mm-ddThh:mm:ssZ)
+                type: string
+                format: date-time
+              process:
+                description: Path of process spawned
+                type: string
+              parent_process:
+                description: Path of parent process
+                type: string
+              command_line:
+                description: Command line used to spawn process (may be truncated to 512 characters if very long)
+                type: string
+              pid:
+                description: Process PID for process
+                type: integer
+              ppid:
+                description: Parent process PID
+                type: integer
+        registry:
+          type: object
+          properties:
+            added:
+              description: Registry data added during analysis.
+              type: array
+              items:
+                required:
+                  - key
+                  - pid
+                  - process
+                  - timestamp
+                type: object
+                properties:
+                  key:
+                    description: Registry key added
+                    type: string
+                  reg_value:
+                    type: string
+                  reg_data:
+                    type: string
+                  timestamp:
+                    description: Time key added (UTC, yyyy-mm-ddThh:mm:ssZ)
+                    type: string
+                    format: date-time
+                  process:
+                    description: Path for process adding key
+                    type: string
+                  pid:
+                    description: Process PID for process adding key
+                    type: integer
+            deleted:
+              type: array
+              items:
+                required:
+                  - key
+                  - pid
+                  - process
+                  - timestamp
+                type: object
+                properties:
+                  key:
+                    description: Registry key deleted
+                    type: string
+                  timestamp:
+                    description: Time key deleted (UTC, yyyy-mm-ddThh:mm:ssZ)
+                    type: string
+                    format: date-time
+                  process:
+                    description: Path for process deleting key
+                    type: string
+                  pid:
+                    description: Process PID for process deleting key
+                    type: integer
+        network:
+          type: object
+          properties:
+            connections:
+              description: List of network connections seen during analysis.
+              type: array
+              items:
+                required:
+                  - ip
+                  - protocol
+                  - port
+                type: object
+                properties:
+                  ip:
+                    description: IP address of remote machine being connected to
+                    type: string
+                  port:
+                    description: port on remote machine
+                    type: integer
+                  protocol:
+                    description: Protocol (UDP or TCP)
+                    type: string
+                  host:
+                    description: Hostname of remote machine being connected to
+                    type: string
+                  process:
+                    description: Path of process responsible (if known)
+                    type: string
+                  pid:
+                    description: Process PID for process (if known)
+                    type: string integer
+            http_flow:
+              description: HTTP flow data seen during analysis.
+              type: array
+              items:
+                required:
+                  - uri
+                type: object
+                properties:
+                  uri:
+                    description: URL being requested
+                    type: string
+                  http_method:
+                    description: HTTP method (GET, POST etc)
+                    type: string
+                  http_useragent:
+                    description: Useragent string in request
+                    type: string
+                  ip:
+                    description: IP of remote server (if known)
+                    type: string
+                  process:
+                    description: Path(s) for process(es) making the request
+                    type: string
+                  url_classification:
+                    description: Risk level for HTTP request based on Sophos reputation data
+                    type: string
+                  response:
+                    type: object
+                    properties:
+                      http_status:
+                        description: HTTP response code (e.g. 200, 404 etc)
+                        type: integer
+                      mime_type:
+                        description: Mime type for returned content according to HTTP headers (could be spoofed)
+                        type: string
+                      size:
+                        description: Size of returned data (bytes)
+                        type: integer
+                      sha1:
+                        description: SHA1 hash for returned data
+                        type: string
+            dns_requests:
+              description: DNS requests seen during analysis.
+              type: array
+              items:
+                required:
+                  - ip
+                  - domain
+                type: object
+                properties:
+                  ip:
+                    description: IP address(es) seen in response
+                    type: string
+                  domain:
+                    description: Host name being queried
+                    type: string
+        screenshots:
+          description: |
+            List of screenshots taken during analysis window.
+
+            Each screenshot JPEG is included inline within the JSON report, using the data URI scheme:
+            data:image/jpeg;base64,/9j/...snip...
+
+            Screenshots are selected across the timespan of the analysis window, up to a maximum of 10 screenshots in total.
+          type: array
+          items:
+            type: string
+        activity_tree:
+          description: |
+            Simple dictionary containing arrays of nodes and edges that comprise the activity tree data for the analysis.
+            The tree data is sufficient to render an activity tree using whatever rendering library you wish (Cytoscape, GraphViz etc). This enables custom styling and optimal user experience.
+
+            Example:
+
+            "activity_tree_data" : {
+                "nodes" : [
+                    {
+                        "nodetype" : ...,
+                        "id"       : ...,
+                        "label"    : ...,
+                        "cmdline"  : ...,
+                    },
+                    ...
+                ],
+                "edges" : [
+                    {
+                        "id"       : ...,
+                        "label"    : ...,
+                        "source"   : ...,
+                        "target"   : ...,
+                    },
+                    ...
+                ]
+            }
+
+          type: object
+          properties:
+            data:
+              type: object
+              properties:
+                nodes:
+                  type: array
+                  items:
+                    required:
+                      - id
+                      - label
+                    properties:
+                      nodetype:
+                        description: |
+                          The type of node in the graph. Some of the nodes represent singular events, others will contain aggregation from multiple events of that type.
+
+                          The various nodetypes supported are listed below.
+
+                           * process - CreateProcess event
+                           * filewrite - aggregation of written files
+                           * registry - aggregation of added Registry keys/values
+                           * ip_connect - IP connection event
+                           * http_req - HTTP request event
+                        type: string
+                      id:
+                        description: |
+                          The id of the node in the graph
+                        type: string
+                      label:
+                        description: |
+                          The label to use in the graph. Information it (may) contain will depend upon nodetype
+
+                           * process - PID & process path
+                           * filewrite - list of file paths
+                           * registry - list of Registry keys
+                           * ip_connect - IP, protocol, port & relevant hostname (if available)
+                           * http_req - URL, HTTP method, http response status & request (GET) or response (POST) body length
+                        type: string
+                      cmdline:
+                        description: |
+                          The command-line for the process (only relevant to process nodes).
+                        type: string
+                edges:
+                  type: array
+                  items:
+                    required:
+                      - id
+                      - source
+                      - target
+                    properties:
+                      id:
+                        description: The id of the edge in the graph
+                        type: string
+                      label:
+                        description: The label used in the graph
+                        type: string
+                      source:
+                        description: The node id of the source node
+                        type: string
+                      target:
+                        description: The node id of the source node
+                        type: string
+            vis:
+              description: |
+                This is an inline SVG image that represents the activity tree for the analysis.
+
+                The rendering is done using GraphViz using the data available in report.activity_tree_data, with simplistic styling:
+
+                 * process - blue, oval
+                 * filewrite - green, folder
+                 * registry - grey, note
+                 * ip_connect - yellow, ellipse
+                 * http_req - orange, rectangle
+
+                The SVG is included inline within the JSON report, using the data URI scheme:
+                data:image/svg+xml;base64,PD94...
+              type: string
+        mitre_overlay:
+          type: object
+          description: |
+            This section provides a JSON dictionary of Mitre tactic/technique data associated with the analysis
+            (see [Mitre docs](https://attack.mitre.org/matrices/enterprise/windows/)).
+
+            Techniques are grouped by Mitre tactic (credential_access etc).
+
+            Where possible, a list of one or more artifacts associated with each Mitre technique is provided. The artifact data contains:
+
+              * Process artifact: fields associated with processes (as per report.processes above)
+              * Non-process artifact: fields associated with non-process nodes, as per activity tree data above
+
+            Note: artifacts field within each technique is optional. Where possible it is populated with 1 or more associated artifacts from the analysis.
+
+            For example:
+
+            ```
+            "mitre_overlay": {
+                "command_and_control": {
+                    "T1071": {
+                        "name": "Standard Application Layer Protocol",
+                        "description": "Adversaries may communicate using a common, ...snip..."
+                    }
+                },
+                "execution": {
+                    "T1064": {
+                        "artifacts": [
+                            {
+                                "nodetype": "process",
+                                "process": "%windir%\\system32\\windowspowershell\\v1.0\\powershell.exe",
+                                "pid": 3936,
+                                "command_line": "powershell -enc ...snip...",
+                                "nodeid": "3936:132134604113080000",
+                                "parent_process": "%windir%\\system32\\wbem\\wmiprvse.exe",
+                                "timestamp": 132134604113080000,
+                                "ppid": 2356
+                            },
+                            {
+                                "nodetype": "process",
+                                "process": "%userprofile%\\548.exe",
+                                "pid": 3460,
+                                "command_line": "%userprofile%\\548.exe ",
+                                "nodeid": "3460:132134604192172000",
+                                "parent_process": "%windir%\\system32\\windowspowershell\\v1.0\\powershell.exe",
+                                "timestamp": 132134604192172000,
+                                "ppid": 3936
+                            },
+                            {
+                                "nodetype": "process",
+                                "process": "%userprofile%\\548.exe",
+                                "pid": 3476,
+                                "command_line": "%userprofile%\\548.exe ",
+                                "nodeid": "3476:132134604193732000",
+                                "parent_process": "%userprofile%\\548.exe",
+                                "timestamp": 132134604193732000,
+                                "ppid": 3460
+                            }
+                        ],
+                        "name": "Scripting",
+                        "description": "Adversaries may use scripts to aid in operations ...snip..."
+                    },
+                    ...
+                },
+                ...
+            }
+            ```
+          properties:
+            credential_access:
+              type: object
+            execution:
+              type: object
+            impact:
+              type: object
+            persistence:
+              type: object
+            privilege_escalation:
+              type: object
+            lateral_movement:
+              type: object
+            defense_evasion:
+              type: object
+            exfiltration:
+              type: object
+            discovery:
+              type: object
+            collection:
+              type: object
+            command_and_control:
+              type: object
+            initial_access:
+              type: object
+
+    DynamicAnalysisReportHtml:
+      type: string
+      description: |
+        The content of the JSON report in a human readable format with visuals.
+
+        [You can click this link to view an example report of a malicious file.](https://api.labs.sophos.com/doc/analysis/file/response_dynamic.html)

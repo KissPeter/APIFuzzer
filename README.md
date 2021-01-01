@@ -29,6 +29,12 @@ if you application can cope with the fuzzed parameters. Does not require coding.
 
 ## Installation
 
+Latest release version:
+
+```
+pip3 install APIFuzzer
+```
+Development version: 
 Fetch the most recent code from GitHub
 ```
 $ git clone https://github.com/KissPeter/APIFuzzer.git

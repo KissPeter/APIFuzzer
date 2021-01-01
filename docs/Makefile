@@ -19,3 +19,9 @@ clean:
 apidoc:
 	sphinx-apidoc  ../apifuzzer -f -e -o .
 
+builld-pip-package:
+	cd ..
+	find . -name "__pycache __" -exec rm -rf {} \;
+	rm -fr  dist/ build/ *.egg-info
+	python3 setup.py sdist bdist_wheel
+	tar -tvf dist/APIFuzzer-*.tar.gz

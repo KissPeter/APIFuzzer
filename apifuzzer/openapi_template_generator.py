@@ -65,7 +65,7 @@ class OpenAPITemplateGenerator(TemplateGenerator):
                 if len(item):
                     schema_path.append(item)
         _return = dict()
-        for key_to_look_for in ['properties', 'paramters', 'content']:
+        for key_to_look_for in ['properties', 'parameters', 'content']:
             # if reference is for a file, but no internal path:
             if schema_path and len(schema_path):
                 schema_path_extended = schema_path
@@ -83,6 +83,19 @@ class OpenAPITemplateGenerator(TemplateGenerator):
             schema_path_extended.pop(len(schema_path_extended) - 1)
         self.logger.debug('Parameters found in schema: {}'.format(pretty_print(_return)))
         return _return
+
+    def _add_extracted_references(self, resource, method, schema_definition):
+        self.logger.debug(f'Add {pretty_print(schema_definition.get(resource, {}).get(method), 500)}')
+        existing_param_names = set()
+        if not self.api_resources['paths'][resource][method].get('parameters'):
+            self.api_resources['paths'][resource][method]['parameters'] = list()
+        for existing_param in self.api_resources['paths'][resource][method]['parameters']:
+            existing_param_names.add(existing_param.get('name'))
+        for schema_def in schema_definition.get(resource, {}).get(method, {}).get('parameters', []):
+            if schema_def.get('name') not in existing_param_names:
+                self.logger.debug(f'Update {resource}/{method} with definition {pretty_print(schema_def)}')
+                self.api_resources['paths'][resource][method]['parameters'].append(schema_def)
+        self.logger.debug(f'Updated definition: {pretty_print(schema_definition.get(resource, {}).get(method), 500)}')
 
     def resolve_json_reference(self, param):
         """
@@ -122,6 +135,8 @@ class OpenAPITemplateGenerator(TemplateGenerator):
         from jsonref import JsonRef
         ref = RefDict(file)
         resolved = materialize(ref)
+        Alternative: OpenApiParser
+        Open issue: https://gitlab.com/Hares-Lab/openapi-parser/-/issues/1
         """
         schema_properties = None
         self.logger.info('Received schema definition: {}'.format(pretty_print(param, limit=500)))
@@ -145,8 +160,6 @@ class OpenAPITemplateGenerator(TemplateGenerator):
             resource_reference, item_location = schema_ref.split('#', 1)
             self.logger.info('Downloading resource from: {} and using {}'.format(resource_reference, item_location))
             schema_definition = get_api_definition_from_url(resource_reference, logger=self.logger.debug)
-            self.logger.debug(f'Update api definition with {pretty_print(schema_definition)}')
-            self.api_resources.update(schema_definition)
             schema_properties = self.get_properties_from_schema_definition(schema_definition, item_location)
         elif schema_ref.startswith('//'):
             self.logger.warning('Not implemented import: {}'.format(schema_ref))
@@ -160,8 +173,6 @@ class OpenAPITemplateGenerator(TemplateGenerator):
                               .format(file_reference, item_location))
             try:
                 schema_definition = get_api_definition_from_file(file_reference, logger=self.logger.debug)
-                self.logger.debug(f'Update api definition with {pretty_print(schema_definition)}')
-                self.api_resources.update(schema_definition)
             except FailedToParseFileException:
                 # This part is necessary only because some of the API definitions doesn't follow the standard
                 if len(self.api_definition_url):
@@ -171,8 +182,6 @@ class OpenAPITemplateGenerator(TemplateGenerator):
                     api_definition_url = "/".join([get_base_url_form_api_src(self.api_definition_url), file_reference])
                     self.logger.debug('Trying to fetch api definition from: {}'.format(api_definition_url))
                     schema_definition = get_api_definition_from_url(api_definition_url, logger=self.logger.debug)
-                    self.logger.debug(f'Update api definition with {pretty_print(schema_definition)}')
-                    self.api_resources.update(schema_definition)
                 else:
                     self.logger.warning('Local file reference was found in API definition, but file is not available')
                     schema_definition = dict()
@@ -256,8 +265,9 @@ class OpenAPITemplateGenerator(TemplateGenerator):
             received_schema_def = self.resolve_json_reference(param)
             processed_schema = self.transform_schema_definition_to_swagger_param_definition(param, received_schema_def)
         except FailedToProcessSchemaException as e:
-            self.logger.debug('{}, trying to find details directly from parameter: {}'.format(e, param))
+            self.logger.debug(f'{e}, trying to find details directly from parameter: {param}')
             processed_schema = self.transform_schema_definition_key_to_swagger_param_definition(param, '', param)
+        self.logger.debug(f'Processes schema: {processed_schema}')
         tmp_api_resource[resource][method]['parameters'].extend(processed_schema)
         return tmp_api_resource
 
@@ -286,31 +296,40 @@ class OpenAPITemplateGenerator(TemplateGenerator):
         self.logger.debug(f'Adding template to list: {template.name}, templates list: {len(self.templates)}')
 
     def pre_process_api_resources(self):
+        """
+        !!! Resolving references in OpenAPI definition isn't the best at the moment, once a reliable package will be
+        available, this pat can be dropped and simplified !!!
+        This code iterates through the API definition and tries to resolve the references. RequestBody not supported yet
+        """
         iteration = 0
         while True:
+            reference_resolved = False
             tmp_api_resource = dict()
             paths = self.api_resources['paths']
-
             for resource in paths.keys():
                 for method in paths[resource].keys():
                     self.logger.debug(f'{iteration}. Resource: {resource} Method: {method}')
-                    params_to_process = list(paths[resource][method].get('parameters', {}))
-                    params_to_process.append(paths[resource][method].get('requestBody', {}))
-                    for param in params_to_process:
+                    for param in paths[resource][method].get('parameters', []):
                         if param.get('schema'):
+                            reference_resolved = True
                             tmp_api_resource = self.process_schema(resource, method, param, tmp_api_resource)
+                            param.pop('schema')
                         if len(param.get("$ref", "")):
                             self.logger.debug(f'{iteration}. Only schema reference found in the parameter: {param}')
                             if param.get('schema'):
                                 tweaked_param = {'schema': param}
                             else:
                                 tweaked_param = param
-                            self.logger.debug(f'Processing {tweaked_param}')
+                            self.logger.debug(f'{iteration}. Processing {tweaked_param}')
+                            reference_resolved = True
                             tmp_api_resource = self.process_schema(resource, method, tweaked_param, tmp_api_resource)
-            if not len(tmp_api_resource):
+                            param.pop('$ref')
+                        else:
+                            self.logger.debug(f'{iteration}. There is nothing to resolve: {param}')
+                        if len(tmp_api_resource):
+                            self._add_extracted_references(resource, method, tmp_api_resource)
+            if not reference_resolved:
                 break
-            else:
-                self.api_resources['paths'].update(tmp_api_resource)
             iteration += 1
 
     def process_api_resources(self, paths=None):
@@ -356,9 +375,9 @@ class OpenAPITemplateGenerator(TemplateGenerator):
                     parameter_place_in_request = param.get('in')
                     param_name = '{}|{}'.format(template_name, param.get('name'))
 
-                    self.logger.debug(f'Resource: {resource} Method: {method} Parameter: {param}, Parameter type: '
-                                      f'{parameter_place_in_request}, Sample data: {sample_data}, Param name: '
-                                      f'{param_name}, fuzzer: {fuzz_type.__name__}')
+                    self.logger.info(f'Resource: {resource} Method: {method} Parameter: {param}, Parameter type: '
+                                     f'{parameter_place_in_request}, Sample data: {sample_data}, Param name: '
+                                     f'{param_name}, fuzzer: {fuzz_type.__name__}')
 
                     if parameter_place_in_request == ParamTypes.PATH:
                         template.path_variables.add(fuzz_type(name=param_name, value=str(sample_data)))

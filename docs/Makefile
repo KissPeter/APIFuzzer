@@ -21,7 +21,10 @@ apidoc:
 
 builld-pip-package:
 	cd ..
+	mkdir /tmp/$$
+	mv test  # not the best, but setup exclude doesn't work
 	find . -name "__pycache __" -exec rm -rf {} \;
 	rm -fr  dist/ build/ *.egg-info
 	python3 setup.py sdist bdist_wheel
 	tar -tvf dist/APIFuzzer-*.tar.gz
+	mv /tmp/$$/test .

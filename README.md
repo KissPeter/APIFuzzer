@@ -4,6 +4,7 @@
 [![Scrutinizer Code Quality](https://scrutinizer-ci.com/g/KissPeter/APIFuzzer/badges/quality-score.png?b=master)](https://scrutinizer-ci.com/g/KissPeter/APIFuzzer/?branch=master)
 [![Build Status](https://travis-ci.org/KissPeter/APIFuzzer.svg?branch=master)](https://travis-ci.org/KissPeter/APIFuzzer)
 [![Documentation Status](https://readthedocs.org/projects/apifuzzer/badge/?version=latest)](https://apifuzzer.readthedocs.io/)
+[![Pypi downloads](https://img.shields.io/pypi/dw/APIFuzzer)](https://pypistats.org/packages/apifuzzer)
 
 # APIFuzzer — HTTP API Testing Framework
 

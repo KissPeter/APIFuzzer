@@ -9,6 +9,7 @@ class BaseTemplate(object):
     def __init__(self, name):
         self.logger = get_logger(self.__class__.__name__)
         self.name = name
+        self.content_type = None
         self.method = None
         self.url = None
         self.params = set()

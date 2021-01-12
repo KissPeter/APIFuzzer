@@ -332,18 +332,52 @@ class OpenAPITemplateGenerator(TemplateGenerator):
                 break
             iteration += 1
 
-    def process_api_resources(self, paths=None):
+    @staticmethod
+    def _split_content_type(content_type):
+        """
+        application/x-www-form-urlencoded -> x-www-form-urlencoded
+        multipart/form-data               -> form-data
+         application/json                 -> json
+        :param content_type:
+        :return:
+        """
+        if '/' in content_type:
+            return content_type.split('/', 1)[1]
+        else:
+            return content_type
+
+    def process_api_resources(self, paths=None, existing_template=None):
         self.logger.info('Start preparation')
-        self.pre_process_api_resources()
-        paths = self.api_resources['paths']
+        if paths is None:
+            self.pre_process_api_resources()
+            paths = self.api_resources['paths']
         for resource in paths.keys():
             normalized_url = self._normalize_url(resource)
             for method in paths[resource].keys():
                 self.logger.info('Resource: {} Method: {}'.format(resource, method))
-                template_name = '{}|{}'.format(normalized_url, method)
-                template = self._get_template(template_name)
-                template.url = normalized_url
-                template.method = method.upper()
+                if existing_template:
+                    template = existing_template
+                    template_name = existing_template.name
+                else:
+                    template_name = '{}|{}'.format(normalized_url, method)
+                    template = self._get_template(template_name)
+                    template.url = normalized_url
+                    template.method = method.upper()
+
+                for content_type in paths[resource][method].get('requestBody', {}).get('content', []):
+                    # as multiple content types can exist here, we need to open up new template
+                    template_name = f'f{template_name}-{self._split_content_type(content_type)}'
+                    template = self._get_template(template_name)
+                    resource_to_preprocess = {
+                        resource: {
+                            method: paths[resource][method]['requestBody']['content'][content_type]
+                        }
+                    }
+                    self.process_api_resources(
+                        paths=resource_to_preprocess,
+                        existing_template=template
+                    )
+
                 for param in list(paths[resource][method].get('parameters', {})):
                     if not isinstance(param, dict):
                         self.logger.warning('{} type mismatch, dict expected, got: {}'.format(param, type(param)))

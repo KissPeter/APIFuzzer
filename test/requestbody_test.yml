@@ -1,0 +1,28 @@
+openapi: "3.0.0"
+info:
+  title: Sample API
+  version: 0.0.1
+paths:
+  /openapi3_post_requestBody:
+    post:
+      requestBody:
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              properties:
+                id:
+                  type: string
+                  format: uuid
+                address:
+                  type: object
+                  properties:
+                    street:
+                      type: string
+                    city:
+                      type: string
+                profileImage:
+                  type: string
+      responses:
+        '200':
+          description: asd

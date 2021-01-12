@@ -13,6 +13,8 @@ from typing import Optional
 import pycurl
 from bitstring import Bits
 
+logger_name = 'APIFuzzer'
+
 from apifuzzer.version import get_version
 
 
@@ -39,7 +41,7 @@ def set_logger(level='warning', basic_output=False):
     :rtype logger
     """
     fmt = '%(process)d [%(levelname)7s] %(name)s [%(filename)s:%(lineno)s - %(funcName)20s ]: %(message)s'
-    logger = logging.getLogger()
+    logger = logging.getLogger(logger_name)
     if basic_output:
         logging.basicConfig(format=fmt)
     else:
@@ -52,6 +54,7 @@ def set_logger(level='warning', basic_output=False):
         logger.addHandler(handler)
     logging.getLogger('kitty').setLevel(level=level.upper())
     logger.setLevel(level=level.upper())
+    logger.propagate = False
     return logger
 
 
@@ -61,7 +64,7 @@ def get_logger(name):
     :param name: name of the new logger
     :return: logger object
     """
-    logger = logging.getLogger().getChild(name)
+    logger = logging.getLogger(logger_name).getChild(name)
     return logger
 
 

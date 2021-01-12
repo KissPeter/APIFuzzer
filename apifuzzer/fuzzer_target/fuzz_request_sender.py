@@ -107,6 +107,24 @@ class FuzzerTarget(FuzzerTargetBase, ServerTarget):
                 _curl.setopt(pycurl.HTTPHEADER, self.format_pycurl_header(kwargs.get('headers', {})))
                 _curl.setopt(pycurl.POST, len(kwargs.get('data', {}).items()))
                 _curl.setopt(pycurl.CUSTOMREQUEST, method)
+                # TODO : add support of different content type
+                # json:
+                # httpheader = p.get('httpheader', ['Accept: application/json', "Content-type: application/json"])
+                # if httpheader:
+                #    c.setopt(pycurl.HTTPHEADER, httpheader)
+                # data:
+                # postfields = json.dumps(postfields, indent=2, ensure_ascii=False)
+                # c.setopt(pycurl.POSTFIELDS, postfields)
+                # https://www.programcreek.com/python/example/2166/pycurl.POST
+                # default:
+                # postfields = urlencode(post_data)
+                # Sets request method to POST,
+                # Content-Type header to application/x-www-form-urlencoded
+                # and data to send in request body.
+                # c.setopt(c.POSTFIELDS, postfields)
+                # multipart:
+                # https://automatthias.wordpress.com/2013/04/07/http-put-with-multipartform-data-using-pycurl/
+                # c.setopt(pycurl.HTTPPOST, [('foo', 'bar')])
                 _curl.setopt(pycurl.POSTFIELDS, urllib.parse.urlencode(kwargs.get('data', {})))
                 _curl.setopt(pycurl.HEADERFUNCTION, resp_buff_hdrs.write)
                 _curl.setopt(pycurl.WRITEFUNCTION, resp_buff_body.write)

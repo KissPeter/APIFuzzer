@@ -6,6 +6,9 @@ from apifuzzer.utils import try_b64encode
 
 class Apifuzzer_Report(Report):
 
+    def is_failed(self):
+        pass
+
     def __init__(self, name):
         super().__init__(name)
 

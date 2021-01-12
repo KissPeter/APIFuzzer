@@ -1,16 +1,17 @@
 import pycurl
 import requests
 
-from apifuzzer.apifuzzer_report import Apifuzzer_Report as Report
-from apifuzzer.utils import set_class_logger, container_name_to_param
+from apifuzzer.fuzz_utils import container_name_to_param
+from apifuzzer.utils import get_logger
+from apifuzzer.version import get_version
 
 
-@set_class_logger
 class FuzzerTargetBase:
 
     def __init__(self, auth_headers):
         self._last_sent_request = None
         self.auth_headers = auth_headers
+        self.logger = get_logger(self.__class__.__name__)
         self.logger.info('Logger initialized')
         self.resp_headers = dict()
         self.chop_left = True
@@ -25,7 +26,7 @@ class FuzzerTargetBase:
         _header = requests.utils.default_headers()
         _header.update(
             {
-                'User-Agent': 'APIFuzzer',
+                'User-Agent': get_version(),
             }
         )
         if isinstance(fuzz_header, dict):
@@ -39,11 +40,6 @@ class FuzzerTargetBase:
         else:
             _header.update(self.auth_headers)
         return _header
-
-    def report_add_basic_msg(self, msg):
-        self.report.set_status(Report.FAILED)
-        self.logger.warning(msg)
-        self.report.failed(msg)
 
     def header_function(self, header_line):
         header_line = header_line.decode('iso-8859-1')
@@ -99,7 +95,9 @@ class FuzzerTargetBase:
                         self.logger.info('The whole query param was removed, using empty string instead')
                         _tmp_query_params[_query_param_name] = ""
                         break
-
+                except Exception as e:  # pylint: disable=broad-exception
+                    self.logger.error('Unexpected exception ({}) while processing: {}'.format(e, k))
+        self.logger.warning('Returning: {}'.format(_tmp_query_params))
         return self.dict_to_query_string(_tmp_query_params)
 
     def format_pycurl_url(self, url):
@@ -149,7 +147,7 @@ class FuzzerTargetBase:
         :return: fuzz value after chopping
         """
         if self.chop_left:
-            self.logger.debug('Remoe first character from value, current length: %s', len(fuzz_value))
+            self.logger.debug('Remove first character from value, current length: %s', len(fuzz_value))
             fuzz_value = fuzz_value[1:]
             if len(fuzz_value) == 0:
                 self.chop_left = False

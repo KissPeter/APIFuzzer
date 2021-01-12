@@ -1,3 +1,4 @@
+import argparse
 import json
 import logging
 import os
@@ -6,80 +7,60 @@ from binascii import Error
 from io import BytesIO
 from logging import Formatter
 from logging.handlers import SysLogHandler
-from random import randint
+from random import SystemRandom
+from typing import Optional
 
 import pycurl
 from bitstring import Bits
-from ruamel.yaml import YAML
-from ruamel.yaml.scanner import ScannerError
 
-from apifuzzer.custom_fuzzers import RandomBitsField
+from apifuzzer.version import get_version
 
 
-def get_field_type_by_method(http_method):
-    fields = {
-        'GET': 'params',
-        'POST': 'data',
-        'PUT': 'data'
-    }
-    return fields.get(http_method, 'data')
-
-
-def get_fuzz_type_by_param_type(fuzz_type):
-    # https://kitty.readthedocs.io/en/latest/data_model/big_list_of_fields.html#atomic-fields
-    # https://swagger.io/docs/specification/data-models/data-types/
-    string_types = [RandomBitsField]
-    number_types = [RandomBitsField]
-    types = {
-        'integer': number_types,
-        'float': number_types,
-        'double': number_types,
-        'int32': number_types,
-        'int64': number_types,
-        'number': number_types,
-        'string': string_types,
-        'email': string_types,
-        'uuid': string_types,
-        'uri': string_types,
-        'hostname': string_types,
-        'ipv4': string_types,
-        'ipv6': string_types,
-        'boolean': string_types
-    }
-    fuzzer_list = types.get(fuzz_type, string_types)
-    return fuzzer_list[randint(0, len(fuzzer_list) - 1)]
-
-
-def get_sample_data_by_type(param_type):
-    types = {
-        u'name': '012',
-        u'string': 'asd',
-        u'integer': 1,
-        u'number': 667.5,
-        u'boolean': False,
-        u'array': [1, 2, 3]  # transform_data_to_bytes complains when this array contains strings.
-    }
-    return types.get(param_type, b'\x00')
+def secure_randint(minimum, maximum):
+    """
+    Provides solution for B311 "Standard pseudo-random generators are not suitable for security/cryptographic purposes."
+    :param minimum: minimum value
+    :type minimum: int
+    :param maximum: maximum value
+    :type maximum: int
+    :return: random integer value between min and maximum
+    """
+    rand = SystemRandom()
+    return rand.randrange(start=minimum, stop=maximum)
 
 
 def set_logger(level='warning', basic_output=False):
+    """
+    Setup logger
+    :param level: log level
+    :type level: log level
+    :param basic_output: If set to True, application logs to the terminal not to Syslog
+    :type basic_output: bool
+    :rtype logger
+    """
     fmt = '%(process)d [%(levelname)s] %(name)s: %(message)s'
+    logger = logging.getLogger()
     if basic_output:
         logging.basicConfig(format=fmt)
-        logger = logging.getLogger()
     else:
         logger = logging.getLogger()
-        if not len(logger.handlers):
+        if os.path.exists('/dev/log'):
+            handler = SysLogHandler(address='/dev/log', facility=SysLogHandler.LOG_LOCAL2)
+        else:
             handler = logging.StreamHandler()
-            if os.path.exists('/dev/log'):
-                handler = SysLogHandler(address='/dev/log', facility=SysLogHandler.LOG_LOCAL2)
-            handler.setFormatter(Formatter('%(process)d [%(levelname)s] %(name)s: %(message)s'))
-            logger.addHandler(handler)
+        handler.setFormatter(Formatter(fmt))
+        logger.addHandler(handler)
     logger.setLevel(level=level.upper())
     return logger
 
 
 def transform_data_to_bytes(data_in):
+    """
+    Transform data to bytes
+    :param data_in: data to transform
+    :type data_in: str, float, Bits
+    :rtype: bytearray
+    """
     if isinstance(data_in, float):
         return bytes(int(data_in))
     elif isinstance(data_in, str):
@@ -90,12 +71,24 @@ def transform_data_to_bytes(data_in):
         return bytes(data_in)
 
 
-def set_class_logger(class_name):
-    class_name.logger = logging.getLogger(class_name.__class__.__name__)
-    return class_name
+def get_logger(name):
+    """
+    Configure the logger
+    :param name: name of the new logger
+    :return: logger object
+    """
+    logger = logging.getLogger().getChild(name)
+    return logger
 
 
 def try_b64encode(data_in):
+    """
+    Encode string to base64
+    :param data_in: data to transform
+    :type data_in: str
+    :rtype str
+    :return base64 string
+    """
     try:
         return b64encode(data_in)
     except (TypeError, Error):
@@ -103,12 +96,21 @@ def try_b64encode(data_in):
 
 
 def container_name_to_param(container_name):
+    """
+    Split container name and provides name of related parameter
+    :param container_name: container name
+    :type container_name: str
+    :return: param
+    :rtype: str
+    """
     return container_name.split('|')[-1]
 
 
 def init_pycurl(debug=False):
     """
     Provides an instances of pycurl with basic configuration
+    :param debug: confugres verbosity of http client
+    :tpye debug: bool
     :return: pycurl instance
     """
     _curl = pycurl.Curl()
@@ -118,11 +120,19 @@ def init_pycurl(debug=False):
     _curl.setopt(pycurl.VERBOSE, debug)
     _curl.setopt(pycurl.TIMEOUT, 10)
     _curl.setopt(pycurl.COOKIEFILE, "")
-    _curl.setopt(pycurl.USERAGENT, 'APIFuzzer')
+    _curl.setopt(pycurl.USERAGENT, get_version())
     return _curl
 
 
 def download_file(url, dst_file):
+    """
+    Download file from the provided url to the defined file
+    :param url: url to download from
+    :type url: str
+    :param dst_file: name of destination file
+    :type dst_file: str
+    :return: None
+    """
     _curl = init_pycurl()
     buffer = BytesIO()
     _curl = pycurl.Curl()
@@ -136,25 +146,61 @@ def download_file(url, dst_file):
     buffer.close()
 
 
-def save_api_definition(url, temp_file):
-    download_file(url, temp_file)
-    return get_api_definition_from_file(temp_file)
+def get_item(json_dict, json_path):
+    """
+    Get JSON item defined by path
+    :param json_dict: JSON dict contains the item we are looking for
+    :type json_dict: dict
+    :param json_path: defines the place of the object
+    :type json_path: list
+    :return: dict
+    """
+    for item in json_path:
+        json_dict = json_dict.get(item, {})
+    return json_dict
 
 
-def get_api_definition_from_file(src_file):
+def pretty_print(printable, limit=200):
+    """
+    Format json data for logging
+    :param printable: json data to dump
+    :type printable: dict
+    :param limit: this amount of chars will be written
+    :type limit: int
+    :return: formatted string
+    :rtype: str
+    """
+    if isinstance(printable, dict):
+        return json.dumps(printable, indent=2, sort_keys=True)[0:limit]
+    else:
+        return printable
+
+
+def json_data(arg_string: Optional[str]) -> dict:
+    """
+    Transforms input string to JSON. Input must be dict or list of dicts like string
+    :type arg_string: str
+    :rtype dict
+    """
+    if isinstance(arg_string, dict) or isinstance(arg_string, list):  # support testing
+        arg_string = json.dumps(arg_string)
     try:
-        with open(src_file, mode='rb') as f:
-            api_definition = f.read()
-        try:
-            return json.loads(api_definition)
-        except ValueError as e:
-            print('Failed to load input as JSON, maybe YAML?')
-        try:
-            yaml = YAML(typ='safe')
-            return yaml.load(api_definition)
-        except (TypeError, ScannerError) as e:
-            print('Failed to load input as YAML:{}'.format(e))
-            raise e
-    except Exception:
-        print('Failed to parse input file, exit')
-        exit()
+        _return = json.loads(arg_string)
+        if hasattr(_return, 'append') or hasattr(_return, 'keys'):
+            return _return
+        else:
+            raise TypeError('not list or dict')
+    except (TypeError, json.decoder.JSONDecodeError):
+        msg = '%s is not JSON', arg_string
+        raise argparse.ArgumentTypeError(msg)
+
+
+def str2bool(v):
+    if isinstance(v, bool):
+        return v
+    if v.lower() in ('yes', 'true', 't', 'y', '1', 'True', 'T'):
+        return True
+    elif v.lower() in ('no', 'false', 'f', 'n', '0', 'False', 'F'):
+        return False
+    else:
+        raise argparse.ArgumentTypeError('Boolean value expected.')

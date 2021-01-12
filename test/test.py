@@ -1,4 +1,4 @@
-#!/usr/bin/env python3 -X utf8
+#!/usr/bin/env python3
 
 from test.test_utils import BaseTest
 
@@ -113,4 +113,34 @@ class TestSwagger(BaseTest):
         assert test_url[1:] == test_url_reported, last_call['req_path']  # heading / shall be removed
         assert float(param1), 'req_path: {}, param1: {}'.format(last_call['req_url'], param1)
         assert not isinstance(param2, int), 'req_path: {}, param2: {}'.format(last_call['req_url'], param2)
+        self.repot_basic_check()
+
+    def test_post_with_schema(self):
+        api_path = '/post_param'
+        api_def = {
+            "post": {
+                "parameters": [
+                    {
+                        "in": "body",
+                        "name": "body",
+                        "schema": {
+                            "$ref": "#/definitions/schema_definition"
+                        }
+                    }
+                ]
+            }
+        }
+        schema = {
+            "schema_definition": {
+                "properties": {
+                    "param_str": {
+                        "type": "string"
+                    },
+                    "param_int": {
+                        "type": "int"
+                    }
+                }
+            }
+        }
+        last_call = self.fuzz_and_get_last_call(api_path, api_def, schema_definitions=schema)
         self.repot_basic_check()

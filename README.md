@@ -4,6 +4,7 @@
 [![Scrutinizer Code Quality](https://scrutinizer-ci.com/g/KissPeter/APIFuzzer/badges/quality-score.png?b=master)](https://scrutinizer-ci.com/g/KissPeter/APIFuzzer/?branch=master)
 [![Build Status](https://travis-ci.org/KissPeter/APIFuzzer.svg?branch=master)](https://travis-ci.org/KissPeter/APIFuzzer)
 [![Documentation Status](https://readthedocs.org/projects/apifuzzer/badge/?version=latest)](https://apifuzzer.readthedocs.io/)
+[![Pypi downloads](https://img.shields.io/pypi/dw/APIFuzzer)](https://pypistats.org/packages/apifuzzer)
 
 # APIFuzzer — HTTP API Testing Framework
 
@@ -18,6 +19,7 @@ if you application can cope with the fuzzed parameters. Does not require coding.
 - [OpenAPI][]
 
 ### Planned
+- [GraphQL][]
 - [API Blueprint][]
 
 ## Pre-requirements
@@ -38,13 +40,14 @@ $ pip3 install -r APIFuzzer/requirements.txt
 ## Quick Start
 Check the help (some of them are not implemented yet):
 ```
-$$ python3 fuzzer.py -h
-usage: fuzzer.py [-h] [-s SRC_FILE] [--src_url SRC_URL] [-r REPORT_DIR]
+$$ ./bin/APIFuzzer -h
+usage: APIFuzzer [-h] [-s SRC_FILE] [--src_url SRC_URL] [-r REPORT_DIR]
                  [--level LEVEL] [-u ALTERNATE_URL] [-t TEST_RESULT_DST]
                  [--log {critical,fatal,error,warn,warning,info,debug,notset}]
                  [--basic_output BASIC_OUTPUT] [--headers HEADERS]
+                 [-v ,--version]
 
-API fuzzer configuration
+APIFuzzer configuration
 
 optional arguments:
   -h, --help        show this help message and exit
@@ -72,6 +75,7 @@ optional arguments:
   --headers HEADERS
                     Http request headers added to all request. Example:
                     '[{"Authorization": "SuperSecret"}, {"Auth2": "asd"}]'
+  -v ,--version     show program's version number and exit
 
 ```
 
@@ -82,7 +86,7 @@ Start the sample application (install the necessary packages listed in test/requ
 $ python3 test/test_application.py
 
 Start the fuzzer:
-$ python3 fuzzer.py -s test/test_swagger_definition.json -u http://127.0.0.1:5000/ -r /tmp/reports/ --log debug 
+$ ./bin/APIFuzzer -s test/test_swagger_definition.json -u http://127.0.0.1:5000/ -r /tmp/reports/ --log debug 
 
 Check the reports:
 $ ls -1 /tmp/reports/
@@ -108,3 +112,4 @@ $ json_pp < /tmp/reports/79_1573993485.5391517.json
 [API Blueprint]: https://apiblueprint.org/
 [Swagger]: http://swagger.io/
 [OpenAPI]: https://swagger.io/docs/specification/about/
+[GraphQL]: https://graphql.org/

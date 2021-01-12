@@ -9,7 +9,6 @@ tools:
   pylint:
     python_version: 3
     config_file: '.pylintrc'
-
 build:
   environment:
     python: 3.7.1
@@ -21,7 +20,6 @@ build:
           - py-scrutinizer-run
           - command: pylint-run
             use_website_config: true
-    test:
       project_setup:
         before:
           - command: pip3 install -r test/requirements_for_test.txt
@@ -31,15 +29,11 @@ build:
             background: true
             on_node: 1
             idle_timeout: 10
+    test:
       commands:
         - command: 'pytest --cov-report term --cov=apifuzzer --durations=10 --show-capture=stdout -vv -rP test'
           on_node: 1
           idle_timeout: 10
-          coverage:
-            file: '.coverage'
-            config_file: '.coveragerc'
-            format: 'py-cc'
 filter:
   excluded_paths:
     - "test/"
-# https://github.com/scrutinizer-ci/ocular.py

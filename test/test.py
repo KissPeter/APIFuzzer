@@ -111,7 +111,7 @@ class TestSwagger(BaseTest):
         # 'req_path': '/multiple_path_params/667.5/\x10'
         _, test_url_reported, param1, param2 = last_call['req_path'].split("/", maxsplit=3)
         assert test_url[1:] == test_url_reported, last_call['req_path']  # heading / shall be removed
-        assert float(param1), 'req_path: {}, param1: {}'.format(last_call['req_url'], param1)
+        assert not isinstance(param1, int), 'req_path: {}, param1: {}'.format(last_call['req_url'], param1)
         assert not isinstance(param2, int), 'req_path: {}, param2: {}'.format(last_call['req_url'], param2)
         self.repot_basic_check()
 
@@ -143,4 +143,9 @@ class TestSwagger(BaseTest):
             }
         }
         last_call = self.fuzz_and_get_last_call(api_path, api_def, schema_definitions=schema)
+        # "req_form": {
+        #     "param_int": "\u0000",
+        #     "param_str": "65Y"
+        # },
+        assert not isinstance(last_call['req_form']['param_int'], int), last_call
         self.repot_basic_check()

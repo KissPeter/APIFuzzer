@@ -38,7 +38,7 @@ def set_logger(level='warning', basic_output=False):
     :type basic_output: bool
     :rtype logger
     """
-    fmt = '%(process)d [%(levelname)s] %(name)s: %(message)s'
+    fmt = '%(process)d [%(levelname)7s] %(name)s [%(filename)s:%(lineno)s - %(funcName)20s ]: %(message)s'
     logger = logging.getLogger()
     if basic_output:
         logging.basicConfig(format=fmt)
@@ -50,7 +50,18 @@ def set_logger(level='warning', basic_output=False):
             handler = logging.StreamHandler()
         handler.setFormatter(Formatter(fmt))
         logger.addHandler(handler)
+    logging.getLogger('kitty').setLevel(level=level.upper())
     logger.setLevel(level=level.upper())
+    return logger
+
+
+def get_logger(name):
+    """
+    Configure the logger
+    :param name: name of the new logger
+    :return: logger object
+    """
+    logger = logging.getLogger().getChild(name)
     return logger
 
 
@@ -69,16 +80,6 @@ def transform_data_to_bytes(data_in):
         return data_in.tobytes()
     else:
         return bytes(data_in)
-
-
-def get_logger(name):
-    """
-    Configure the logger
-    :param name: name of the new logger
-    :return: logger object
-    """
-    logger = logging.getLogger().getChild(name)
-    return logger
 
 
 def try_b64encode(data_in):

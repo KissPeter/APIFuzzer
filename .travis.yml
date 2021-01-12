@@ -1,14 +1,25 @@
+env:
+  global:
+    - CC_TEST_REPORTER_ID=f726d48e08c97402fff8db5969822b4564437d36d3e8d68eac5d4a4beb5c96f2
 language: python
 python:
   - '3.6'
   - '3.7'
   - '3.8'
+  - '3.9'
+before_script:
+  - export PYTHONPATH=$PYTHONPATH:$(pwd)
+  - curl -L https://codeclimate.com/downloads/test-reporter/test-reporter-latest-linux-amd64 > ./cc-test-reporter
+  - chmod +x ./cc-test-reporter
 before_install:
   - sudo apt-get -y install libgnutls28-dev
 install:
   - pip3 install -r requirements.txt
 script:
-  - ./bin/APIFuzzer -h
+  - ./APIFuzzer -h
   - pip3 install -r test/requirements_for_test.txt
   - python3 test/test_application.py&
   - pytest --cov-report term --cov=apifuzzer --durations=10 --show-capture=stdout -vv -rP test
+after_script:
+  - coverage xml
+  - if [[ "$TRAVIS_PULL_REQUEST" == "false" && "$TRAVIS_PYTHON_VERSION" == "3.8" ]]; then ./cc-test-reporter after-build --exit-code $TRAVIS_TEST_RESULT; fi

@@ -33,9 +33,9 @@ class OpenApiServerFuzzer(ServerFuzzer):
         pass
 
     def __init__(self):
-        self.logger = self.logger = get_logger(self.__class__.__name__)
+        self.logger = get_logger(self.__class__.__name__)
         self.logger.info('Logger initialized')
-        super(OpenApiServerFuzzer, self).__init__()
+        super(OpenApiServerFuzzer, self).__init__(logger=self.logger)
 
     def _transmit(self, node):
         """

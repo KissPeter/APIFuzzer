@@ -2,6 +2,7 @@
 [![Codacy Badge](https://api.codacy.com/project/badge/Grade/eab6434d9bd742e3880d8f589a9cc0a6)](https://www.codacy.com/app/KissPeter/APIFuzzer?utm_source=github.com&utm_medium=referral&utm_content=KissPeter/APIFuzzer&utm_campaign=badger)
 [![Maintainability](https://api.codeclimate.com/v1/badges/bfc9bda00deb5002b665/maintainability)](https://codeclimate.com/github/KissPeter/APIFuzzer/maintainability)
 [![Scrutinizer Code Quality](https://scrutinizer-ci.com/g/KissPeter/APIFuzzer/badges/quality-score.png?b=master)](https://scrutinizer-ci.com/g/KissPeter/APIFuzzer/?branch=master)
+[![Test Coverage](https://api.codeclimate.com/v1/badges/bfc9bda00deb5002b665/test_coverage)](https://codeclimate.com/github/KissPeter/APIFuzzer/test_coverage)
 [![Build Status](https://travis-ci.org/KissPeter/APIFuzzer.svg?branch=master)](https://travis-ci.org/KissPeter/APIFuzzer)
 [![Documentation Status](https://readthedocs.org/projects/apifuzzer/badge/?version=latest)](https://apifuzzer.readthedocs.io/)
 [![Pypi downloads](https://img.shields.io/pypi/dw/APIFuzzer)](https://pypistats.org/packages/apifuzzer)
@@ -24,10 +25,17 @@ if you application can cope with the fuzzed parameters. Does not require coding.
 
 ## Pre-requirements
 1. Python3
-2. sudo apt install libcurl4-openssl-dev libssl-dev (on Ubuntu 18.04, required by pycurl)
+2. sudo apt install libcurl4-openssl-dev libssl-dev libcurl4-nss-dev (on Ubuntu 18.04, required by pycurl)
+3. sudo apt install gcc libcurl4-nss-dev (on Ubuntu 20.04, required by pycurl)
 
 ## Installation
 
+Latest release version:
+
+```
+pip3 install APIFuzzer
+```
+Development version: 
 Fetch the most recent code from GitHub
 ```
 $ git clone https://github.com/KissPeter/APIFuzzer.git

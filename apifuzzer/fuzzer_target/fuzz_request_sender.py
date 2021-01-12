@@ -114,6 +114,8 @@ class FuzzerTarget(FuzzerTargetBase, ServerTarget):
                     try:
                         _curl.perform()
                         # TODO: Handle this: pycurl.error: (3, 'Illegal characters found in URL')
+                    except pycurl.error as e:
+                        self.logger.warning(f'Failed to send request because of {e}')
                     except Exception as e:
                         if retries:
                             self.logger.error('Retrying... ({}) because {}'.format(retries, e))

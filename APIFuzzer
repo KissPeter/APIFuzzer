@@ -20,12 +20,12 @@ if __name__ == '__main__':
     parser.add_argument('-s', '--src_file',
                         type=str,
                         required=False,
-                        help='API definition file path. Currently only JSON format is supported',
+                        help='API definition file path. JSON and YAML format is supported',
                         dest='src_file')
     parser.add_argument('--src_url',
                         type=str,
                         required=False,
-                        help='API definition url. Currently only JSON format is supported',
+                        help='API definition url. JSON and YAML format is supported',
                         dest='src_url')
     parser.add_argument('-r', '--report_dir',
                         type=str,

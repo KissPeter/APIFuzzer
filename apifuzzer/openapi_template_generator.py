@@ -295,22 +295,23 @@ class OpenAPITemplateGenerator(TemplateGenerator):
         self.templates.add(template)
         self.logger.debug(f'Adding template to list: {template.name}, templates list: {len(self.templates)}')
 
-    def pre_process_api_resources(self):
+    def _pre_process_api_resources(self):
         """
         !!! Resolving references in OpenAPI definition isn't the best at the moment, once a reliable package will be
         available, this pat can be dropped and simplified !!!
         This code iterates through the API definition and tries to resolve the references. RequestBody not supported yet
         """
+        paths = self.api_resources['paths']
         iteration = 0
         while True:
             reference_resolved = False
             tmp_api_resource = dict()
-            paths = self.api_resources['paths']
             for resource in paths.keys():
                 for method in paths[resource].keys():
                     self.logger.debug(f'{iteration}. Resource: {resource} Method: {method}')
                     for param in paths[resource][method].get('parameters', []):
                         if param.get('schema'):
+                            self.logger.debug(f'Processing schema: {param.get("schema")}')
                             reference_resolved = True
                             tmp_api_resource = self.process_schema(resource, method, param, tmp_api_resource)
                             param.pop('schema')
@@ -329,6 +330,7 @@ class OpenAPITemplateGenerator(TemplateGenerator):
                         if len(tmp_api_resource):
                             self._add_extracted_references(resource, method, tmp_api_resource)
             if not reference_resolved:
+                self.logger.debug(f'No more reference to resolve, return {tmp_api_resource}')
                 break
             iteration += 1
 
@@ -346,11 +348,45 @@ class OpenAPITemplateGenerator(TemplateGenerator):
         else:
             return content_type
 
+    def _process_request_body(self):
+        paths = self.api_resources['paths']
+        for resource in paths.keys():
+            normalized_url = self._normalize_url(resource)
+            for method in paths[resource].keys():
+                self.logger.info('Resource: {} Method: {}'.format(resource, method))
+                template_name = '{}|{}'.format(normalized_url, method)
+                for content_type in paths[resource][method].get('requestBody', {}).get('content', []):
+                    # as multiple content types can exist here, we need to open up new template
+                    template_name = f'f{template_name}-{self._split_content_type(content_type)}'
+                    template = self._get_template(template_name)
+                    template.url = normalized_url
+                    template.method = method.upper()
+                    self.logger.debug(f'Processing {content_type}, template: {template_name}')
+                    resource_to_preprocess = {
+                        'paths': {
+                            resource: {
+                                method: {
+                                    'parameters': [
+                                        paths[resource][method]['requestBody']['content'][content_type]
+                                    ]
+                                }
+                            }
+                        }
+                    }
+                    self.logger.debug(f'Another round: {pretty_print(resource_to_preprocess, 300)}')
+                    self._pre_process_api_resources(paths=resource_to_preprocess)
+                    self.process_api_resources(
+                        paths=resource_to_preprocess,
+                        existing_template=template
+                    )
+
     def process_api_resources(self, paths=None, existing_template=None):
         self.logger.info('Start preparation')
-        if paths is None:
-            self.pre_process_api_resources()
-            paths = self.api_resources['paths']
+        self._process_request_body()
+        self._pre_process_api_resources()
+        self._process_api_resources()
+
+    def _process_api_resources(self, paths=None, existing_template=None):
         for resource in paths.keys():
             normalized_url = self._normalize_url(resource)
             for method in paths[resource].keys():
@@ -361,22 +397,8 @@ class OpenAPITemplateGenerator(TemplateGenerator):
                 else:
                     template_name = '{}|{}'.format(normalized_url, method)
                     template = self._get_template(template_name)
-                    template.url = normalized_url
-                    template.method = method.upper()
-
-                for content_type in paths[resource][method].get('requestBody', {}).get('content', []):
-                    # as multiple content types can exist here, we need to open up new template
-                    template_name = f'f{template_name}-{self._split_content_type(content_type)}'
-                    template = self._get_template(template_name)
-                    resource_to_preprocess = {
-                        resource: {
-                            method: paths[resource][method]['requestBody']['content'][content_type]
-                        }
-                    }
-                    self.process_api_resources(
-                        paths=resource_to_preprocess,
-                        existing_template=template
-                    )
+                template.url = normalized_url
+                template.method = method.upper()
 
                 for param in list(paths[resource][method].get('parameters', {})):
                     if not isinstance(param, dict):
@@ -426,7 +448,7 @@ class OpenAPITemplateGenerator(TemplateGenerator):
                     elif parameter_place_in_request == ParamTypes.FORM_DATA:
                         template.params.add(fuzz_type(name=param_name, value=str(sample_data)))
                     else:
-                        self.logger.warning('Can not parse a definition: %s', param)
+                        self.logger.warning(f'Can not parse a definition: {pretty_print(param)}')
                 self._save_template(template)
 
     def _compile_base_url_for_swagger(self, alternate_url):

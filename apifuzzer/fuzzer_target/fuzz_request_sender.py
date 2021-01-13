@@ -162,7 +162,8 @@ class FuzzerTarget(FuzzerTargetBase, ServerTarget):
             self.report.add('response', _return.content.decode())
             status_code = _return.status_code
             if not status_code:
-                self.report_add_basic_msg('Failed to parse http response code')
+                self.logger.warning(f'Failed to parse http response code, continue...')
+                self.report.set_status(Report.PASSED)
             elif status_code not in self.accepted_status_codes:
                 self.report.add('parsed_status_code', status_code)
                 self.report_add_basic_msg(('Return code %s is not in the expected list:', status_code))

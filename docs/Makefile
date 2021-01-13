@@ -19,12 +19,14 @@ clean:
 apidoc:
 	sphinx-apidoc  ../apifuzzer -f -e -o .
 
-build-pip-package:
+clean-build-folder:
+	rm -fr  ../dist/ ../build/ ../*.egg-info
+
+build-pip-package: clean-build-folder
 	DIR=`mktemp -d`
 	echo $DIR
 	mv ../test $DIR/  # not the best, but setup exclude doesn't work
 	find ../ -name "__pycache __" -exec rm -rf {} \;
-	rm -fr  ../dist/ ../build/ ../*.egg-info
 	cd .. && python3 setup.py sdist bdist_wheel
 	tar -tvf ../dist/APIFuzzer-*.tar.gz
 	mv $DIR/test ../

@@ -2,6 +2,7 @@ import argparse
 import json
 import logging
 import os
+import sys
 from base64 import b64encode
 from binascii import Error
 from io import BytesIO
@@ -13,9 +14,9 @@ from typing import Optional
 import pycurl
 from bitstring import Bits
 
-logger_name = 'APIFuzzer'
-
 from apifuzzer.version import get_version
+
+logger_name = 'APIFuzzer'
 
 
 def secure_randint(minimum, maximum):
@@ -43,17 +44,17 @@ def set_logger(level='warning', basic_output=False):
     fmt = '%(process)d [%(levelname)7s] %(name)s [%(filename)s:%(lineno)s - %(funcName)20s ]: %(message)s'
     logger = logging.getLogger(logger_name)
     if basic_output:
-        logging.basicConfig(format=fmt)
+        handler = logging.StreamHandler(stream=sys.stdout)
     else:
-        logger = logging.getLogger()
         if os.path.exists('/dev/log'):
             handler = SysLogHandler(address='/dev/log', facility=SysLogHandler.LOG_LOCAL2)
         else:
-            handler = logging.StreamHandler()
-        handler.setFormatter(Formatter(fmt))
-        logger.addHandler(handler)
-    logging.getLogger('kitty').setLevel(level=level.upper())
-    logger.setLevel(level=level.upper())
+            handler = logging.StreamHandler(stream=sys.stdout)
+    handler.setFormatter(Formatter(fmt))
+    logger.addHandler(handler)
+    kitty_logger = logging.getLogger('kitty')
+    kitty_logger.setLevel(level=logging.getLevelName(level.upper()))
+    logger.setLevel(level=logging.getLevelName(level.upper()))
     logger.propagate = False
     return logger
 

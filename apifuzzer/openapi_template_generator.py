@@ -308,8 +308,8 @@ class OpenAPITemplateGenerator(TemplateGenerator):
             tmp_api_resource = dict()
             for resource in paths.keys():
                 for method in paths[resource].keys():
-                    self.logger.debug(f'{iteration}. Resource: {resource} Method: {method}')
                     for param in paths[resource][method].get('parameters', []):
+                        self.logger.debug(f'{iteration}. Resource: {resource}, method: {method}, param: {param}')
                         if param.get('schema'):
                             self.logger.debug(f'Processing schema: {param.get("schema")}')
                             reference_resolved = True
@@ -362,23 +362,10 @@ class OpenAPITemplateGenerator(TemplateGenerator):
                     template.url = normalized_url
                     template.method = method.upper()
                     self.logger.debug(f'Processing {content_type}, template: {template_name}')
-                    resource_to_preprocess = {
-                        'paths': {
-                            resource: {
-                                method: {
-                                    'parameters': [
-                                        paths[resource][method]['requestBody']['content'][content_type]
-                                    ]
-                                }
-                            }
-                        }
-                    }
-                    self.logger.debug(f'Another round: {pretty_print(resource_to_preprocess, 300)}')
-                    self._pre_process_api_resources(paths=resource_to_preprocess)
-                    self.process_api_resources(
-                        paths=resource_to_preprocess,
-                        existing_template=template
-                    )
+                    if not self.api_resources['paths'][resource][method].get('parameters'):
+                        self.api_resources['paths'][resource][method]['parameters'] = []
+                    for k, v in paths[resource][method]['requestBody']['content'][content_type].items():
+                        self.api_resources['paths'][resource][method]['parameters'].append({'in': 'body', k: v})
 
     def process_api_resources(self, paths=None, existing_template=None):
         self.logger.info('Start preparation')
@@ -387,6 +374,8 @@ class OpenAPITemplateGenerator(TemplateGenerator):
         self._process_api_resources()
 
     def _process_api_resources(self, paths=None, existing_template=None):
+        if paths is None:
+            paths = self.api_resources.get('paths')
         for resource in paths.keys():
             normalized_url = self._normalize_url(resource)
             for method in paths[resource].keys():

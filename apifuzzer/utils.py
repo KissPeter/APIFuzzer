@@ -43,6 +43,7 @@ def set_logger(level='warning', basic_output=False):
     """
     fmt = '%(process)d [%(levelname)7s] %(name)s [%(filename)s:%(lineno)s - %(funcName)20s ]: %(message)s'
     logger = logging.getLogger(logger_name)
+    logger.handlers.clear()
     if basic_output:
         handler = logging.StreamHandler(stream=sys.stdout)
     else:

@@ -6,7 +6,6 @@ import sys
 import tempfile
 from logging import _nameToLevel as levelNames
 
-from apifuzzer.fuzz_utils import get_api_definition_from_file, get_api_definition_from_url
 from apifuzzer.fuzzer import Fuzzer
 from apifuzzer.utils import json_data, str2bool
 from apifuzzer.version import get_version
@@ -75,16 +74,10 @@ if __name__ == '__main__':
                         action='version',
                         version=get_version())
     args = parser.parse_args()
-    api_definition_json = dict()
-    if args.src_file:
-        api_definition_json = get_api_definition_from_file(args.src_file)
-    elif args.src_url:
-        api_definition_json = get_api_definition_from_url(args.src_url)
-    else:
+    if args.src_file is None and args.src_url is None:
         argparse.ArgumentTypeError('No API definition source provided -s, --src_file or --src_url should be defined')
         exit()
-    prog = Fuzzer(api_resources=api_definition_json,
-                  report_dir=args.report_dir,
+    prog = Fuzzer(report_dir=args.report_dir,
                   test_level=args.level,
                   alternate_url=args.alternate_url,
                   test_result_dst=args.test_result_dst,
@@ -92,6 +85,7 @@ if __name__ == '__main__':
                   basic_output=args.basic_output,
                   auth_headers=args.headers,
                   api_definition_url=args.src_url,
+                  api_definition_file=args.src_file,
                   junit_report_path=args.test_result_dst
                   )
     prog.prepare()

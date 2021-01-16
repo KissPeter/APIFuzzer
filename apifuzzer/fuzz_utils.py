@@ -74,7 +74,7 @@ def get_api_definition_from_file(src_file, logger=None):
             print_func(f'Failed to load input ({src_file}) as JSON because ({e}), maybe YAML?')
         try:
             yaml = YAML(typ='safe')
-            return yaml.load(api_definition)
+            return yaml.load(api_definition.decode('utf-8'))
         except (TypeError, ScannerError) as e:
             print_func(f'Failed to load input ({src_file}) as YAML:{e}')
             raise e

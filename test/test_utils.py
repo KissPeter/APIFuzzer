@@ -16,6 +16,7 @@ class BaseTest:
         """
         Setup test class at initialization
         """
+        cls.tempfile = tempfile.NamedTemporaryFile().name
         cls.report_dir = tempfile.mkdtemp()
         cls.report_files = list()
         cls.test_app_url = "http://127.0.0.1:5000/"
@@ -86,7 +87,9 @@ class BaseTest:
             self.generate_random_auth_headers()
         else:
             self.auth_headers = headers
-        prog = Fuzzer(api_resources=api_resources,
+        with open(self.tempfile, 'w') as apidef:
+            json.dump(api_resources, apidef, sort_keys=True, indent=2, ensure_ascii=False)
+        prog = Fuzzer(api_definition_file=self.tempfile,
                       report_dir=self.report_dir,
                       test_level=1,
                       alternate_url=self.test_app_url,

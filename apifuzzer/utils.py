@@ -170,14 +170,16 @@ def pretty_print(printable, limit=200):
     """
     Format json data for logging
     :param printable: json data to dump
-    :type printable: dict
+    :type printable: dict, str
     :param limit: this amount of chars will be written
     :type limit: int
     :return: formatted string
     :rtype: str
     """
     if isinstance(printable, dict):
-        return json.dumps(printable, indent=2, sort_keys=True)[0:limit]
+        return json.dumps(printable, sort_keys=True)[0:limit]
+    elif isinstance(printable, str):
+        return printable[:limit]
     else:
         return printable
 

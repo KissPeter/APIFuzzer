@@ -1,19 +1,22 @@
-import json
 import os.path
 from copy import deepcopy
 
 from jsonpath_ng import parse
 
-from apifuzzer.fuzz_utils import get_api_definition_from_url, get_base_url_form_api_src, FailedToParseFileException
+from apifuzzer.fuzz_utils import get_api_definition_from_url, get_base_url_form_api_src, FailedToParseFileException, \
+    get_api_definition_from_file
 from apifuzzer.utils import pretty_print, get_logger
+
+
+class FailedToResolveReference(Exception):
+    pass
 
 
 class ResolveReferences:
 
-    def __init__(self, api_definition=None, api_definition_path=None, api_definition_url=None):
+    def __init__(self, api_definition_path=None, api_definition_url=""):
         self.logger = get_logger(self.__class__.__name__)
-        self.api_definition = api_definition if api_definition else self._get_api_definition(api_definition_path,
-                                                                                             api_definition_url)
+        self.api_definition = self._get_api_definition(api_definition_path, api_definition_url)
         self.api_definition_path = api_definition_path
         self.api_definition_base_path = self._get_base_path_of_file(api_definition_path)
         self.api_definition_url = api_definition_url
@@ -21,15 +24,15 @@ class ResolveReferences:
 
     def _get_api_definition(self, path, url):
         if path is not None:
-            return get_api_definition_from_file(path)
+            return get_api_definition_from_file(path, logger=self.logger.debug)
         elif url is not None:
-            return get_api_definition_from_url(url)
+            return get_api_definition_from_url(url, logger=self.logger.debug)
 
-    @staticmethod
-    def _get_base_path_of_file(path):
+    def _get_base_path_of_file(self, path):
         if path:
             return os.path.abspath(os.path.join(path, os.pardir))
         else:
+            self.logger.warning(f'Failed to get directory for file path')
             return '.'
 
     def _find_by_jsonpath(self, data, path):
@@ -130,8 +133,10 @@ class ResolveReferences:
                     self.additional_api_definition.update(
                         get_api_definition_from_url(api_definition_url, logger=self.logger.debug))
                 else:
-                    self.logger.warning(
-                        'Local file reference was found in API definition, but file is not available')
+                    msg = 'Local file reference was found in API definition, but file is not available'
+                    self.logger.error(msg)
+                    raise FailedToResolveReference(msg)
+
         else:
             self.logger.debug(f'Nothing to extract: {schema_path} - {schema_ref}')
         schema_definition_filtered = self._find_by_jsonpath(self.additional_api_definition, item_location)
@@ -157,13 +162,14 @@ class ResolveReferences:
                         return_data[key].append(self.resolve(data=data[key][iter]))
                 elif key == '$ref' and value:
                     ref_found = True
-                    return_data = self._resolve_json_reference(schema_path=key, schema_ref=value)
-                    self.logger.debug(f'>>>>Processed {key} -> {data[key]}')
+                    try:
+                        return_data = self._resolve_json_reference(schema_path=key, schema_ref=value)
+                        self.logger.debug(f'Processed {key} -> {pretty_print(return_data)}')
+                    except FailedToResolveReference:
+                        return_data = None
                 else:
                     return_data[key] = value
-                    if not isinstance(value, str):
-                        self.logger.warning(f'1 Not processed {type(value)}: {pretty_print(data)}')
-                    if '$ref' in value:
+                    if isinstance(value, str) and '$ref' in value:
                         ref_found = True
                         self.logger.warning(f'Unresolved reference:{key} -  {type(value)} {pretty_print(value)}')
                 self.logger.debug(f'Processed: {key}')
@@ -175,6 +181,7 @@ class ResolveReferences:
         return [return_data, ref_found]
 
     def resolve(self, data=None):
+        self.logger.info('Resolving API internal references, may take a while')
         if data is None:
             data = self.api_definition
         resolved_in_this_iteration = True
@@ -184,21 +191,4 @@ class ResolveReferences:
             self.logger.debug(f'{iteration} resolving reference')
             data, resolved_in_this_iteration = self._resolve(data)
             iteration += 1
-        with open('additional.json', 'w') as f:
-            json.dump(self.additional_api_definition, f, sort_keys=True, indent=2)
         return data
-
-
-if __name__ == '__main__':
-    from apifuzzer.utils import set_logger
-    from apifuzzer.fuzz_utils import get_api_definition_from_file
-
-    logger = set_logger(level='debug', basic_output=True)
-    prog = ResolveReferences(api_definition_path='/home/kissp/git/APIFuzzer/labs/dynamic_file_analysis.yml')
-    resolved = prog.resolve()
-    with open('resolved.json', 'w') as f:
-        if isinstance(resolved, str):
-            f.write(resolved)
-        elif isinstance(resolved, dict):
-            dumped = json.dumps(resolved, sort_keys=True, indent=2)
-            f.write(dumped)

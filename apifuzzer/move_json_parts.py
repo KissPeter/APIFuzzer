@@ -50,10 +50,4 @@ class JsonSectionAbove:
             self.logger.debug(f'{iteration} resolving reference')
             data, resolved_in_this_iteration = self._resolve(data)
             iteration += 1
-        # with open('resolved.json', 'w') as f:
-        #     if isinstance(data, str):
-        #         f.write(data)
-        #     elif isinstance(data, dict):
-        #         dumped = json.dumps(data, sort_keys=True, indent=2)
-        #         f.write(dumped)
         return data

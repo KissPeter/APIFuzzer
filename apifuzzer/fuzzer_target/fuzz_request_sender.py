@@ -11,7 +11,7 @@ from kitty.targets.server import ServerTarget
 
 from apifuzzer.apifuzzer_report import Apifuzzer_Report as Report
 from apifuzzer.fuzzer_target.request_base_functions import FuzzerTargetBase
-from apifuzzer.utils import try_b64encode, init_pycurl
+from apifuzzer.utils import try_b64encode, init_pycurl, get_logger
 
 
 class Return:
@@ -26,6 +26,7 @@ class FuzzerTarget(FuzzerTargetBase, ServerTarget):
     def __init__(self, name, base_url, report_dir, auth_headers, junit_report_path):
         super(ServerTarget, self).__init__(name)
         super(FuzzerTargetBase, self).__init__(auth_headers)
+        self.logger = get_logger(self.__class__.__name__)
         self.base_url = base_url
         self.accepted_status_codes = list(range(200, 300)) + list(range(400, 500))
         self.auth_headers = auth_headers

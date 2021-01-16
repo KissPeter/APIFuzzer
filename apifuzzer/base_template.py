@@ -9,7 +9,7 @@ class BaseTemplate(object):
     def __init__(self, name):
         self.logger = get_logger(self.__class__.__name__)
         self.name = name
-        self.content_type = None
+        self.content_type = ''
         self.method = None
         self.url = None
         self.params = set()
@@ -24,7 +24,8 @@ class BaseTemplate(object):
             'data': self.data,
             'path_variables': self.path_variables,
             'cookies': self.cookies,
-            'query': self.query
+            'query': self.query,
+            'content_type': self.content_type
         }
         """
         Possible paramters from request docs:

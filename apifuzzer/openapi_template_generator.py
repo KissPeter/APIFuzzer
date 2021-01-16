@@ -39,10 +39,8 @@ class OpenAPITemplateGenerator(TemplateGenerator):
         self.reference_resolver = ResolveReferences(api_definition_url=api_definition_url,
                                                     api_definition_path=api_definition_file)
         tmp_api_resources = self.reference_resolver.resolve()
-        for section in ['schema', 'properties']:
-            self.json_formatter = JsonSectionAbove(tmp_api_resources, section)
-            tmp_api_resources = self.json_formatter.resolve()
-        self.api_resources = tmp_api_resources
+        self.json_formatter = JsonSectionAbove(tmp_api_resources)
+        self.api_resources = self.json_formatter.resolve()
 
     @staticmethod
     def _normalize_url(url_in):
@@ -118,7 +116,6 @@ class OpenAPITemplateGenerator(TemplateGenerator):
                     for k, v in paths[resource][method]['requestBody']['content'][content_type].items():
                         self.api_resources['paths'][resource][method]['parameters'].append({'in': 'body', k: v})
 
-
     def _process_api_resources(self, paths=None, existing_template=None):
         if paths is None:
             paths = self.api_resources.get('paths')
@@ -148,14 +145,6 @@ class OpenAPITemplateGenerator(TemplateGenerator):
                         parameter_data_type = 'string'
                     param_format = param.get('format')
 
-                    if param_format is not None:
-                        fuzzer_type = param_format.lower()
-                    elif parameter_data_type is not None:
-                        fuzzer_type = parameter_data_type.lower()
-                    else:
-                        fuzzer_type = None
-                    fuzz_type = get_fuzz_type_by_param_type(fuzzer_type)
-
                     if param.get('example'):
                         sample_data = param.get('example')
                     elif param.get('schema', {}).get('example'):
@@ -164,27 +153,45 @@ class OpenAPITemplateGenerator(TemplateGenerator):
                         sample_data = get_sample_data_by_type(param.get('type'))
 
                     parameter_place_in_request = param.get('in')
-                    param_name = '{}|{}'.format(template_name, param.get('name'))
+                    param_name = f'{template_name}|{param.get("name")}'
+                    parameters = list()
+                    parameters.append({'name': param_name, 'type': parameter_data_type})
+                    for _param in param.get('properties', []):
+                        param_name = f'{template_name}|{_param}'
+                        parameter_data_type = param.get('properties', {}).get(_param).get('type', 'string')
+                        parameters.append({'name': param_name, 'type': parameter_data_type})
+                    for _parameter in parameters:
 
-                    self.logger.info(f'Resource: {resource} Method: {method} Parameter: {param}, Parameter type: '
-                                     f'{parameter_place_in_request}, Sample data: {sample_data}, Param name: '
-                                     f'{param_name}, fuzzer: {fuzz_type.__name__}')
+                        param_name = _parameter.get('name')
+                        parameter_data_type = _parameter.get('type')
 
-                    if parameter_place_in_request == ParamTypes.PATH:
-                        template.path_variables.add(fuzz_type(name=param_name, value=str(sample_data)))
-                    elif parameter_place_in_request == ParamTypes.HEADER:
-                        template.headers.add(fuzz_type(name=param_name, value=transform_data_to_bytes(sample_data)))
-                    elif parameter_place_in_request == ParamTypes.COOKIE:
-                        template.cookies.add(fuzz_type(name=param_name, value=sample_data))
-                    elif parameter_place_in_request == ParamTypes.QUERY:
-                        template.params.add(fuzz_type(name=param_name, value=str(sample_data)))
-                    elif parameter_place_in_request == ParamTypes.BODY:
-                        template.data.add(fuzz_type(name=param_name, value=transform_data_to_bytes(sample_data)))
-                    elif parameter_place_in_request == ParamTypes.FORM_DATA:
-                        template.params.add(fuzz_type(name=param_name, value=str(sample_data)))
-                    else:
-                        self.logger.warning(f'Can not parse a definition ({parameter_place_in_request}): '
-                                            f'{pretty_print(param)}')
+                        if param_format is not None:
+                            fuzzer_type = param_format.lower()
+                        elif parameter_data_type is not None:
+                            fuzzer_type = parameter_data_type.lower()
+                        else:
+                            fuzzer_type = None
+                        fuzz_type = get_fuzz_type_by_param_type(fuzzer_type)
+
+                        self.logger.info(f'Resource: {resource} Method: {method} Parameter: {param}, Parameter type: '
+                                         f'{parameter_place_in_request}, Sample data: {sample_data}, Param name: '
+                                         f'{param_name}, fuzzer: {fuzz_type.__name__}')
+
+                        if parameter_place_in_request == ParamTypes.PATH:
+                            template.path_variables.add(fuzz_type(name=param_name, value=str(sample_data)))
+                        elif parameter_place_in_request == ParamTypes.HEADER:
+                            template.headers.add(fuzz_type(name=param_name, value=transform_data_to_bytes(sample_data)))
+                        elif parameter_place_in_request == ParamTypes.COOKIE:
+                            template.cookies.add(fuzz_type(name=param_name, value=sample_data))
+                        elif parameter_place_in_request == ParamTypes.QUERY:
+                            template.params.add(fuzz_type(name=param_name, value=str(sample_data)))
+                        elif parameter_place_in_request == ParamTypes.BODY:
+                            template.data.add(fuzz_type(name=param_name, value=transform_data_to_bytes(sample_data)))
+                        elif parameter_place_in_request == ParamTypes.FORM_DATA:
+                            template.params.add(fuzz_type(name=param_name, value=str(sample_data)))
+                        else:
+                            self.logger.warning(f'Can not parse a definition ({parameter_place_in_request}): '
+                                                f'{pretty_print(param)}')
                 self._save_template(template)
 
     def _compile_base_url_for_swagger(self, alternate_url):

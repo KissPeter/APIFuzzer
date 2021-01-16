@@ -1,6 +1,3 @@
-#!/usr/bin/env python3
-import pytest
-
 from test.test_utils import BaseTest
 
 
@@ -116,7 +113,6 @@ class TestSwagger(BaseTest):
         assert not isinstance(param2, int), 'req_path: {}, param2: {}'.format(last_call['req_url'], param2)
         self.repot_basic_check()
 
-    @pytest.mark.skip(reason="post handing in progress")
     def test_post_with_schema(self):
         api_path = '/post_param'
         api_def = {

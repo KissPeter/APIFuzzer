@@ -30,11 +30,11 @@ class JsonSectionAbove:
                         return_data[key] = list()
                     for iter in range(len(value)):
                         self.logger.debug(f'Process {key} list elem: {iter}')
-                        return_data[key].append(self.resolve(data=data[key][iter]))
+                        return_data[key].append(self.resolve(data=value[iter]))
 
                 else:
                     return_data[key] = value
-                self.logger.debug(f'Processed: {key}')
+                self.logger.debug(f'Processed: {key} -> {pretty_print(return_data, 100)}')
         else:
             return_data = data
         return [return_data, schema_fount]

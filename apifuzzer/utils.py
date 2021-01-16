@@ -41,7 +41,10 @@ def set_logger(level='warning', basic_output=False):
     :type basic_output: bool
     :rtype logger
     """
-    fmt = '%(process)d [%(levelname)7s] %(name)s [%(filename)s:%(lineno)s - %(funcName)20s ]: %(message)s'
+    if level.lower() == 'debug':
+        fmt = '%(process)d [%(levelname)7s] %(name)s [%(filename)s:%(lineno)s - %(funcName)20s ]: %(message)s'
+    else:
+        fmt = '%(process)d [%(levelname)7s] %(name)s: %(message)s'
     logger = logging.getLogger(logger_name)
     logger.handlers.clear()
     if basic_output:

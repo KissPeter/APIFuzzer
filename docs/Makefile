@@ -23,8 +23,9 @@ clean-build-folder:
 	rm -fr  ../dist/ ../build/ ../*.egg-info
 
 build-pip-package: clean-build-folder
-	DIR=`mktemp -d`
-	echo $DIR
+	DIR=/tmp/test
+	rm -rf $DIR
+	mkdir -p $DIR
 	mv ../test $DIR/  # not the best, but setup exclude doesn't work
 	find ../ -name "__pycache __" -exec rm -rf {} \;
 	cd .. && python3 setup.py sdist bdist_wheel

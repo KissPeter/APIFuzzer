@@ -20,7 +20,7 @@ class TestSwagger(BaseTest):
                 ]
             }
         }
-        last_call = self.fuzz_and_get_last_call(api_path, api_def)
+        last_call = self.fuzz_swagger_and_get_last_call(api_path, api_def)
         # last_call test field sample:
         # "req_path": "/path_param/\u001f/\u001c\u007f\u0000N@",
         last_value_sent = last_call['req_path'].replace(test_url, '')
@@ -45,7 +45,7 @@ class TestSwagger(BaseTest):
         }
         # last_call test field sample:
         # 'http://127.0.0.1:5000/query?integer_id=%10'
-        last_call = self.fuzz_and_get_last_call(api_path, api_def)
+        last_call = self.fuzz_swagger_and_get_last_call(api_path, api_def)
         _, last_value_sent = last_call['req_url'].split("=")
         assert not isinstance(last_value_sent, int), last_call['req_url']
         self.repot_basic_check()
@@ -72,7 +72,7 @@ class TestSwagger(BaseTest):
                 ]
             }
         }
-        last_call = self.fuzz_and_get_last_call(api_path, api_def)
+        last_call = self.fuzz_swagger_and_get_last_call(api_path, api_def)
         # last_call['req_url']
         # http://127.0.0.1:5000/query_multiple_params?int_query_param1=667.5&int_query_param2=%10
         _, query_string = last_call['req_url'].split("?", maxsplit=1)
@@ -104,7 +104,7 @@ class TestSwagger(BaseTest):
                 ]
             }
         }
-        last_call = self.fuzz_and_get_last_call(api_path, api_def)
+        last_call = self.fuzz_swagger_and_get_last_call(api_path, api_def)
         # last_call['req_path']
         # 'req_path': '/multiple_path_params/667.5/\x10'
         _, test_url_reported, param1, param2 = last_call['req_path'].split("/", maxsplit=3)
@@ -113,7 +113,7 @@ class TestSwagger(BaseTest):
         assert not isinstance(param2, int), 'req_path: {}, param2: {}'.format(last_call['req_url'], param2)
         self.repot_basic_check()
 
-    def test_post_with_schema(self):
+    def test_v2_post_with_schema(self):
         api_path = '/post_param'
         api_def = {
             "post": {
@@ -143,7 +143,7 @@ class TestSwagger(BaseTest):
                 }
             }
         }
-        last_call = self.fuzz_and_get_last_call(api_path, api_def, schema_definitions=schema)
+        last_call = self.fuzz_swagger_and_get_last_call(api_path, api_def, schema_definitions=schema)
         # "req_form": {
         #     "param_int": "\u0000",
         #     "param_str": "65Y"

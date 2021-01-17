@@ -143,16 +143,12 @@ class OpenAPITemplateGenerator(TemplateGenerator):
 
                     if param.get('type'):
                         parameter_data_type = param.get('type')
-                    elif param.get('schema', {}).get('type'):
-                        parameter_data_type = param.get('schema', {}).get('type')
                     else:
                         parameter_data_type = 'string'
                     param_format = param.get('format')
 
                     if param.get('example'):
                         sample_data = param.get('example')
-                    elif param.get('schema', {}).get('example'):
-                        sample_data = param.get('schema', {}).get('example')
                     else:
                         sample_data = get_sample_data_by_type(param.get('type'))
 

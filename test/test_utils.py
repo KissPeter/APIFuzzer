@@ -21,15 +21,25 @@ class BaseTest:
         cls.report_files = list()
         cls.test_app_url = "http://127.0.0.1:5000/"
         print('Setup_class with report dir: {}'.format(cls.report_dir))
-        if os.path.exists('test/test_swagger_definition.json'):
-            src_file = 'test/test_swagger_definition.json'
-        elif os.path.exists('./test_swagger_definition.json'):
-            src_file = './test_swagger_definition.json'
+        if os.path.exists('test/test_api/openapi_v2.json'):
+            src_file = 'test/test_api/openapi_v2.json'
+        elif os.path.exists('./test_api/openapi_v2.json'):
+            src_file = './test_api/openapi_v2.json'
         else:
             print('Failed to find test file')
             src_file = None
         with open(src_file, 'r') as f:
-            cls.swagger = json.loads(f.read())
+            cls.swagger = json.load(f)
+
+        if os.path.exists('test/test_api/openapi_v3.json'):
+            src_file = 'test/test_api/openapi_v3.json'
+        elif os.path.exists('./test_api/openapi_v3.json'):
+            src_file = './test_api/openapi_v3.json'
+        else:
+            print('Failed to find test file')
+            src_file = None
+        with open(src_file, 'r') as f:
+            cls.openapi = json.load(f)
 
     def setup_method(self, method):
         self.auth_headers = None
@@ -107,19 +117,32 @@ class BaseTest:
         with open("{}/{}".format(self.report_dir, self.report_files[-1]), mode='r', encoding='utf-8') as f:
             return json.load(f)
 
-    def fuzz_and_get_last_call(self, api_path, api_def, schema_definitions=None, headers=None):
-        self.swagger.pop('paths')
-        self.swagger['paths'] = {}
-        self.swagger['paths'][api_path] = api_def
+    def _fuzz_api_and_get_last_call(self, version, api_path, api_def, schema_definitions=None, headers=None):
+        version.pop('paths')
+        version['paths'] = {}
+        version['paths'][api_path] = api_def
         if schema_definitions:
-            self.swagger['definitions'] = schema_definitions
-        print(self.swagger)
-        self.fuzz(self.swagger, headers)
+            version['definitions'] = schema_definitions
+        print(version)
+        self.fuzz(version, headers)
         last_call = self.query_last_call()
-        assert last_call['resp_status'] == 500, '{} received, full response: {}'.format(last_call['resp_status'],
-                                                                                        last_call)
+        assert last_call['resp_status'] == 500, f'{last_call["resp_status"]} received, full response: {last_call}'
         print('api_path: {}, api_def: {} \nlast_call: {}'.format(api_path, api_def, last_call))
         return last_call
+
+    def fuzz_swagger_and_get_last_call(self, api_path, api_def, schema_definitions=None, headers=None):
+        return self._fuzz_api_and_get_last_call(self.swagger,
+                                                api_path=api_path,
+                                                api_def=api_def,
+                                                schema_definitions=schema_definitions,
+                                                headers=headers)
+
+    def fuzz_openapi_and_get_last_call(self, api_path, api_def, schema_definitions=None, headers=None):
+        return self._fuzz_api_and_get_last_call(self.openapi,
+                                                api_path=api_path,
+                                                api_def=api_def,
+                                                schema_definitions=schema_definitions,
+                                                headers=headers)
 
     def repot_basic_check(self):
         required_report_fields = ['status', 'sub_reports', 'name', 'request_headers', 'state', 'request_method',

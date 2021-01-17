@@ -83,6 +83,8 @@ class FuzzerTarget(FuzzerTargetBase, ServerTarget):
             if query_params is not None:
                 request_url = '{}{}'.format(request_url, query_params)
             method = kwargs['method']
+            content_type = kwargs.get('content_Type')
+            kwargs.pop('content_type', None)
             self.logger.info('Request URL : {} {}'.format(method, request_url))
             if kwargs.get('data') is not None:
                 self.logger.info('Request data:{}'.format(json.dumps(dict(kwargs.get('data')))))
@@ -105,28 +107,18 @@ class FuzzerTarget(FuzzerTargetBase, ServerTarget):
                 _curl = init_pycurl()
                 _curl.setopt(pycurl.URL, self.format_pycurl_url(request_url))
                 _curl.setopt(pycurl.HEADERFUNCTION, self.header_function)
-                _curl.setopt(pycurl.HTTPHEADER, self.format_pycurl_header(kwargs.get('headers', {})))
                 _curl.setopt(pycurl.POST, len(kwargs.get('data', {}).items()))
                 _curl.setopt(pycurl.CUSTOMREQUEST, method)
-                # TODO : add support of different content type
-                # json:
-                # httpheader = p.get('httpheader', ['Accept: application/json', "Content-type: application/json"])
-                # if httpheader:
-                #    c.setopt(pycurl.HTTPHEADER, httpheader)
-                # data:
-                # postfields = json.dumps(postfields, indent=2, ensure_ascii=False)
-                # c.setopt(pycurl.POSTFIELDS, postfields)
-                # https://www.programcreek.com/python/example/2166/pycurl.POST
-                # default:
-                # postfields = urlencode(post_data)
-                # Sets request method to POST,
-                # Content-Type header to application/x-www-form-urlencoded
-                # and data to send in request body.
-                # c.setopt(c.POSTFIELDS, postfields)
-                # multipart:
-                # https://automatthias.wordpress.com/2013/04/07/http-put-with-multipartform-data-using-pycurl/
-                # c.setopt(pycurl.HTTPPOST, [('foo', 'bar')])
-                _curl.setopt(pycurl.POSTFIELDS, urllib.parse.urlencode(kwargs.get('data', {})))
+                if content_type:
+                    kwargs['headers'].update({"Content-type": content_type})
+                _curl.setopt(pycurl.HTTPHEADER, self.format_pycurl_header(kwargs.get('headers', {})))
+                if content_type == 'multipart/form-data':
+                    _curl.setopt(pycurl.HTTPPOST, kwargs.get('data', {}).items())
+                elif content_type == 'application/json':
+                    _curl.setopt(pycurl.POSTFIELDS, json.dumps(kwargs.get('data', {}), indent=2, ensure_ascii=False))
+                else:
+                    # default content type: application/x-www-form-urlencoded
+                    _curl.setopt(pycurl.POSTFIELDS, urllib.parse.urlencode(kwargs.get('data', {})))
                 _curl.setopt(pycurl.HEADERFUNCTION, resp_buff_hdrs.write)
                 _curl.setopt(pycurl.WRITEFUNCTION, resp_buff_body.write)
                 for retries in reversed(range(0, 3)):

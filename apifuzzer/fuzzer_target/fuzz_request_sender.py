@@ -83,7 +83,7 @@ class FuzzerTarget(FuzzerTargetBase, ServerTarget):
             if query_params is not None:
                 request_url = '{}{}'.format(request_url, query_params)
             method = kwargs['method']
-            content_type = kwargs.get('content_Type')
+            content_type = kwargs.get('content_type')
             kwargs.pop('content_type', None)
             self.logger.info('Request URL : {} {}'.format(method, request_url))
             if kwargs.get('data') is not None:
@@ -109,9 +109,11 @@ class FuzzerTarget(FuzzerTargetBase, ServerTarget):
                 _curl.setopt(pycurl.HEADERFUNCTION, self.header_function)
                 _curl.setopt(pycurl.POST, len(kwargs.get('data', {}).items()))
                 _curl.setopt(pycurl.CUSTOMREQUEST, method)
+                headers = kwargs['headers']
                 if content_type:
-                    kwargs['headers'].update({"Content-type": content_type})
-                _curl.setopt(pycurl.HTTPHEADER, self.format_pycurl_header(kwargs.get('headers', {})))
+                    self.logger.debug(f'Adding Content-Type: {content_type} header')
+                    headers.update({"Content-Type": content_type})
+                _curl.setopt(pycurl.HTTPHEADER, self.format_pycurl_header(headers))
                 if content_type == 'multipart/form-data':
                     _curl.setopt(pycurl.HTTPPOST, kwargs.get('data', {}).items())
                 elif content_type == 'application/json':
@@ -203,5 +205,5 @@ class FuzzerTarget(FuzzerTargetBase, ServerTarget):
             test_cases.append(TestCase(name='Fuzz test succeed', status='Pass'))
         if self.junit_report_path:
             with open(self.junit_report_path, 'w') as report_file:
-                TestSuite.to_file(report_file, [TestSuite("API Fuzzer", test_cases)], prettyprint=True)
+                TestSuite.to_xml_report_file(report_file, [TestSuite("API Fuzzer", test_cases)], prettyprint=True)
         super(ServerTarget, self).teardown()

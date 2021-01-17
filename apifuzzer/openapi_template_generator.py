@@ -26,8 +26,8 @@ class OpenAPITemplateGenerator(TemplateGenerator):
 
     def __init__(self, api_definition_url, api_definition_file):
         """
-        :param api_resources_file: API resources local file
-        :type api_resources: str
+        :param api_definition_file: API resources local file
+        :type api_definition_file: str
         :param api_definition_url: URL where the request should be sent
         :type api_definition_url: str
         """
@@ -201,7 +201,8 @@ class OpenAPITemplateGenerator(TemplateGenerator):
                         else:
                             self.logger.warning(f'Can not parse a definition ({parameter_place_in_request}): '
                                                 f'{pretty_print(param)}')
-                self._save_template(template)
+                if template.get_stat() > 0:
+                    self._save_template(template)
 
     def _compile_base_url_for_swagger(self, alternate_url):
         if alternate_url:

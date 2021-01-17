@@ -75,13 +75,13 @@ def query_multiple_params():
 @app.route('/post_param', methods=['POST'])
 @catch_custom_exception
 def post_param():
-    return 'ID: {}'.format(int(request.form.get('param_int', 0))) \
- \
- \
-@app.route('/v3_post', methods=['POST'])
+    return 'ID: {}'.format(int(request.form.get('param_int', 0)))
+
+
+@app.route('/v3_post_json', methods=['POST'])
 @catch_custom_exception
 def v3_post():
-    return 'ID: {}'.format(int(request.form.get('category_id', 0)))
+    return 'ID: {}'.format(int(request.json.get('category_id', 0)))
 
 
 @app.route('/last_call', methods=['GET'])

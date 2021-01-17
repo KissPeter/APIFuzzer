@@ -3,8 +3,8 @@ from test.test_utils import BaseTest
 
 class TestOpenAPI(BaseTest):
 
-    def test_v3_post_with_schema(self):
-        api_path = '/v3_post'
+    def test_v3_post_with_schema_json_content_type(self):
+        api_path = '/v3_post_json'
         api_def = {
             "post": {
                 "requestBody": {
@@ -33,5 +33,5 @@ class TestOpenAPI(BaseTest):
         #     "param_int": "\u0000",
         #     "param_str": "65Y"
         # },
-        assert not isinstance(last_call['req_form']['category_id'], int), last_call
+        assert not isinstance(last_call['req_json']['category_id'], int), last_call
         self.repot_basic_check()

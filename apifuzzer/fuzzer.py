@@ -44,7 +44,7 @@ class Fuzzer(object):
         model = APIFuzzerModel()
         for template in self.templates:
             model.connect(template.compile_template())
-            model.content_type = template.content_type
+            model.content_type = template.get_content_type()
         fuzzer = OpenApiServerFuzzer()
         fuzzer.set_model(model)
         fuzzer.set_target(target)

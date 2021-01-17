@@ -56,3 +56,6 @@ class BaseTemplate(object):
                 except KittyException as e:
                     self.logger.warning('Failed to add {} because {}, continue processing...'.format(name, e))
         return template
+
+    def get_content_type(self):
+        return self.content_type

@@ -22,6 +22,9 @@ build:
             use_website_config: true
       project_setup:
         before:
+          - command: pip3 install -r requirements.txt
+            on_node: 1
+            idle_timeout: 10
           - command: pip3 install -r test/requirements_for_test.txt
             on_node: 1
             idle_timeout: 10

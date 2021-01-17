@@ -1,6 +1,6 @@
 from kitty.interfaces import WebInterface
-from kitty.model import GraphModel
 
+from apifuzzer.fuzz_model import APIFuzzerModel
 from apifuzzer.fuzzer_target.fuzz_request_sender import FuzzerTarget
 from apifuzzer.openapi_template_generator import OpenAPITemplateGenerator
 from apifuzzer.server_fuzzer import OpenApiServerFuzzer
@@ -41,9 +41,10 @@ class Fuzzer(object):
         target = FuzzerTarget(name='target', base_url=self.base_url, report_dir=self.report_dir,
                               auth_headers=self.auth_headers, junit_report_path=self.junit_report_path)
         interface = WebInterface()
-        model = GraphModel()
+        model = APIFuzzerModel()
         for template in self.templates:
             model.connect(template.compile_template())
+            model.content_type = template.content_type
         fuzzer = OpenApiServerFuzzer()
         fuzzer.set_model(model)
         fuzzer.set_target(target)

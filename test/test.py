@@ -117,6 +117,9 @@ class TestSwagger(BaseTest):
         api_path = '/post_param'
         api_def = {
             "post": {
+                "consumes": [
+                    "application/json"
+                ],
                 "parameters": [
                     {
                         "in": "body",

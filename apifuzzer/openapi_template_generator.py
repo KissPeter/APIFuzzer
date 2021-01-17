@@ -110,6 +110,7 @@ class OpenAPITemplateGenerator(TemplateGenerator):
                     template = self._get_template(template_name)
                     template.url = normalized_url
                     template.method = method.upper()
+                    template.content_type = content_type
                     self.logger.debug(f'Processing {content_type}, template: {template_name}')
                     if not self.api_resources['paths'][resource][method].get('parameters'):
                         self.api_resources['paths'][resource][method]['parameters'] = []
@@ -131,6 +132,9 @@ class OpenAPITemplateGenerator(TemplateGenerator):
                     template = self._get_template(template_name)
                 template.url = normalized_url
                 template.method = method.upper()
+                # Version 2: Set content type (POST, PUT method)
+                if len(paths[resource][method].get('consumes', [])):
+                    template.content_type = paths[resource][method]['consumes'][0]
 
                 for param in list(paths[resource][method].get('parameters', {})):
                     if not isinstance(param, dict):

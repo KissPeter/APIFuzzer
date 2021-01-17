@@ -40,33 +40,27 @@ class OpenApiServerFuzzer(ServerFuzzer):
     def _transmit(self, node):
         """
         Where the magic happens. This function prepares the request
-        :param node: dict of paramters compiled earlier
-        :type node: dict
+        :param node: Kitty template
+        :type node: object
         """
-        payload = {}
+        payload = {'content_type': self.model.content_type}
         for key in ['url', 'method']:
             payload[key] = transform_data_to_bytes(node.get_field_by_name(key).render())
         fuzz_places = ['params', 'headers', 'data', 'path_variables']
         for place in fuzz_places:
-            # self.logger.info('Transmit place: {}'.format(place))
             try:
                 if place in node._fields_dict:
                     param = node.get_field_by_name(place)
-                    # if isinstance(param, Container):
                     _result = self._recurse_params(param)
-                    # self.logger.info('Process param recursively: {} gives: {}'.format(param, _result))
                     payload[place] = _result
-                    # elif hasattr(param, 'render'):
-                    #     payload[place] = param.render()
             except KittyException as e:
-                self.logger.warning('Exception occurred while processing {}: {}'.format(place, e.__str__()))
-        # self.logger.info('Payload: {}'.format(payload))
+                self.logger.warning(f'Exception occurred while processing {place}: {e}')
         self._last_payload = payload
         try:
             return self.target.transmit(**payload)
         except Exception as e:
-            self.logger.error('Error in transmit: %s', e)
-            raise
+            self.logger.error(f'Error in transmit: {e}')
+            raise e
 
     @staticmethod
     def _recurse_params(param):

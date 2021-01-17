@@ -18,15 +18,17 @@ class BaseTest:
         """
         cls.tempfile = tempfile.NamedTemporaryFile().name
         cls.report_dir = tempfile.mkdtemp()
+        cls.base_dir = os.getcwd()
+        os.chdir(cls.base_dir)
         cls.report_files = list()
         cls.test_app_url = "http://127.0.0.1:5000/"
-        print('Setup_class with report dir: {}'.format(cls.report_dir))
+        print(f'Setup_class with report dir: {cls.report_dir}')
         if os.path.exists('test/test_api/openapi_v2.json'):
             src_file = 'test/test_api/openapi_v2.json'
         elif os.path.exists('./test_api/openapi_v2.json'):
             src_file = './test_api/openapi_v2.json'
         else:
-            print('Failed to find test file')
+            print(f'Failed to find test file in {os.listdir()}')
             src_file = None
         with open(src_file, 'r') as f:
             cls.swagger = json.load(f)
@@ -36,7 +38,7 @@ class BaseTest:
         elif os.path.exists('./test_api/openapi_v3.json'):
             src_file = './test_api/openapi_v3.json'
         else:
-            print('Failed to find test file')
+            print(f'Failed to find test file in {os.listdir()}')
             src_file = None
         with open(src_file, 'r') as f:
             cls.openapi = json.load(f)
@@ -114,6 +116,7 @@ class BaseTest:
     def get_last_report_file(self):
         os.chdir(self.report_dir)
         self.report_files = sorted(filter(os.path.isfile, os.listdir('.')), key=os.path.getmtime)
+        os.chdir(self.base_dir)
         with open("{}/{}".format(self.report_dir, self.report_files[-1]), mode='r', encoding='utf-8') as f:
             return json.load(f)
 

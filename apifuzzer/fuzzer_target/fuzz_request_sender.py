@@ -6,7 +6,7 @@ from time import time
 
 import pycurl
 from bitstring import Bits
-from junit_xml import TestSuite, TestCase
+from junit_xml import TestSuite, TestCase, to_xml_report_file
 from kitty.targets.server import ServerTarget
 
 from apifuzzer.apifuzzer_report import Apifuzzer_Report as Report
@@ -115,7 +115,10 @@ class FuzzerTarget(FuzzerTargetBase, ServerTarget):
                     headers.update({"Content-Type": content_type})
                 _curl.setopt(pycurl.HTTPHEADER, self.format_pycurl_header(headers))
                 if content_type == 'multipart/form-data':
-                    _curl.setopt(pycurl.HTTPPOST, kwargs.get('data', {}).items())
+                    post_data = list()
+                    for k, v in kwargs.get('data', {}).items():
+                        post_data.append((k, v))
+                    _curl.setopt(pycurl.HTTPPOST, post_data)
                 elif content_type == 'application/json':
                     _curl.setopt(pycurl.POSTFIELDS, json.dumps(kwargs.get('data', {}), indent=2, ensure_ascii=False))
                 else:
@@ -205,5 +208,5 @@ class FuzzerTarget(FuzzerTargetBase, ServerTarget):
             test_cases.append(TestCase(name='Fuzz test succeed', status='Pass'))
         if self.junit_report_path:
             with open(self.junit_report_path, 'w') as report_file:
-                TestSuite.to_xml_report_file(report_file, [TestSuite("API Fuzzer", test_cases)], prettyprint=True)
+                to_xml_report_file(report_file, [TestSuite("API Fuzzer", test_cases)], prettyprint=True)
         super(ServerTarget, self).teardown()

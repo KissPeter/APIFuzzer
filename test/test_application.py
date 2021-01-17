@@ -80,8 +80,14 @@ def post_param():
 
 @app.route('/v3_post_json', methods=['POST'])
 @catch_custom_exception
-def v3_post():
+def v3_post_json():
     return 'ID: {}'.format(int(request.json.get('category_id', 0)))
+
+
+@app.route('/v3_post_multipart', methods=['POST'])
+@catch_custom_exception
+def v3_post_multipart():
+    return 'ID: {}'.format(int(request.form.get('category_id', 0)))
 
 
 @app.route('/last_call', methods=['GET'])

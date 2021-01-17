@@ -41,6 +41,8 @@ class OpenAPITemplateGenerator(TemplateGenerator):
         tmp_api_resources = self.reference_resolver.resolve()
         self.json_formatter = JsonSectionAbove(tmp_api_resources)
         self.api_resources = self.json_formatter.resolve()
+        with open(f'resolved.json', 'w') as f:
+            json.dump(self.api_resources, f, sort_keys=True, indent=2)
 
     @staticmethod
     def _normalize_url(url_in):
@@ -74,6 +76,7 @@ class OpenAPITemplateGenerator(TemplateGenerator):
 
     def _save_template(self, template):
         if template in self.templates:
+            self.logger.debug(f'Removing previous version of {template.name}')
             self.templates.remove(template)
         self.templates.add(template)
         self.logger.debug(f'Adding template to list: {template.name}, templates list: {len(self.templates)}')
@@ -99,23 +102,27 @@ class OpenAPITemplateGenerator(TemplateGenerator):
 
     def _process_request_body(self):
         paths = self.api_resources['paths']
+        request_body_paths = dict()
         for resource in paths.keys():
             normalized_url = self._normalize_url(resource)
+            if not request_body_paths.get(resource):
+                request_body_paths[resource] = dict()
             for method in paths[resource].keys():
-                self.logger.info('Resource: {} Method: {}'.format(resource, method))
-                template_name = '{}|{}'.format(normalized_url, method)
+                if not request_body_paths[resource].get(method):
+                    request_body_paths[resource][method] = dict()
                 for content_type in paths[resource][method].get('requestBody', {}).get('content', []):
                     # as multiple content types can exist here, we need to open up new template
-                    template_name = f'f{template_name}-{self._split_content_type(content_type)}'
+                    template_name = f'{normalized_url}|{method}-{self._split_content_type(content_type)}'
+                    self.logger.info(f'Resource: {resource} Method: {method}, CT: {content_type}')
                     template = self._get_template(template_name)
                     template.url = normalized_url
                     template.method = method.upper()
                     template.content_type = content_type
-                    self.logger.debug(f'Processing {content_type}, template: {template_name}')
-                    if not self.api_resources['paths'][resource][method].get('parameters'):
-                        self.api_resources['paths'][resource][method]['parameters'] = []
+                    if not request_body_paths[resource][method].get('parameters'):
+                        request_body_paths[resource][method]['parameters'] = []
                     for k, v in paths[resource][method]['requestBody']['content'][content_type].items():
-                        self.api_resources['paths'][resource][method]['parameters'].append({'in': 'body', k: v})
+                        request_body_paths[resource][method]['parameters'].append({'in': 'body', k: v})
+                    self._process_api_resources(paths=request_body_paths, existing_template=template)
 
     def _process_api_resources(self, paths=None, existing_template=None):
         if paths is None:
@@ -153,12 +160,14 @@ class OpenAPITemplateGenerator(TemplateGenerator):
                         sample_data = get_sample_data_by_type(param.get('type'))
 
                     parameter_place_in_request = param.get('in')
-                    param_name = f'{template_name}|{param.get("name")}'
                     parameters = list()
-                    parameters.append({'name': param_name, 'type': parameter_data_type})
+                    if param.get("name"):
+                        param_name = f'{template_name}|{param.get("name")}'
+                        parameters.append({'name': param_name, 'type': parameter_data_type})
                     for _param in param.get('properties', []):
                         param_name = f'{template_name}|{_param}'
                         parameter_data_type = param.get('properties', {}).get(_param).get('type', 'string')
+                        self.logger.debug(f'Adding property: {param_name} with type: {parameter_data_type}')
                         parameters.append({'name': param_name, 'type': parameter_data_type})
                     for _parameter in parameters:
 
@@ -173,7 +182,7 @@ class OpenAPITemplateGenerator(TemplateGenerator):
                             fuzzer_type = None
                         fuzz_type = get_fuzz_type_by_param_type(fuzzer_type)
 
-                        self.logger.info(f'Resource: {resource} Method: {method} Parameter: {param}, Parameter type: '
+                        self.logger.info(f'Resource: {resource} Method: {method} Parameter: {param}, Parameter place: '
                                          f'{parameter_place_in_request}, Sample data: {sample_data}, Param name: '
                                          f'{param_name}, fuzzer: {fuzz_type.__name__}')
 

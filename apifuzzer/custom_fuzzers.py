@@ -24,7 +24,7 @@ class Utf8Chars(BaseField):
     MAX = 1114111
 
     def __init__(self, value, name, fuzzable=True, min_length=20, max_length=100, num_mutations=80):
-        super(BaseField, self).__init__(name=name)
+        super(BaseField, self).__init__(name=name)  # pylint: disable=E1003
         self.logger = self.logger = get_logger(self.__class__.__name__)
         self.name = name
         self.value = value

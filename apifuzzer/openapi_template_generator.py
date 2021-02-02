@@ -95,7 +95,7 @@ class OpenAPITemplateGenerator(TemplateGenerator):
         else:
             return content_type
 
-    def process_api_resources(self, paths=None, existing_template=None):
+    def process_api_resources(self, paths=None, existing_template=None):  # pylint: disable=W0221
         self.logger.info('Start preparation')
         self._process_request_body()
         self._process_api_resources()

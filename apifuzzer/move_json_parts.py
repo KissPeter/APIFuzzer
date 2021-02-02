@@ -28,9 +28,9 @@ class JsonSectionAbove:
                 elif isinstance(value, list):
                     if not return_data.get(key):
                         return_data[key] = list()
-                    for iter in range(len(value)):
-                        self.logger.debug(f'Process {key} list elem: {iter}')
-                        return_data[key].append(self.resolve(data=value[iter]))
+                    for _iter in range(len(value)):
+                        self.logger.debug(f'Process {key} list elem: {_iter}')
+                        return_data[key].append(self.resolve(data=value[_iter]))
 
                 else:
                     return_data[key] = value

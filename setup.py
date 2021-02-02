@@ -1,8 +1,10 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
+"""
+Preparation instructions: https://packaging.python.org/tutorials/packaging-projects/
+"""
 import codecs
 import os.path
 import re
-from os import path
 
 from setuptools import setup, find_packages
 
@@ -13,8 +15,8 @@ __version__ = re.search(
     open("apifuzzer/__init__.py").read(),
 ).group(1)
 
-REQUIREMENTS_FILE_PATH = path.join(
-    path.abspath(path.dirname(__file__)), "requirements.txt"
+REQUIREMENTS_FILE_PATH = os.path.join(
+    os.path.abspath(os.path.dirname(__file__)), "requirements.txt"
 )
 
 
@@ -61,7 +63,3 @@ setup_options = dict(
 )
 
 setup(**setup_options)
-
-"""
-Preparation instructions: https://packaging.python.org/tutorials/packaging-projects/
-"""

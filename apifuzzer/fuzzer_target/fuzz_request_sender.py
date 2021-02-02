@@ -24,8 +24,8 @@ class FuzzerTarget(FuzzerTargetBase, ServerTarget):
         pass
 
     def __init__(self, name, base_url, report_dir, auth_headers, junit_report_path):
-        super(ServerTarget, self).__init__(name)
-        super(FuzzerTargetBase, self).__init__(auth_headers)
+        super(ServerTarget, self).__init__(name)  # pylint: disable=E1003
+        super(FuzzerTargetBase, self).__init__(auth_headers)  # pylint: disable=E1003
         self.logger = get_logger(self.__class__.__name__)
         self.base_url = base_url
         self.accepted_status_codes = list(range(200, 300)) + list(range(400, 500))
@@ -173,7 +173,7 @@ class FuzzerTarget(FuzzerTargetBase, ServerTarget):
         """Called after a test is completed, perform cleanup etc."""
         if self.report.get('report') is None:
             self.report.add('reason', self.report.get_status())
-        super(ServerTarget, self).post_test(test_num)
+        super(ServerTarget, self).post_test(test_num)  # pylint: disable=E1003
         if self.report.get_status() != Report.PASSED:
             if self.junit_report_path:
                 test_case = TestCase(name=self.test_number, status=self.report.get_status())
@@ -209,4 +209,4 @@ class FuzzerTarget(FuzzerTargetBase, ServerTarget):
         if self.junit_report_path:
             with open(self.junit_report_path, 'w') as report_file:
                 to_xml_report_file(report_file, [TestSuite("API Fuzzer", test_cases)], prettyprint=True)
-        super(ServerTarget, self).teardown()
+        super(ServerTarget).teardown()  # pylint: disable=E1003

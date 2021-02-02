@@ -97,7 +97,6 @@ class ResolveReferences:
         """
         resource_reference, item_location = schema_ref.split('#', 1)
 
-        schema_definition = dict()
         # Local reference:
         # Example: $ref: '#/definitions/myElement'
         if schema_ref.startswith('#'):
@@ -157,9 +156,9 @@ class ResolveReferences:
                 elif isinstance(value, list):
                     if not return_data.get(key):
                         return_data[key] = list()
-                    for iter in range(len(value)):
-                        self.logger.debug(f'Process {key} list elem: {iter}')
-                        return_data[key].append(self.resolve(data=data[key][iter]))
+                    for _iter in range(len(value)):
+                        self.logger.debug(f'Process {key} list elem: {_iter}')
+                        return_data[key].append(self.resolve(data=data[key][_iter]))
                 elif key == '$ref' and value:
                     ref_found = True
                     try:

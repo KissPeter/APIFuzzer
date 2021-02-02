@@ -23,6 +23,7 @@ class LastRequestData(object):
         except TypeError as e:
             return 'Error: {}, latest data: {}'.format(e, self.last_request_data)
 
+
 def catch_custom_exception(func):
     @wraps(func)
     def decorated_function(*args, **kwargs):
@@ -88,6 +89,12 @@ def v3_post_json():
 @catch_custom_exception
 def v3_post_multipart():
     return 'ID: {}'.format(int(request.form.get('category_id', 0)))
+
+
+@app.route('/v2_header', methods=['GET'])
+@catch_custom_exception
+def v2_header():
+    return 'ID: {}'.format(int(request.headers.get('X-Test', 0)))
 
 
 @app.route('/last_call', methods=['GET'])

@@ -209,4 +209,4 @@ class FuzzerTarget(FuzzerTargetBase, ServerTarget):
         if self.junit_report_path:
             with open(self.junit_report_path, 'w') as report_file:
                 to_xml_report_file(report_file, [TestSuite("API Fuzzer", test_cases)], prettyprint=True)
-        super(ServerTarget).teardown()  # pylint: disable=E1003
+        super(ServerTarget, self).teardown()  # pylint: disable=E1003

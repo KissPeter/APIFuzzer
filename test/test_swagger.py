@@ -147,3 +147,24 @@ class TestSwagger(BaseTest):
         # },
         assert not isinstance(last_call['req_form']['param_int'], int), last_call
         self.repot_basic_check()
+
+    def test_v2_header(self):
+        api_path = '/v2_header'
+        api_def = {
+            "get": {
+                "parameters": [
+                    {
+                        "name": "X-Test",
+                        "in": "header",
+                        "required": True,
+                        "type": "number",
+                        "format": "double"
+                    }
+
+                ]
+            }
+        }
+        last_call = self.fuzz_swagger_and_get_last_call(api_path, api_def)
+        last_value_sent = last_call['req_headers']['X-Test']
+        assert not isinstance(last_value_sent, int), last_call
+        self.repot_basic_check()

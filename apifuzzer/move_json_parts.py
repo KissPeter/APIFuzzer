@@ -2,6 +2,9 @@ from apifuzzer.utils import pretty_print, get_logger
 
 
 class JsonSectionAbove:
+    """
+    By organizing the API definition OpenAPI v3 and Swagger v2 API definitions can be processed in a similar way
+    """
 
     def __init__(self, api_definition, section_to_up='schema'):
         self.logger = get_logger(f'{self.__class__.__name__}-{section_to_up}')
@@ -28,9 +31,9 @@ class JsonSectionAbove:
                 elif isinstance(value, list):
                     if not return_data.get(key):
                         return_data[key] = list()
-                    for _iter in range(len(value)):
+                    for _iter, val in enumerate(value):
                         self.logger.debug(f'Process {key} list elem: {_iter}')
-                        return_data[key].append(self.resolve(data=value[_iter]))
+                        return_data[key].append(self.resolve(data=val))
 
                 else:
                     return_data[key] = value

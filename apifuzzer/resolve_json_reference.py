@@ -13,6 +13,9 @@ class FailedToResolveReference(Exception):
 
 
 class ResolveReferences:
+    """
+    Resolve API references in order to get one single JSON object with all data available in place
+    """
 
     def __init__(self, api_definition_path=None, api_definition_url=""):
         self.logger = get_logger(self.__class__.__name__)
@@ -156,7 +159,7 @@ class ResolveReferences:
                 elif isinstance(value, list):
                     if not return_data.get(key):
                         return_data[key] = list()
-                    for _iter in range(len(value)):
+                    for _iter, _ in enumerate(value):
                         self.logger.debug(f'Process {key} list elem: {_iter}')
                         return_data[key].append(self.resolve(data=data[key][_iter]))
                 elif key == '$ref' and value:

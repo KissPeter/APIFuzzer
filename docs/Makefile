@@ -2,10 +2,20 @@ SHELL:=$(shell which bash)
 parent_dir:=$(shell dirname $(shell dirname $(realpath $(lastword $(MAKEFILE_LIST)))))
 .PHONY: all
 all: clean
+all: readme
 all: apidoc
 all: sphinx
 
+
 SPHINXOPTS= -j 4 -d _build/doctrees .
+
+
+.PHONY: readme
+readme:
+	rm -f readme.md readme.rst
+	sed -e '1,/APIFuzzer — HTTP API Testing Framework/d' ../README.md  > readme.md
+	m2r readme.md
+
 
 .PHONY: sphinx
 sphinx:

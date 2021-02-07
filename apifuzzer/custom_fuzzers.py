@@ -8,19 +8,20 @@ from apifuzzer.utils import secure_randint, get_logger
 
 
 class Utf8Chars(BaseField):
-    """
+    '''
     This custom fuzzer iterates through the UTF8 chars and gives back random section between min and max length
     Highly relies on random numbers so most probably will give you different values each time to run it.
 
     You can generate the chars like this:
-    for st in range(0, 1114111):
-    try:
-        print('{}-> {}'.format(st, chr(st)))
-    except (UnicodeEncodeError, ValueError):
-        pass
+    :example:
+    >>>for st in range(0, 1114111):
+    >>>    try:
+    >>>        print(f'{st}-> {chr(st)}')
+    >>>    except (UnicodeEncodeError, ValueError):
+    >>>        pass
     Above 1114111 chars started to getting unprocessable so this is the upper limit for now.
+    '''
 
-    """
     MAX = 1114111
 
     def __init__(self, value, name, fuzzable=True, min_length=20, max_length=100, num_mutations=80):
@@ -61,7 +62,6 @@ class Utf8Chars(BaseField):
         return Bits(self.str_to_bytes(val))
 
     def _mutate(self):
-
         current_value = list()
         current_mutation_length = secure_randint(self.min_length, self.max_length)
         for st in range(self.position, self.position + current_mutation_length):

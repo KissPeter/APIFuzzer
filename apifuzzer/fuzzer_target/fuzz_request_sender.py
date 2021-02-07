@@ -9,7 +9,7 @@ from bitstring import Bits
 from junit_xml import TestSuite, TestCase, to_xml_report_file
 from kitty.targets.server import ServerTarget
 
-from apifuzzer.apifuzzer_report import Apifuzzer_Report as Report
+from apifuzzer.apifuzzerreport import ApifuzzerReport as Report
 from apifuzzer.fuzzer_target.request_base_functions import FuzzerTargetBase
 from apifuzzer.utils import try_b64encode, init_pycurl, get_logger
 

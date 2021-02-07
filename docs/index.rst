@@ -4,4 +4,5 @@ Table of contents
 =================
 
 .. toctree::
+    readme
     modules

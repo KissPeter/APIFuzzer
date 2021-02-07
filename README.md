@@ -13,10 +13,21 @@
 APIFuzzer reads your API description and step by step fuzzes the fields to validate 
 if you application can cope with the fuzzed parameters. Does not require coding.
 
-### Supported API Description Formats
-- [Swagger][]
+## Main features
+*Parse API definition from local file or remote URL
+* JSON and YAML file format support
+* GET, POST, PUT, POST, DELETE methods are supported
+* Fuzzing of request body, query string, path parameter and request header are supported
+* Support CI integration 
+    * Generate JUnit XML test report format
+    * Send request to alternative URL
+    * Support HTTP basic auth from configuration
+    * Save report of failed test in JSON format into the pre-configured folder
+    * Log to stdout instead of syslog
+* Configurable log level
 
-### Work in progress
+### Supported API definition formats
+- [Swagger][]
 - [OpenAPI][]
 
 ### Planned
@@ -61,7 +72,7 @@ optional arguments:
   --src_url SRC_URL     API definition url. JSON and YAML format is supported
   -r REPORT_DIR, --report_dir REPORT_DIR
                         Directory where error reports will be saved. Default is temporally generated directory
-  --level LEVEL         Test deepness: [1,2], higher is the deeper !!!Not implemented!!!
+  --level LEVEL         Test deepness: [1,2], the higher is the deeper (In progress)
   -u ALTERNATE_URL, --url ALTERNATE_URL
                         Use CLI defined url instead compile the url from the API definition. Useful for testing
   -t TEST_RESULT_DST, --test_report TEST_RESULT_DST

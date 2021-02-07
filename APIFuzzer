@@ -6,6 +6,7 @@ import sys
 import tempfile
 from logging import _nameToLevel as levelNames
 
+from apifuzzer.fuzz_utils import FailedToParseFileException
 from apifuzzer.fuzzer import Fuzzer
 from apifuzzer.utils import json_data, str2bool
 from apifuzzer.version import get_version
@@ -88,6 +89,13 @@ if __name__ == '__main__':
                   api_definition_file=args.src_file,
                   junit_report_path=args.test_result_dst
                   )
-    prog.prepare()
+    try:
+        prog.prepare()
+    except FailedToParseFileException:
+        print('Failed to parse API definition')
+        exit(1)
+    except Exception as e:
+        print(f'Unexpected exception happened during fuzz test preparation: {e}. Feel free to report the issue')
+        exit(1)
     signal.signal(signal.SIGINT, signal_handler)
     prog.run()

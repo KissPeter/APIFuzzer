@@ -104,3 +104,4 @@ ENV/
 kittylogs
 .hypothesis
 .pytest_cache
+doc/*.rst

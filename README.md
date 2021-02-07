@@ -13,10 +13,11 @@
 APIFuzzer reads your API description and step by step fuzzes the fields to validate 
 if you application can cope with the fuzzed parameters. Does not require coding.
 
-## Main features
-*Parse API definition from local file or remote URL
+## APIFuzzer main features
+
+* Parse API definition from local file or remote URL
 * JSON and YAML file format support
-* GET, POST, PUT, POST, DELETE methods are supported
+* All HTTP methods are supported
 * Fuzzing of request body, query string, path parameter and request header are supported
 * Support CI integration 
     * Generate JUnit XML test report format

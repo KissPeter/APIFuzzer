@@ -24,6 +24,10 @@ sphinx:
 .PHONY: clean
 clean:
 	rm -rf _build
+	mv index.rst index.rst.bck
+	rm -f *.rst
+	rm -f readme.md
+	mv index.rst.bck index.rst
 
 .PHONY: apidoc
 apidoc:

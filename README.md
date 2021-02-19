@@ -19,6 +19,7 @@ if you application can cope with the fuzzed parameters. Does not require coding.
 * JSON and YAML file format support
 * All HTTP methods are supported
 * Fuzzing of request body, query string, path parameter and request header are supported
+* Relies on random mutations
 * Support CI integration 
     * Generate JUnit XML test report format
     * Send request to alternative URL

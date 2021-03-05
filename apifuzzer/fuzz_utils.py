@@ -4,7 +4,7 @@ import tempfile
 from ruamel.yaml import YAML
 from ruamel.yaml.scanner import ScannerError
 
-from apifuzzer.custom_fuzzers import RandomBitsField, Utf8Chars, UnicodeStrings
+from apifuzzer.custom_fuzzers import RandomBitsField, Utf8Chars, UnicodeStrings, APIFuzzerGroup
 from apifuzzer.exceptions import FailedToParseFileException
 from apifuzzer.utils import download_file, secure_randint
 
@@ -49,7 +49,8 @@ def get_fuzz_type_by_param_type(fuzz_type):
         'hostname': string_types,
         'ipv4': string_types,
         'ipv6': string_types,
-        'boolean': string_types
+        'boolean': string_types,
+        'enum': [APIFuzzerGroup]
     }
     fuzzer_list = types.get(fuzz_type, string_types)
     return fuzzer_list[secure_randint(0, max(len(fuzzer_list) - 1, 1))]

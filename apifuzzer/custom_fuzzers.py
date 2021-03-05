@@ -1,10 +1,20 @@
 import six
 from bitstring import Bits
 from kitty.core import kassert
-from kitty.model import RandomBits, String, BaseField
+from kitty.model import RandomBits, String, BaseField, Group
 from kitty.model.low_level.encoder import ENC_BITS_DEFAULT, strToBytes
 
 from apifuzzer.utils import secure_randint, get_logger
+
+
+class APIFuzzerGroup(Group):
+
+    def __init__(self, name, value):
+        super().__init__(values=value, name=name, fuzzable=True)
+
+    @staticmethod
+    def accept_list_as_value():
+        return True
 
 
 class Utf8Chars(BaseField):
@@ -24,13 +34,13 @@ class Utf8Chars(BaseField):
 
     MAX = 1114111
 
-    def __init__(self, value, name, fuzzable=True, min_length=20, max_length=100, num_mutations=80):
+    def __init__(self, value, name, fuzzable=True, min_length=20, max_length=None, num_mutations=80):
         super(BaseField, self).__init__(name=name)  # pylint: disable=E1003
         self.logger = self.logger = get_logger(self.__class__.__name__)
         self.name = name
         self.value = value
         self.min_length = min_length
-        self.max_length = max_length
+        self.max_length = max_length if max_length else len(value) * 2
         self._num_mutations = num_mutations
         self.position = self.init_position()
         self._initialized = False
@@ -91,8 +101,8 @@ class RandomBitsField(RandomBits):
     def __init__(self, value, name, fuzzable=True):
         self.name = name
         self.value = value
-        super(RandomBitsField, self).__init__(name=name, value=value, min_length=20, max_length=100, fuzzable=fuzzable,
-                                              num_mutations=80)
+        super(RandomBitsField, self).__init__(name=name, value=value, min_length=0, max_length=len(value) * 2,
+                                              fuzzable=fuzzable, num_mutations=80)
 
     def _mutate(self):
         if self._step:
@@ -113,9 +123,9 @@ class RandomBitsField(RandomBits):
 
 class UnicodeStrings(String):
 
-    def __init__(self, value, name, min_length=20, max_length=100, num_mutations=80, fuzzable=True):
+    def __init__(self, value, name, min_length=0, max_length=None, num_mutations=80, fuzzable=True):
         self.min_length = min_length
-        self.max_length = max_length
+        self.max_length = max_length if max_length else len(value) * 2
         self._num_mutations = num_mutations
         self.name = name
         self.value = value

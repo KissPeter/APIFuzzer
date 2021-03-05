@@ -156,6 +156,8 @@ class OpenAPITemplateGenerator(TemplateGenerator):
 
                     if param.get('example'):
                         sample_data = param.get('example')
+                    elif param.get('default'):
+                        sample_data = param.get('default')
                     else:
                         sample_data = get_sample_data_by_type(param.get('type'))
 
@@ -168,13 +170,20 @@ class OpenAPITemplateGenerator(TemplateGenerator):
                         param_name = f'{template_name}|{_param}'
                         parameter_data_type = param.get('properties', {}).get(_param).get('type', 'string')
                         self.logger.debug(f'Adding property: {param_name} with type: {parameter_data_type}')
-                        parameters.append({'name': param_name, 'type': parameter_data_type})
+                        _additional_param = {'name': param_name,
+                                             'type': parameter_data_type,
+                                             'default': param.get('properties', {}).get(_param).get('default'),
+                                             'example': param.get('properties', {}).get(_param).get('example'),
+                                             'enum': param.get('properties', {}).get(_param).get('enum')
+                                             }
+                        parameters.append(_additional_param)
                     for _parameter in parameters:
-
                         param_name = _parameter.get('name')
                         parameter_data_type = _parameter.get('type')
 
-                        if param_format is not None:
+                        if _parameter.get('enum'):
+                            fuzzer_type = 'enum'
+                        elif param_format is not None:
                             fuzzer_type = param_format.lower()
                         elif parameter_data_type is not None:
                             fuzzer_type = parameter_data_type.lower()
@@ -182,9 +191,17 @@ class OpenAPITemplateGenerator(TemplateGenerator):
                             fuzzer_type = None
                         fuzz_type = get_fuzz_type_by_param_type(fuzzer_type)
 
-                        self.logger.info(f'Resource: {resource} Method: {method} Parameter: {param}, Parameter place: '
-                                         f'{parameter_place_in_request}, Sample data: {sample_data}, Param name: '
-                                         f'{param_name}, fuzzer: {fuzz_type.__name__}')
+                        if _parameter.get('enum') and hasattr(fuzz_type, 'accept_list_as_value'):
+                            sample_data = _parameter.get('enum')
+                        elif _parameter.get('example'):
+                            sample_data = _parameter.get('example')
+                        elif _parameter.get('default'):
+                            sample_data = _parameter.get('default')
+
+                        self.logger.info(f'Resource: {resource} Method: {method} \n Parameter: {param} \n'
+                                         f' Parameter place: {parameter_place_in_request} \n Sample data: {sample_data}'
+                                         f'\n Param name: {param_name}\n fuzzer_type: {fuzzer_type} '
+                                         f'fuzzer: {fuzz_type.__name__}')
 
                         if parameter_place_in_request == ParamTypes.PATH:
                             template.path_variables.add(fuzz_type(name=param_name, value=str(sample_data)))
@@ -195,7 +212,11 @@ class OpenAPITemplateGenerator(TemplateGenerator):
                         elif parameter_place_in_request == ParamTypes.QUERY:
                             template.params.add(fuzz_type(name=param_name, value=str(sample_data)))
                         elif parameter_place_in_request == ParamTypes.BODY:
-                            template.data.add(fuzz_type(name=param_name, value=transform_data_to_bytes(sample_data)))
+                            if hasattr(fuzz_type, 'accept_list_as_value'):
+                                template.data.add(fuzz_type(name=param_name, value=sample_data))
+                            else:
+                                template.data.add(
+                                    fuzz_type(name=param_name, value=transform_data_to_bytes(sample_data)))
                         elif parameter_place_in_request == ParamTypes.FORM_DATA:
                             template.params.add(fuzz_type(name=param_name, value=str(sample_data)))
                         else:

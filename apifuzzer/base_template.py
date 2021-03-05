@@ -27,6 +27,13 @@ class BaseTemplate(object):
             'query': self.query,
             'content_type': self.content_type
         }
+        self.place_to_field = {
+            'path': self.path_variables,
+            'query': self.query,
+            'header': self.headers,
+            'cookie': self.query,
+            'body': self.data
+        }
         """
         Possible paramters from request docs:
         :param method: method for the new :class:`Request` object.

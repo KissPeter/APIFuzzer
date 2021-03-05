@@ -120,7 +120,10 @@ class FuzzerTarget(FuzzerTargetBase, ServerTarget):
                         post_data.append((k, v))
                     _curl.setopt(pycurl.HTTPPOST, post_data)
                 elif content_type == 'application/json':
-                    _curl.setopt(pycurl.POSTFIELDS, json.dumps(kwargs.get('data', {}), indent=2, ensure_ascii=False))
+                    _json_data = json.dumps(kwargs.get('data', {}), ensure_ascii=True) \
+                        .encode("utf-8") \
+                        .decode('utf-8', 'ignore')
+                    _curl.setopt(pycurl.POSTFIELDS, _json_data)
                 else:
                     # default content type: application/x-www-form-urlencoded
                     _curl.setopt(pycurl.POSTFIELDS, urllib.parse.urlencode(kwargs.get('data', {})))

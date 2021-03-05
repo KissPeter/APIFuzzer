@@ -86,6 +86,8 @@ def transform_data_to_bytes(data_in):
         return bytes(data_in, 'utf-16')
     elif isinstance(data_in, Bits):
         return data_in.tobytes()
+    elif isinstance(data_in, list):
+        return bytes(",".join(data_in), 'utf-16')
     else:
         return bytes(data_in)
 

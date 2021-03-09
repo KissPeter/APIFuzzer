@@ -18,6 +18,7 @@ class BaseTemplate(object):
         self.path_variables = set()
         self.query = set()
         self.cookies = set()
+        self.object = {}
         self.field_to_param = {
             'params': self.params,
             'headers': self.headers,
@@ -25,7 +26,8 @@ class BaseTemplate(object):
             'path_variables': self.path_variables,
             'cookies': self.cookies,
             'query': self.query,
-            'content_type': self.content_type
+            'content_type': self.content_type,
+            'object': self.object
         }
         self.place_to_field = {
             'path': self.path_variables,
@@ -57,6 +59,9 @@ class BaseTemplate(object):
         _method = Static(name='method', value=self.method)
         template = Template(name=self.name, fields=[_url, _method])
         for name, field in self.field_to_param.items():
+            if name == 'object':
+                # todo: Add to Kitt
+                pass
             if list(field):
                 try:
                     template.append_fields([Container(name=name, fields=field)])

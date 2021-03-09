@@ -39,8 +39,10 @@ class OpenAPITemplateGenerator(TemplateGenerator):
         self.reference_resolver = ResolveReferences(api_definition_url=api_definition_url,
                                                     api_definition_path=api_definition_file)
         tmp_api_resources = self.reference_resolver.resolve()
-        self.json_formatter = JsonSectionAbove(tmp_api_resources)
-        self.api_resources = self.json_formatter.resolve()
+        for section_to_up in ['schema', 'items']:
+            self.json_formatter = JsonSectionAbove(tmp_api_resources, section_to_up=section_to_up)
+            tmp_api_resources = self.json_formatter.resolve()
+        self.api_resources = tmp_api_resources
         with open(f'resolved.json', 'w') as f:
             json.dump(self.api_resources, f, sort_keys=True, indent=2)
 
@@ -147,13 +149,12 @@ class OpenAPITemplateGenerator(TemplateGenerator):
                     if not isinstance(param, dict):
                         self.logger.warning('{} type mismatch, dict expected, got: {}'.format(param, type(param)))
                         param = json.loads(param)
-
                     if param.get('type'):
                         parameter_data_type = param.get('type')
                     else:
                         parameter_data_type = 'string'
-                    param_format = param.get('format')
 
+                    param_format = param.get('format')
                     if param.get('example'):
                         sample_data = param.get('example')
                     elif param.get('default'):
@@ -174,7 +175,8 @@ class OpenAPITemplateGenerator(TemplateGenerator):
                                              'type': parameter_data_type,
                                              'default': param.get('properties', {}).get(_param).get('default'),
                                              'example': param.get('properties', {}).get(_param).get('example'),
-                                             'enum': param.get('properties', {}).get(_param).get('enum')
+                                             'enum': param.get('properties', {}).get(_param).get('enum'),
+                                             'properties': param.get('properties', {})
                                              }
                         parameters.append(_additional_param)
                     for _parameter in parameters:
@@ -197,6 +199,27 @@ class OpenAPITemplateGenerator(TemplateGenerator):
                             sample_data = _parameter.get('example')
                         elif _parameter.get('default'):
                             sample_data = _parameter.get('default')
+
+                        # --- Type: Object
+                        # TODO: make more generic
+                        if parameter_data_type == 'object':
+                            items = _parameter.get('properties')
+                            if isinstance(items, dict):
+                                for object_name, object_def in items.items():
+                                    self.logger.info(f'Processing {object_name}')
+                                    if template.object.get(object_name) is None:
+                                        template.object[object_name] = {}
+                                    if isinstance(object_def, dict) and isinstance(object_def.get('properties'), dict):
+                                        for k, v in object_def.get('properties').items():
+                                            self.logger.info(f'>>>>>>>>>>> Adding {k} / {v} as object')
+                                            fuzz_type = get_fuzz_type_by_param_type(v.get('type'))
+                                            if template.object[object_name].get(k) is None:
+                                                template.object[object_name][k] = {}
+                                            sample_data = v.get('default', v.get('example', ''))
+                                            template.object[object_name][k] = fuzz_type(name=k, value=sample_data)
+                            else:
+                                self.logger.info(f"Can't process item: {items} {_parameter}")
+                        # --- Type: Object
 
                         self.logger.info(f'Resource: {resource} Method: {method} \n Parameter: {param} \n'
                                          f' Parameter place: {parameter_place_in_request} \n Sample data: {sample_data}'

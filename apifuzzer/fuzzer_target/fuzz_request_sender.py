@@ -28,7 +28,7 @@ class FuzzerTarget(FuzzerTargetBase, ServerTarget):
         super(FuzzerTargetBase, self).__init__(auth_headers)  # pylint: disable=E1003
         self.logger = get_logger(self.__class__.__name__)
         self.base_url = base_url
-        self.accepted_status_codes = list(range(200, 300)) + list(range(400, 500))
+        self.accepted_status_codes = list(range(200, 500))
         self.auth_headers = auth_headers
         self.report_dir = report_dir
         self.junit_report_path = junit_report_path

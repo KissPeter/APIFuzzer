@@ -71,7 +71,7 @@ if __name__ == '__main__':
                              '{"Auth2": "asd"}]\'',
                         dest='headers',
                         default=None)
-    parser.add_argument('-v ,--version',
+    parser.add_argument('-v' , '--version',
                         action='version',
                         version=get_version())
     args = parser.parse_args()

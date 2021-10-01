@@ -257,7 +257,7 @@ class OpenAPITemplateGenerator(TemplateGenerator):
             _base_url = self._compile_base_url_for_swagger(alternate_url)
             self.logger.debug('Using swagger style url: {}'.format(_base_url))
         elif self.api_resources.get('openapi', "").startswith('3'):
-            _base_url = self._compile_base_url_for_swagger(alternate_url)
+            _base_url = self._compile_base_url_for_openapi(alternate_url)
             self.logger.debug('Using openapi style url: {}'.format(_base_url))
         else:
             self.logger.warning('Failed to find base url, using the alternative one ({})'.format(alternate_url))

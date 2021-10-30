@@ -14,7 +14,6 @@ build:
     python: 3.7.1
   nodes:
     tests: true
-
     analysis:
       tests:
         override:
@@ -27,7 +26,7 @@ build:
             on_node: 1
             idle_timeout: 10
     test:
-      project_setup:
+      dependencies:
         before:
           - command: pip3 install -r requirements.txt -r test/requirements_for_test.txt
             on_node: 1

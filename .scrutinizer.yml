@@ -25,10 +25,7 @@ build:
           - command: pip3 install -r requirements.txt
             on_node: 1
             idle_timeout: 10
-          - command: pip3 install -r test/requirements_for_test.txt
-            on_node: 1
-            idle_timeout: 10
-          - command: python3 test/test_application.py&
+          - command: pip3 install -r test/requirements_for_test.txt && python3 test/test_application.py&
             background: true
             on_node: 1
             idle_timeout: 10

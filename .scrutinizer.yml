@@ -25,18 +25,6 @@ build:
           - command: pip3 install -r requirements.txt
             on_node: 1
             idle_timeout: 10
-    test:
-      commands:
-        - command: pip3 install -r requirements.txt -r test/requirements_for_test.txt
-          on_node: 1
-          idle_timeout: 10
-        - command: python3 test/test_application.py&
-          background: true
-          on_node: 1
-          idle_timeout: 1
-        - command: 'pytest --cov-report term --cov=apifuzzer --durations=10 --show-capture=stdout -vv -rP test'
-          on_node: 1
-          idle_timeout: 10
 filter:
   excluded_paths:
     - "test/"

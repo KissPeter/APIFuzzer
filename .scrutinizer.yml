@@ -14,6 +14,7 @@ build:
     python: 3.7.1
   nodes:
     tests: true
+
     analysis:
       tests:
         override:
@@ -22,14 +23,19 @@ build:
             use_website_config: true
       project_setup:
         before:
+          - command: pip3 install -r requirements.txt
+            on_node: 1
+            idle_timeout: 10
+    test:
+      project_setup:
+        before:
           - command: pip3 install -r requirements.txt -r test/requirements_for_test.txt
             on_node: 1
             idle_timeout: 10
           - command: python3 test/test_application.py&
             background: true
             on_node: 1
-            idle_timeout: 10
-    test:
+            idle_timeout: 1
       commands:
         - command: 'pytest --cov-report term --cov=apifuzzer --durations=10 --show-capture=stdout -vv -rP test'
           on_node: 1

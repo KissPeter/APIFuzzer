@@ -208,7 +208,7 @@ class FuzzerTargetBase:
                 self.logger.warning('{} was not in the url: {}, adding it'.format(url_path_parameter, url))
                 tmp_url += '&{}={}'.format(path_parameter, path_value)
             formatted_url = tmp_url
-        self.logger.info('Compiled url in {}, out: {}'.format(url, formatted_url))
+        self.logger.debug('Compiled url in {}, out: {}'.format(url, formatted_url))
         return formatted_url.replace("{", "").replace("}", "").replace("+", "/")
 
     @staticmethod

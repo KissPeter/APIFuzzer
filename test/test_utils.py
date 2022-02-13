@@ -22,7 +22,7 @@ class BaseTest:
         os.chdir(cls.base_dir)
         cls.report_files = list()
         cls.test_app_url = "http://127.0.0.1:5000/"
-        print(f'Setup_class with report dir: {cls.report_dir}')
+        print(f'Setup_class with report dir: {cls.report_dir}, tmp file: {cls.tempfile}')
         if os.path.exists('test/test_api/openapi_v2.json'):
             src_file = 'test/test_api/openapi_v2.json'
         elif os.path.exists('./test_api/openapi_v2.json'):

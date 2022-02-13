@@ -1,10 +1,11 @@
 import json
 from urllib.parse import urlparse
 
+from json_ref_dict import materialize, RefDict
+
 from apifuzzer.base_template import BaseTemplate
 from apifuzzer.fuzz_utils import get_sample_data_by_type, get_fuzz_type_by_param_type
 from apifuzzer.move_json_parts import JsonSectionAbove
-from apifuzzer.resolve_json_reference import ResolveReferences
 from apifuzzer.template_generator_base import TemplateGenerator
 from apifuzzer.utils import transform_data_to_bytes, pretty_print, get_logger
 
@@ -36,13 +37,19 @@ class OpenAPITemplateGenerator(TemplateGenerator):
         self.logger = get_logger(self.__class__.__name__)
         self.api_definition_url = api_definition_url
         self.api_definition_file = api_definition_file
-        self.reference_resolver = ResolveReferences(api_definition_url=api_definition_url,
-                                                    api_definition_path=api_definition_file)
-        tmp_api_resources = self.reference_resolver.resolve()
+        tmp_api_resources = self.resolve_json_references()
         self.json_formatter = JsonSectionAbove(tmp_api_resources)
         self.api_resources = self.json_formatter.resolve()
         with open(f'resolved.json', 'w') as f:
             json.dump(self.api_resources, f, sort_keys=True, indent=2)
+
+    def resolve_json_references(self):
+        if self.api_definition_url:
+            reference = self.api_definition_url
+        else:
+            reference = self.api_definition_file
+        ref = RefDict(reference)
+        return materialize(ref)
 
     @staticmethod
     def _normalize_url(url_in):
@@ -241,11 +248,14 @@ class OpenAPITemplateGenerator(TemplateGenerator):
         return _base_url
 
     def _compile_base_url_for_openapi(self, alternate_url):
-        uri = urlparse(self.api_resources.get('servers')[0].get('url'))
+        if self.api_resources.get('servers'):
+            uri = urlparse(self.api_resources.get('servers', [])[0].get('url'))
+        else:
+            uri = urlparse(alternate_url)
         if alternate_url:
             _base_url = "/".join([alternate_url.strip('/'), uri.path.strip('/')])
         else:
-            _base_url = self.api_resources.get('servers')[0].get('url')
+            _base_url = self.api_resources.get('servers', [])[0].get('url')
         return _base_url
 
     def compile_base_url(self, alternate_url):

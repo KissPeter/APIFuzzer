@@ -46,7 +46,7 @@ class TestSwagger(BaseTest):
         # last_call test field sample:
         # 'http://127.0.0.1:5000/query?integer_id=%10'
         last_call = self.fuzz_swagger_and_get_last_call(api_path, api_def)
-        _, last_value_sent = last_call['req_url'].split("=")
+        _, last_value_sent = last_call['req_url'].split("=", 1)
         assert not isinstance(last_value_sent, int), last_call['req_url']
         self.repot_basic_check()
 

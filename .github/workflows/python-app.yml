@@ -43,6 +43,7 @@ jobs:
         run: |
           pytest  -x --hypothesis-show-statistics --cov-report html --cov=apifuzzer  --html=pytest.html --self-contained-html --durations=10 --show-capture=stdout -vv -rP test
           coverage html
+          coverage report
       - uses: actions/upload-artifact@v2
         with:
           name: Coverage-${{ matrix.python-version }}

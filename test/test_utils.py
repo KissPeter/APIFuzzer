@@ -116,7 +116,6 @@ class BaseTest:
         version['paths'][api_path] = api_def
         if schema_definitions:
             version['definitions'] = schema_definitions
-        print(f'>>>>{version}')
         self.fuzz(version, headers)
         last_call = self.query_last_call()
         assert last_call['resp_status'] == 500, f'{last_call["resp_status"]} received, full response: {last_call}'

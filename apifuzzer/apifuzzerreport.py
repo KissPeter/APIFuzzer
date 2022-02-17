@@ -5,7 +5,6 @@ from apifuzzer.utils import try_b64encode
 
 
 class ApifuzzerReport(Report):
-
     def __init__(self, name):
         super().__init__(name)
 
@@ -14,9 +13,9 @@ class ApifuzzerReport(Report):
         .. deprecated:: 0.6.7
             use :func:`~kitty.data.report.Report.get_status`
         """
-        raise NotImplementedError('API was changed, use get_status instead')
+        raise NotImplementedError("API was changed, use get_status instead")
 
-    def to_dict(self, encoding='base64'):
+    def to_dict(self, encoding="base64"):
         """
         Return a dictionary version of the report
 

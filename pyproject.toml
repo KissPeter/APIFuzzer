@@ -1,0 +1,5 @@
+[tool.mypy]
+ignore_missing_imports = true
+[tool.mypy-redis]
+ignore_missing_imports = true
+

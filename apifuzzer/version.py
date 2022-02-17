@@ -1,6 +1,6 @@
 from apifuzzer.__init__ import __version__
 
-PROJECT = 'APIFuzzer'
+PROJECT = "APIFuzzer"
 
 
 def get_version():
@@ -8,4 +8,4 @@ def get_version():
     Provides name and version of the application
     :rtype: str
     """
-    return '{} {}'.format(PROJECT, __version__)
+    return "{} {}".format(PROJECT, __version__)

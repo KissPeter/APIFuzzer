@@ -16,7 +16,7 @@ from bitstring import Bits
 
 from apifuzzer.version import get_version
 
-logger_name = 'APIFuzzer'
+logger_name = "APIFuzzer"
 
 
 def secure_randint(minimum, maximum):
@@ -32,7 +32,7 @@ def secure_randint(minimum, maximum):
     return rand.randrange(start=minimum, stop=maximum)
 
 
-def set_logger(level='warning', basic_output=False):
+def set_logger(level="warning", basic_output=False):
     """
     Setup logger
     :param level: log level
@@ -41,22 +41,24 @@ def set_logger(level='warning', basic_output=False):
     :type basic_output: bool
     :rtype logger
     """
-    if level.lower() == 'debug':
-        fmt = '%(process)d [%(levelname)7s] %(name)s [%(filename)s:%(lineno)s - %(funcName)20s ]: %(message)s'
+    if level.lower() == "debug":
+        fmt = "%(process)d [%(levelname)7s] %(name)s [%(filename)s:%(lineno)s - %(funcName)20s ]: %(message)s"
     else:
-        fmt = '%(process)d [%(levelname)7s] %(name)s: %(message)s'
+        fmt = "%(process)d [%(levelname)7s] %(name)s: %(message)s"
     logger = logging.getLogger(logger_name)
     logger.handlers.clear()
     if basic_output:
         handler = logging.StreamHandler(stream=sys.stdout)
     else:
-        if os.path.exists('/dev/log'):
-            handler = SysLogHandler(address='/dev/log', facility=SysLogHandler.LOG_LOCAL2)
+        if os.path.exists("/dev/log"):
+            handler = SysLogHandler(
+                address="/dev/log", facility=SysLogHandler.LOG_LOCAL2
+            )
         else:
             handler = logging.StreamHandler(stream=sys.stdout)
     handler.setFormatter(Formatter(fmt))
     logger.addHandler(handler)
-    kitty_logger = logging.getLogger('kitty')
+    kitty_logger = logging.getLogger("kitty")
     kitty_logger.setLevel(level=logging.getLevelName(level.upper()))
     logger.setLevel(level=logging.getLevelName(level.upper()))
     logger.propagate = False
@@ -83,11 +85,11 @@ def transform_data_to_bytes(data_in):
     if isinstance(data_in, float):
         return bytes(int(data_in))
     elif isinstance(data_in, str):
-        return bytes(data_in, 'utf-16')
+        return bytes(data_in, "utf-16")
     elif isinstance(data_in, Bits):
         return data_in.tobytes()
     elif isinstance(data_in, list):
-        return bytes(",".join(data_in), 'utf-16')
+        return bytes(",".join(data_in), "utf-16")
     else:
         return bytes(data_in)
 
@@ -114,7 +116,7 @@ def container_name_to_param(container_name):
     :return: param
     :rtype: str
     """
-    return container_name.split('|')[-1]
+    return container_name.split("|")[-1]
 
 
 def init_pycurl(debug=False):
@@ -152,7 +154,7 @@ def download_file(url, dst_file):
     _curl.perform()
     _curl.close()
     buffer.seek(0)
-    with open(dst_file, 'wb') as tmp_file:
+    with open(dst_file, "wb") as tmp_file:
         tmp_file.write(buffer.getvalue())
     buffer.close()
 
@@ -199,21 +201,21 @@ def json_data(arg_string: Optional[str]) -> dict:
         arg_string = json.dumps(arg_string)
     try:
         _return = json.loads(arg_string)
-        if hasattr(_return, 'append') or hasattr(_return, 'keys'):
+        if hasattr(_return, "append") or hasattr(_return, "keys"):
             return _return
         else:
-            raise TypeError('not list or dict')
+            raise TypeError("not list or dict")
     except (TypeError, json.decoder.JSONDecodeError):
-        msg = '%s is not JSON', arg_string
+        msg = "%s is not JSON", arg_string
         raise argparse.ArgumentTypeError(msg)
 
 
 def str2bool(v):
     if isinstance(v, bool):
         return v
-    if v.lower() in ('yes', 'true', 't', 'y', '1', 'True', 'T'):
+    if v.lower() in ("yes", "true", "t", "y", "1", "True", "T"):
         return True
-    elif v.lower() in ('no', 'false', 'f', 'n', '0', 'False', 'F'):
+    elif v.lower() in ("no", "false", "f", "n", "0", "False", "F"):
         return False
     else:
-        raise argparse.ArgumentTypeError('Boolean value expected.')
+        raise argparse.ArgumentTypeError("Boolean value expected.")

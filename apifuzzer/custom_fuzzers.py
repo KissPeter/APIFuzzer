@@ -8,7 +8,6 @@ from apifuzzer.utils import secure_randint, get_logger
 
 
 class APIFuzzerGroup(Group):
-
     def __init__(self, name, value):
         super().__init__(values=value, name=name, fuzzable=True)
 
@@ -18,7 +17,7 @@ class APIFuzzerGroup(Group):
 
 
 class Utf8Chars(BaseField):
-    '''
+    """
     This custom fuzzer iterates through the UTF8 chars and gives back random section between min and max length
     Highly relies on random numbers so most probably will give you different values each time to run it.
 
@@ -30,11 +29,19 @@ class Utf8Chars(BaseField):
     >>>    except (UnicodeEncodeError, ValueError):
     >>>        pass
     Above 1114111 chars started to getting unprocessable so this is the upper limit for now.
-    '''
+    """
 
     MAX = 1114111
 
-    def __init__(self, value, name, fuzzable=True, min_length=20, max_length=None, num_mutations=80):
+    def __init__(
+        self,
+        value,
+        name,
+        fuzzable=True,
+        min_length=20,
+        max_length=None,
+        num_mutations=80,
+    ):
         super(BaseField, self).__init__(name=name)  # pylint: disable=E1003
         self.logger = self.logger = get_logger(self.__class__.__name__)
         self.name = name
@@ -63,7 +70,7 @@ class Utf8Chars(BaseField):
         """
         kassert.is_of_types(value, (bytes, bytearray, six.string_types))
         if isinstance(value, six.string_types):
-            return value.encode(encoding='utf-8')
+            return value.encode(encoding="utf-8")
         if isinstance(value, bytearray):
             return bytes(value)
         return value
@@ -82,10 +89,10 @@ class Utf8Chars(BaseField):
             self.position = self.init_position()
 
     def __str__(self):
-        return f'{self.name}->{self.value}'
+        return f"{self.name}->{self.value}"
 
     def __repr__(self):
-        return f'{self.name}->{self.value}'
+        return f"{self.name}->{self.value}"
 
 
 class RandomBitsField(RandomBits):
@@ -96,34 +103,48 @@ class RandomBitsField(RandomBits):
     """
 
     def not_implemented(self, func_name):
+        _ = func_name
         pass
 
     def __init__(self, value, name, fuzzable=True):
         self.name = name
         self.value = value
-        super(RandomBitsField, self).__init__(name=name, value=value, min_length=0, max_length=len(value) * 2,
-                                              fuzzable=fuzzable, num_mutations=80)
+        super(RandomBitsField, self).__init__(
+            name=name,
+            value=value,
+            min_length=0,
+            max_length=len(value) * 2,
+            fuzzable=fuzzable,
+            num_mutations=80,
+        )
 
     def _mutate(self):
         if self._step:
             length = self._min_length + self._step * self._current_index
         else:
             length = self._random.randint(self._min_length, self._max_length)
-        current_bytes = ''
+        current_bytes = ""
         for _ in range(length // 8 + 1):
             current_bytes += chr(self._random.randint(0, 255))
         self._current_value = Bits(bytes=strToBytes(current_bytes))[:length]
 
     def __str__(self):
-        return f'{self.name}->{self.value}'
+        return f"{self.name}->{self.value}"
 
     def __repr__(self):
-        return f'{self.name}->{self.value}'
+        return f"{self.name}->{self.value}"
 
 
 class UnicodeStrings(String):
-
-    def __init__(self, value, name, min_length=0, max_length=None, num_mutations=80, fuzzable=True):
+    def __init__(
+        self,
+        value,
+        name,
+        min_length=0,
+        max_length=None,
+        num_mutations=80,
+        fuzzable=True,
+    ):
         self.min_length = min_length
         self.max_length = max_length if max_length else len(value) * 2
         self._num_mutations = num_mutations
@@ -132,10 +153,11 @@ class UnicodeStrings(String):
         super(UnicodeStrings, self).__init__(name=name, value=value, fuzzable=fuzzable)
 
     def not_implemented(self, func_name):
+        _ = func_name
         pass
 
     def __str__(self):
-        return f'{self.name}->{self.value}'
+        return f"{self.name}->{self.value}"
 
     def __repr__(self):
-        return f'{self.name}->{self.value}'
+        return f"{self.name}->{self.value}"

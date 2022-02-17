@@ -35,10 +35,9 @@ jobs:
           ./APIFuzzer -h
       - name: Lint
         run: |
-          black apifuzzer/ || true
-          vulture --min-confidence 100 apifuzzer/ || true
+          black apifuzzer/
+          vulture --min-confidence 100 apifuzzer/
           python3 test/test_application.py&
-           vulture --min-confidence 100 apifuzzer/ || true
       - name: Test
         run: |
           pytest  -x --hypothesis-show-statistics --cov-report html --cov=apifuzzer  --html=pytest.html --self-contained-html --durations=10 --show-capture=stdout -vv -rP test

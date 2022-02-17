@@ -5,11 +5,10 @@ from apifuzzer.utils import get_logger
 
 
 class BaseTemplate(object):
-
     def __init__(self, name):
         self.logger = get_logger(self.__class__.__name__)
         self.name = name
-        self.content_type = ''
+        self.content_type = ""
         self.method = None
         self.url = None
         self.params = set()
@@ -19,20 +18,20 @@ class BaseTemplate(object):
         self.query = set()
         self.cookies = set()
         self.field_to_param = {
-            'params': self.params,
-            'headers': self.headers,
-            'data': self.data,
-            'path_variables': self.path_variables,
-            'cookies': self.cookies,
-            'query': self.query,
-            'content_type': self.content_type
+            "params": self.params,
+            "headers": self.headers,
+            "data": self.data,
+            "path_variables": self.path_variables,
+            "cookies": self.cookies,
+            "query": self.query,
+            "content_type": self.content_type,
         }
         self.place_to_field = {
-            'path': self.path_variables,
-            'query': self.query,
-            'header': self.headers,
-            'cookie': self.query,
-            'body': self.data
+            "path": self.path_variables,
+            "query": self.query,
+            "header": self.headers,
+            "cookie": self.query,
+            "body": self.data,
         }
         """
         Possible paramters from request docs:
@@ -49,19 +48,23 @@ class BaseTemplate(object):
         total = 0
         for field in self.field_to_param.values():
             total += len(field)
-        self.logger.info(f'Template size: {total}, content: {self.field_to_param}')
+        self.logger.info(f"Template size: {total}, content: {self.field_to_param}")
         return total
 
     def compile_template(self):
-        _url = Static(name='url', value=self.url)
-        _method = Static(name='method', value=self.method)
+        _url = Static(name="url", value=self.url)
+        _method = Static(name="method", value=self.method)
         template = Template(name=self.name, fields=[_url, _method])
         for name, field in self.field_to_param.items():
             if list(field):
                 try:
                     template.append_fields([Container(name=name, fields=field)])
                 except KittyException as e:
-                    self.logger.warning('Failed to add {} because {}, continue processing...'.format(name, e))
+                    self.logger.warning(
+                        "Failed to add {} because {}, continue processing...".format(
+                            name, e
+                        )
+                    )
         return template
 
     def get_content_type(self):

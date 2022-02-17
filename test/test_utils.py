@@ -4,6 +4,7 @@ import random
 import string
 import tempfile
 
+import pytest
 import requests
 
 from apifuzzer.fuzzer import Fuzzer
@@ -11,7 +12,7 @@ from apifuzzer.fuzzer import Fuzzer
 
 class BaseTest:
 
-    @classmethod
+    @pytest.fixture(autouse=True)
     def setup_class(cls):
         """
         Setup test class at initialization
@@ -22,7 +23,7 @@ class BaseTest:
         os.chdir(cls.base_dir)
         cls.report_files = list()
         cls.test_app_url = "http://127.0.0.1:5000/"
-        print(f'Setup_class with report dir: {cls.report_dir}')
+        print(f'Setup_class with report dir: {cls.report_dir}, tmp file: {cls.tempfile}')
         if os.path.exists('test/test_api/openapi_v2.json'):
             src_file = 'test/test_api/openapi_v2.json'
         elif os.path.exists('./test_api/openapi_v2.json'):
@@ -42,19 +43,8 @@ class BaseTest:
             src_file = None
         with open(src_file, 'r') as f:
             cls.openapi = json.load(f)
-
-    def setup_method(self, method):
-        self.auth_headers = None
-
-    def teardown_method(self, method):
-        """
-        Clears the report directory at the end of each test run
-        :param method: test method
-        """
-        print('Removing {} report files...'.format(len(self.report_files)))
-        # for f in self.report_files:
-        #     filepath = '{}/{}'.format(self.report_dir, f)
-        #     os.remove(filepath)
+        cls.auth_headers = None
+        yield
 
     def query_last_call(self):
         """
@@ -126,11 +116,11 @@ class BaseTest:
         version['paths'][api_path] = api_def
         if schema_definitions:
             version['definitions'] = schema_definitions
-        print(version)
+        print(f'>>>>{version}')
         self.fuzz(version, headers)
         last_call = self.query_last_call()
         assert last_call['resp_status'] == 500, f'{last_call["resp_status"]} received, full response: {last_call}'
-        print('api_path: {}, api_def: {} \nlast_call: {}'.format(api_path, api_def, last_call))
+        print(f'api_path: {api_path}, api_def: {api_def} \nlast_call: {last_call}')
         return last_call
 
     def fuzz_swagger_and_get_last_call(self, api_path, api_def, schema_definitions=None, headers=None):
@@ -141,7 +131,7 @@ class BaseTest:
                                                 headers=headers)
 
     def fuzz_openapi_and_get_last_call(self, api_path, api_def, schema_definitions=None, headers=None):
-        return self._fuzz_api_and_get_last_call(self.openapi,
+        return self._fuzz_api_and_get_last_call(version=self.openapi,
                                                 api_path=api_path,
                                                 api_def=api_def,
                                                 schema_definitions=schema_definitions,

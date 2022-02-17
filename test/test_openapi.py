@@ -49,6 +49,6 @@ class TestOpenAPI(BaseTest):
             }
         }
         last_call = self.fuzz_openapi_and_get_last_call(api_path, api_def, schema_definitions=self.schema)
-        assert not isinstance(last_call['req_form']['category_id'], int), last_call
+        assert not isinstance(last_call['req_form'].get('category_id'), int), last_call
         assert last_call['req_headers']['Content-Type'].startswith('multipart/form-data')
         self.repot_basic_check()

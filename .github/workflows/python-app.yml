@@ -1,0 +1,54 @@
+# This workflow will install Python dependencies, run tests and lint with a single version of Python
+# For more information see: https://help.github.com/actions/language-and-framework-guides/using-python-with-github-actions
+
+name: Python application
+
+on:
+  push:
+    branches:
+      - '**'
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  build:
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [ ubuntu-latest ] # , macos-latest, windows-latest
+        python-version: [ '3.6', '3.7', '3.8', '3.9', '3.10', 'pypy-3.8' ]
+    steps:
+      - uses: actions/checkout@v2
+      - name: Set up Python
+        uses: actions/setup-python@v2
+        with:
+          python-version: ${{ matrix.python-version }}
+      - name: Display Python version
+        run: python --version
+      - name: Install dependencies
+        run: |
+          sudo apt-get -y install libgnutls28-dev
+          python -m pip install --upgrade pip
+          pip install flake8 pytest
+          if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
+          if [ -f test/requirements_for_test.txt ]; then pip install -r test/requirements_for_test.txt; fi
+          ./APIFuzzer -h
+      - name: Lint
+        run: |
+          black apifuzzer/ || true
+          vulture --min-confidence 100 apifuzzer/ || true
+          python3 test/test_application.py&
+           vulture --min-confidence 100 apifuzzer/ || true
+      - name: Test
+        run: |
+          pytest  -x --hypothesis-show-statistics --cov-report html --cov=apifuzzer  --html=pytest.html --self-contained-html --durations=10 --show-capture=stdout -vv -rP test
+          coverage html
+      - uses: actions/upload-artifact@v2
+        with:
+          name: Coverage-${{ matrix.python-version }}
+          path: ./htmlcov
+      - uses: actions/upload-artifact@v2
+        with:
+          name: Pytest-Report-${{ matrix.python-version }}
+          path: pytest.html
+

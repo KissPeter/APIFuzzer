@@ -38,8 +38,10 @@ class OpenAPITemplateGenerator(TemplateGenerator):
         self.api_definition_url = api_definition_url
         self.api_definition_file = api_definition_file
         tmp_api_resources = self.resolve_json_references()
+        print(f'1>>>>>>>>>>>>{json.dumps(tmp_api_resources, indent=2, sort_keys=True)}')
         self.json_formatter = JsonSectionAbove(tmp_api_resources)
         self.api_resources = self.json_formatter.resolve()
+        print(f'2>>>>>>>>>>>>{json.dumps(self.api_resources, indent=2, sort_keys=True)}')
         with open(f'resolved.json', 'w') as f:
             json.dump(self.api_resources, f, sort_keys=True, indent=2)
 

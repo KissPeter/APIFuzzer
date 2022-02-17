@@ -29,7 +29,7 @@ jobs:
         run: |
           sudo apt-get -y install libgnutls28-dev libcurl4-openssl-dev libssl-dev
           python -m pip install --upgrade pip
-          pip install flake8 pytest
+          pip install black vulture
           if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
           if [ -f test/requirements_for_test.txt ]; then pip install -r test/requirements_for_test.txt; fi
           ./APIFuzzer -h

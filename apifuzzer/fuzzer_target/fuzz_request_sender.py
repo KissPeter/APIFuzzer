@@ -2,7 +2,7 @@ import json
 import os
 import urllib.parse
 from io import BytesIO
-from time import time
+from time import time, perf_counter
 
 import pycurl
 from bitstring import Bits
@@ -35,6 +35,7 @@ class FuzzerTarget(FuzzerTargetBase, ServerTarget):
         self.failed_test = list()
         self.logger.info("Logger initialized")
         self.resp_headers = dict()
+        self.transmit_start_test = None
 
     def pre_test(self, test_num):
         """
@@ -48,6 +49,7 @@ class FuzzerTarget(FuzzerTargetBase, ServerTarget):
             monitor.pre_test(test_number=self.test_number)
         self.report.add("test_number", test_num)
         self.report.add("state", "STARTED")
+        self.transmit_start_test = perf_counter()
 
     def transmit(self, **kwargs):
         """
@@ -218,7 +220,10 @@ class FuzzerTarget(FuzzerTargetBase, ServerTarget):
         if self.report.get_status() != Report.PASSED:
             if self.junit_report_path:
                 test_case = TestCase(
-                    name=self.test_number, status=self.report.get_status()
+                    name=self.test_number,
+                    status=self.report.get_status(),
+                    timestamp=time(),
+                    elapsed_sec=perf_counter() - self.transmit_start_test
                 )
                 test_case.add_failure_info(message=json.dumps(self.report.to_dict()))
                 self.failed_test.append(test_case)
@@ -257,6 +262,8 @@ class FuzzerTarget(FuzzerTargetBase, ServerTarget):
         if self.junit_report_path:
             with open(self.junit_report_path, "w") as report_file:
                 to_xml_report_file(
-                    report_file, [TestSuite("API Fuzzer", test_cases)], prettyprint=True
+                    report_file,
+                    [TestSuite(name="API Fuzzer", test_cases=test_cases, timestamp=time())],
+                    prettyprint=True
                 )
         super(ServerTarget, self).teardown()  # pylint: disable=E1003

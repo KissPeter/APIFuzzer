@@ -9,8 +9,8 @@
   ],
   "basePath": "/",
   "paths": {
-    "/exception/{integer_id}":{
-        "get": {
+    "/path_param/{integer_id}": {
+      "get": {
         "parameters": [
           {
             "name": "integer_id",
@@ -19,7 +19,6 @@
             "type": "number",
             "format": "double"
           }
-
         ]
       }
     },

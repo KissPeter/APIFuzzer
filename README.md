@@ -91,7 +91,7 @@ Start the sample application (install the necessary packages listed in test/requ
 $ python3 test/test_application.py
 
 Start the fuzzer:
-$ ./bin/APIFuzzer -s test/test_api/openapi_v2.json -u http://127.0.0.1:5000/ -r /tmp/reports/ --log debug 
+$ APIFuzzer -s test/test_api/openapi_v2.json -u http://127.0.0.1:5000/ -r /tmp/reports/ --log debug 
 
 Check the reports:
 $ ls -1 /tmp/reports/

@@ -3,7 +3,7 @@
 [![Codacy Badge](https://api.codacy.com/project/badge/Grade/eab6434d9bd742e3880d8f589a9cc0a6)](https://www.codacy.com/app/KissPeter/APIFuzzer?utm_source=github.com&utm_medium=referral&utm_content=KissPeter/APIFuzzer&utm_campaign=badger)
 [![Maintainability](https://api.codeclimate.com/v1/badges/bfc9bda00deb5002b665/maintainability)](https://codeclimate.com/github/KissPeter/APIFuzzer/maintainability)
 [![Pypi downloads](https://img.shields.io/pypi/dw/APIFuzzer)](https://pypistats.org/packages/apifuzzer)
-![example workflow](https://github.com/KissPeter/APIFuzzer/actions/workflows/python-app.yml/badge.svg)
+[![CI](https://github.com/KissPeter/APIFuzzer/actions/workflows/python-app.yml/badge.svg)](https://github.com/KissPeter/APIFuzzer/actions)
 # APIFuzzer — HTTP API Testing Framework
 
 

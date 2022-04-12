@@ -241,11 +241,7 @@ class FuzzerTarget(FuzzerTargetBase, ServerTarget):
                 as report_dump_file:
                 report_dump_file.write(json.dumps(self.report.to_dict()))
         except Exception as e:
-            self.logger.error(
-                'Failed to save report "{}" to {} because: {}'.format(
-                    self.report.to_dict(), self.report_dir, e
-                )
-            )
+            self.logger.error(f'Failed to save report "{self.report.to_dict()}" to {self.report_dir} because: {e}')
 
     def report_add_basic_msg(self, msg):
         self.report.set_status(Report.FAILED)

@@ -1,5 +1,7 @@
 itsdangerous==2.0.1
 flask==1.1.2
+jinja2==3.0.3
+werkzeug==2.0.3
 pytest==6.2.1
 pytest-cov==2.10.1
 sphinx==3.4.1

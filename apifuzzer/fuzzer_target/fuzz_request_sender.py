@@ -237,16 +237,11 @@ class FuzzerTarget(FuzzerTargetBase, ServerTarget):
                     os.makedirs(os.path.dirname(self.report_dir))
                 except OSError:
                     pass
-            with open(
-                "{}/{}_{}.json".format(self.report_dir, self.test_number, time()), "w"
-            ) as report_dump_file:
+            with open(f"{self.report_dir}/{str(self.test_number + 1).zfill(4)}_{int(time())}.json", "w") \
+                as report_dump_file:
                 report_dump_file.write(json.dumps(self.report.to_dict()))
         except Exception as e:
-            self.logger.error(
-                'Failed to save report "{}" to {} because: {}'.format(
-                    self.report.to_dict(), self.report_dir, e
-                )
-            )
+            self.logger.error(f'Failed to save report "{self.report.to_dict()}" to {self.report_dir} because: {e}')
 
     def report_add_basic_msg(self, msg):
         self.report.set_status(Report.FAILED)

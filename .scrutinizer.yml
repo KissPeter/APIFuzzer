@@ -13,7 +13,6 @@ build:
   environment:
     python: 3.9.12
   nodes:
-    tests: true
     analysis:
       tests:
         override:

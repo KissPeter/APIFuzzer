@@ -4,7 +4,7 @@ from urllib.parse import urlparse
 from json_ref_dict import materialize, RefDict
 
 from apifuzzer.base_template import BaseTemplate
-from apifuzzer.fuzz_utils import get_sample_data_by_type, get_fuzz_type_by_param_type
+from apifuzzer.fuzz_utils import _get_sample_data_by_type, get_fuzz_type_by_param_type
 from apifuzzer.move_json_parts import JsonSectionAbove
 from apifuzzer.template_generator_base import TemplateGenerator
 from apifuzzer.utils import transform_data_to_bytes, pretty_print, get_logger
@@ -182,7 +182,7 @@ class OpenAPITemplateGenerator(TemplateGenerator):
                     elif param.get("default"):
                         sample_data = param.get("default")
                     else:
-                        sample_data = get_sample_data_by_type(param.get("type"))
+                        sample_data = _get_sample_data_by_type(param.get("type"))
 
                     parameter_place_in_request = param.get("in")
                     parameters = list()
@@ -201,40 +201,14 @@ class OpenAPITemplateGenerator(TemplateGenerator):
                         self.logger.debug(
                             f"Adding property: {param_name} with type: {parameter_data_type}"
                         )
-                        _additional_param = {
-                            "name": param_name,
-                            "type": parameter_data_type,
-                            "default": param.get("properties", {})
-                                .get(_param)
-                                .get("default"),
-                            "example": param.get("properties", {})
-                                .get(_param)
-                                .get("example"),
-                            "enum": param.get("properties", {}).get(_param).get("enum"),
-                        }
-                        parameters.append(_additional_param)
+                        parameters.append(self._get_additional_parameters(_param, param, param_name,
+                                                                          parameter_data_type))
                     for _parameter in parameters:
                         param_name = _parameter.get("name")
                         parameter_data_type = _parameter.get("type")
-
-                        if _parameter.get("enum"):
-                            fuzzer_type = "enum"
-                        elif param_format is not None:
-                            fuzzer_type = param_format.lower()
-                        elif parameter_data_type is not None:
-                            fuzzer_type = parameter_data_type.lower()
-                        else:
-                            fuzzer_type = None
+                        fuzzer_type = self._get_fuzzer_type(_parameter, param_format, parameter_data_type)
                         fuzz_type = get_fuzz_type_by_param_type(fuzzer_type)
-
-                        if _parameter.get("enum") and hasattr(
-                            fuzz_type, "accept_list_as_value"
-                        ):
-                            sample_data = _parameter.get("enum")
-                        elif _parameter.get("example"):
-                            sample_data = _parameter.get("example")
-                        elif _parameter.get("default"):
-                            sample_data = _parameter.get("default")
+                        sample_data = self._get_sample_data(_parameter, fuzz_type, sample_data)
 
                         self.logger.info(
                             f"Resource: {resource} Method: {method} \n Parameter: {param} \n"
@@ -243,48 +217,91 @@ class OpenAPITemplateGenerator(TemplateGenerator):
                             f"fuzzer: {fuzz_type.__name__}"
                         )
 
-                        if parameter_place_in_request == ParamTypes.PATH:
-                            template.path_variables.add(
-                                fuzz_type(name=param_name, value=str(sample_data))
-                            )
-                        elif parameter_place_in_request == ParamTypes.HEADER:
-                            template.headers.add(
-                                fuzz_type(
-                                    name=param_name,
-                                    value=transform_data_to_bytes(sample_data),
-                                )
-                            )
-                        elif parameter_place_in_request == ParamTypes.COOKIE:
-                            template.cookies.add(
-                                fuzz_type(name=param_name, value=sample_data)
-                            )
-                        elif parameter_place_in_request == ParamTypes.QUERY:
-                            template.params.add(
-                                fuzz_type(name=param_name, value=str(sample_data))
-                            )
-                        elif parameter_place_in_request == ParamTypes.BODY:
-                            if hasattr(fuzz_type, "accept_list_as_value"):
-                                template.data.add(
-                                    fuzz_type(name=param_name, value=sample_data)
-                                )
-                            else:
-                                template.data.add(
-                                    fuzz_type(
-                                        name=param_name,
-                                        value=transform_data_to_bytes(sample_data),
-                                    )
-                                )
-                        elif parameter_place_in_request == ParamTypes.FORM_DATA:
-                            template.params.add(
-                                fuzz_type(name=param_name, value=str(sample_data))
-                            )
-                        else:
-                            self.logger.warning(
-                                f"Can not parse a definition ({parameter_place_in_request}): "
-                                f"{pretty_print(param)}"
-                            )
+                        self._add_field_to_param(fuzz_type, param, param_name, parameter_place_in_request, sample_data,
+                                                 template)
                 if template.get_stat() > 0:
                     self._save_template(template)
+
+    @staticmethod
+    def _get_additional_parameters(_param, param, param_name, parameter_data_type):
+        _additional_param = {
+            "name": param_name,
+            "type": parameter_data_type,
+            "default": param.get("properties", {})
+                .get(_param)
+                .get("default"),
+            "example": param.get("properties", {})
+                .get(_param)
+                .get("example"),
+            "enum": param.get("properties", {}).get(_param).get("enum"),
+        }
+        return _additional_param
+
+    def _add_field_to_param(self, fuzz_type, param, param_name, parameter_place_in_request, sample_data, template):
+        if parameter_place_in_request == ParamTypes.PATH:
+            template.path_variables.add(
+                fuzz_type(name=param_name, value=str(sample_data))
+            )
+        elif parameter_place_in_request == ParamTypes.HEADER:
+            template.headers.add(
+                fuzz_type(
+                    name=param_name,
+                    value=transform_data_to_bytes(sample_data),
+                )
+            )
+        elif parameter_place_in_request == ParamTypes.COOKIE:
+            template.cookies.add(
+                fuzz_type(name=param_name, value=sample_data)
+            )
+        elif parameter_place_in_request == ParamTypes.QUERY:
+            template.params.add(
+                fuzz_type(name=param_name, value=str(sample_data))
+            )
+        elif parameter_place_in_request == ParamTypes.BODY:
+            if hasattr(fuzz_type, "accept_list_as_value"):
+                template.data.add(
+                    fuzz_type(name=param_name, value=sample_data)
+                )
+            else:
+                template.data.add(
+                    fuzz_type(
+                        name=param_name,
+                        value=transform_data_to_bytes(sample_data),
+                    )
+                )
+        elif parameter_place_in_request == ParamTypes.FORM_DATA:
+            template.params.add(
+                fuzz_type(name=param_name, value=str(sample_data))
+            )
+        else:
+            self.logger.warning(
+                f"Can not parse a definition ({parameter_place_in_request}): "
+                f"{pretty_print(param)}"
+            )
+
+    @staticmethod
+    def _get_sample_data(_parameter, fuzz_type, sample_data):
+        if _parameter.get("enum") and hasattr(
+            fuzz_type, "accept_list_as_value"
+        ):
+            sample_data = _parameter.get("enum")
+        elif _parameter.get("example"):
+            sample_data = _parameter.get("example")
+        elif _parameter.get("default"):
+            sample_data = _parameter.get("default")
+        return sample_data
+
+    @staticmethod
+    def _get_fuzzer_type(_parameter, param_format, parameter_data_type):
+        if _parameter.get("enum"):
+            fuzzer_type = "enum"
+        elif param_format is not None:
+            fuzzer_type = param_format.lower()
+        elif parameter_data_type is not None:
+            fuzzer_type = parameter_data_type.lower()
+        else:
+            fuzzer_type = None
+        return fuzzer_type
 
     def _compile_base_url_for_swagger(self, alternate_url):
         if alternate_url:
@@ -305,14 +322,14 @@ class OpenAPITemplateGenerator(TemplateGenerator):
         return _base_url
 
     def _compile_base_url_for_openapi(self, alternate_url):
-        if self.api_resources.get("servers"):
-            uri = urlparse(self.api_resources.get("servers", [])[0].get("url"))
+        if len(self.api_resources.get("servers", [])) > 0:
+            uri = urlparse(self.api_resources.get("servers", [{}])[0].get("url"))
         else:
             uri = urlparse(alternate_url)
         if alternate_url:
             _base_url = "/".join([alternate_url.strip("/"), uri.path.strip("/")])
         else:
-            _base_url = self.api_resources.get("servers", [])[0].get("url")
+            _base_url = self.api_resources.get("servers", [{}])[0].get("url")
         return _base_url
 
     def compile_base_url(self, alternate_url):

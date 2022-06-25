@@ -14,7 +14,7 @@ from apifuzzer.exceptions import FailedToParseFileException
 from apifuzzer.utils import download_file, secure_randint
 
 
-def get_sample_data_by_type(param_type):
+def _get_sample_data_by_type(param_type):
     types = {
         "name": "012",
         "string": "asd",

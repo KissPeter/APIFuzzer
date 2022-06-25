@@ -4,6 +4,7 @@ import argparse
 import signal
 import sys
 import tempfile
+import traceback
 from logging import _nameToLevel as levelNames
 
 from apifuzzer.fuzz_utils import FailedToParseFileException
@@ -95,7 +96,8 @@ if __name__ == '__main__':
         print('Failed to parse API definition')
         exit(1)
     except Exception as e:
-        print(f'Unexpected exception happened during fuzz test preparation: {e}. Feel free to report the issue')
+        print(f'Unexpected exception happened during fuzz test preparation: {traceback.print_stack(*sys.exc_info())}.\n'
+              f' Feel free to report the issue',)
         exit(1)
     signal.signal(signal.SIGINT, signal_handler)
     prog.run()

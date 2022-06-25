@@ -61,9 +61,11 @@ class FuzzerTarget(FuzzerTargetBase, ServerTarget):
         try:
             _req_url = list()
             for url_part in self.base_url, kwargs["url"]:
-                if isinstance(url_part, Bits):
+                if not url_part:
+                    continue
+                elif isinstance(url_part, Bits):
                     url_part = url_part.tobytes()
-                if isinstance(url_part, bytes):
+                elif isinstance(url_part, bytes):
                     url_part = url_part.decode()
                 _req_url.append(url_part.strip("/"))
             kwargs.pop("url")

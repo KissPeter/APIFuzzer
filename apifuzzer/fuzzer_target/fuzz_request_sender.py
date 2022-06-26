@@ -12,13 +12,14 @@ from kitty.targets.server import ServerTarget
 from apifuzzer.apifuzzerreport import ApifuzzerReport as Report
 from apifuzzer.fuzzer_target.request_base_functions import FuzzerTargetBase
 from apifuzzer.utils import try_b64encode, init_pycurl, get_logger
+from fuzzer_target.junit_report import JunitReport
 
 
 class Return:
     pass
 
 
-class FuzzerTarget(FuzzerTargetBase, ServerTarget):
+class FuzzerTarget(FuzzerTargetBase, ServerTarget, JunitReport):
     def not_implemented(self, func_name):
         _ = func_name
         pass
@@ -26,12 +27,12 @@ class FuzzerTarget(FuzzerTargetBase, ServerTarget):
     def __init__(self, name, base_url, report_dir, auth_headers, junit_report_path):
         super(ServerTarget, self).__init__(name)  # pylint: disable=E1003
         super(FuzzerTargetBase, self).__init__(auth_headers)  # pylint: disable=E1003
+        super(JunitReport, self).__init__(junit_report_path)  # pylint: disable=E1003
         self.logger = get_logger(self.__class__.__name__)
         self.base_url = base_url
         self.accepted_status_codes = list(range(200, 300)) + list(range(400, 500))
         self.auth_headers = auth_headers
         self.report_dir = report_dir
-        self.junit_report_path = junit_report_path
         self.failed_test = list()
         self.logger.info("Logger initialized")
         self.resp_headers = dict()
@@ -219,31 +220,30 @@ class FuzzerTarget(FuzzerTargetBase, ServerTarget):
         if self.report.get("report") is None:
             self.report.add("reason", self.report.get_status())
         super(ServerTarget, self).post_test(test_num)  # pylint: disable=E1003
+        test_case = TestCase(
+            name=self.test_number,
+            status=self.report.get_status(),
+            timestamp=time(),
+            elapsed_sec=perf_counter() - self.transmit_start_test
+        )
         if self.report.get_status() != Report.PASSED:
-            if self.junit_report_path:
-                test_case = TestCase(
-                    name=self.test_number,
-                    status=self.report.get_status(),
-                    timestamp=time(),
-                    elapsed_sec=perf_counter() - self.transmit_start_test
-                )
-                test_case.add_failure_info(message=json.dumps(self.report.to_dict()))
-                self.failed_test.append(test_case)
+            test_case.add_failure_info(message=json.dumps(self.report.to_dict()))
             self.save_report_to_disc()
+        self.test_cases.append(test_case)
 
     def save_report_to_disc(self):
-        self.logger.info("Report: {}".format(self.report.to_dict()))
-        try:
-            if not os.path.exists(os.path.dirname(self.report_dir)):
-                try:
-                    os.makedirs(os.path.dirname(self.report_dir))
-                except OSError:
-                    pass
-            with open(f"{self.report_dir}/{str(self.test_number + 1).zfill(4)}_{int(time())}.json", "w") \
-                as report_dump_file:
-                report_dump_file.write(json.dumps(self.report.to_dict()))
-        except Exception as e:
-            self.logger.error(f'Failed to save report "{self.report.to_dict()}" to {self.report_dir} because: {e}')
+            self.logger.info("Report: {}".format(self.report.to_dict()))
+            try:
+                if not os.path.exists(os.path.dirname(self.report_dir)):
+                    try:
+                        os.makedirs(os.path.dirname(self.report_dir))
+                    except OSError:
+                        pass
+                with open(f"{self.report_dir}/{str(self.test_number + 1).zfill(4)}_{int(time())}.json", "w") \
+                    as report_dump_file:
+                    report_dump_file.write(json.dumps(self.report.to_dict()))
+            except Exception as e:
+                self.logger.error(f'Failed to save report "{self.report.to_dict()}" to {self.report_dir} because: {e}')
 
     def report_add_basic_msg(self, msg):
         self.report.set_status(Report.FAILED)
@@ -251,16 +251,13 @@ class FuzzerTarget(FuzzerTargetBase, ServerTarget):
         self.report.failed(msg)
 
     def teardown(self):
-        if len(self.failed_test):
-            test_cases = self.failed_test
-        else:
-            test_cases = list()
-            test_cases.append(TestCase(name="Fuzz test succeed", status="Pass"))
+        for test in self.test_cases:
+            self.test_cases.append(test)
         if self.junit_report_path:
             with open(self.junit_report_path, "w") as report_file:
                 to_xml_report_file(
                     report_file,
-                    [TestSuite(name="API Fuzzer", test_cases=test_cases, timestamp=time())],
+                    [TestSuite(name="API Fuzzer", test_cases=self.test_cases, timestamp=time())],
                     prettyprint=True
                 )
         super(ServerTarget, self).teardown()  # pylint: disable=E1003

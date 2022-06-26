@@ -27,7 +27,6 @@ class FuzzerTarget(FuzzerTargetBase, ServerTarget, JunitReport):
     def __init__(self, name, base_url, report_dir, auth_headers, junit_report_path):
         super(ServerTarget, self).__init__(name)  # pylint: disable=E1003
         super(FuzzerTargetBase, self).__init__(auth_headers)  # pylint: disable=E1003
-        super(JunitReport, self).__init__(junit_report_path)  # pylint: disable=E1003
         self.logger = get_logger(self.__class__.__name__)
         self.base_url = base_url
         self.accepted_status_codes = list(range(200, 300)) + list(range(400, 500))
@@ -37,6 +36,7 @@ class FuzzerTarget(FuzzerTargetBase, ServerTarget, JunitReport):
         self.logger.info("Logger initialized")
         self.resp_headers = dict()
         self.transmit_start_test = None
+        self.junit_report = JunitReport(junit_report_path=junit_report_path)
 
     def pre_test(self, test_num):
         """
@@ -220,16 +220,13 @@ class FuzzerTarget(FuzzerTargetBase, ServerTarget, JunitReport):
         if self.report.get("report") is None:
             self.report.add("reason", self.report.get_status())
         super(ServerTarget, self).post_test(test_num)  # pylint: disable=E1003
-        test_case = TestCase(
-            name=self.test_number,
-            status=self.report.get_status(),
-            timestamp=time(),
-            elapsed_sec=perf_counter() - self.transmit_start_test
-        )
+        self.junit_report.add_testcase(test_number=self.test_number,
+                                       test_report=self.report,
+                                       start_transmit=self.transmit_start_test)
         if self.report.get_status() != Report.PASSED:
-            test_case.add_failure_info(message=json.dumps(self.report.to_dict()))
+            self.junit_report.test_case.add_failure_info(message=json.dumps(self.report.to_dict()))
             self.save_report_to_disc()
-        self.test_cases.append(test_case)
+        self.junit_report.save_testcase()
 
     def save_report_to_disc(self):
             self.logger.info("Report: {}".format(self.report.to_dict()))
@@ -251,13 +248,5 @@ class FuzzerTarget(FuzzerTargetBase, ServerTarget, JunitReport):
         self.report.failed(msg)
 
     def teardown(self):
-        for test in self.test_cases:
-            self.test_cases.append(test)
-        if self.junit_report_path:
-            with open(self.junit_report_path, "w") as report_file:
-                to_xml_report_file(
-                    report_file,
-                    [TestSuite(name="API Fuzzer", test_cases=self.test_cases, timestamp=time())],
-                    prettyprint=True
-                )
+        self.junit_report.save_report()
         super(ServerTarget, self).teardown()  # pylint: disable=E1003

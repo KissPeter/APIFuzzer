@@ -187,7 +187,10 @@ def pretty_print(printable, limit=200):
     :rtype: str
     """
     if isinstance(printable, dict):
-        return json.dumps(printable, sort_keys=True)[0:limit]
+        try:
+            return json.dumps(printable, sort_keys=True)[0:limit]
+        except Exception:
+            return printable[:limit]
     elif isinstance(printable, str):
         return printable[:limit]
     else:

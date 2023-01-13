@@ -10,17 +10,17 @@ RUN find $HOME/.cache/pip -type f -name pycurl*.whl -exec cp {} /tmp \;
 FROM python:3.11.1-slim-bullseye as pycurl
 COPY --from=build  /tmp/*.whl  /tmp/
 COPY --from=build  /usr/bin/curl-config  /usr/bin/curl-config
-COPY --from=build  /usr/lib/aarch64-linux-gnu/  /usr/lib/aarch64-linux-gnu/
+COPY --from=build  /usr/lib/x86_64-linux-gnu/  /usr/lib/x86_64-linux-gnu/
 ENV PYCURL_CURL_CONFIG=/usr/bin/curl-config
 ENV PYCURL_SSL_LIBRARY=nss
 ENV PIP_NO_CACHE_DIR=yes
 RUN pip install /tmp/*.whl && rm -rf /tmp/*.whl
 CMD python -c "import pycurl"
 
-FROM python:3.11.1-slim-bullseye
+FROM pycurl
 WORKDIR /src/
-COPY apifuzzer .
+COPY apifuzzer apifuzzer
 COPY APIFuzzer .
 COPY requirements.txt .
 RUN pip install -r requirements.txt
-ENTRYPOINT APIFuzzer $@
+ENTRYPOINT ./APIFuzzer $@

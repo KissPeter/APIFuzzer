@@ -23,4 +23,4 @@ COPY apifuzzer apifuzzer
 COPY APIFuzzer .
 COPY requirements.txt .
 RUN pip install -r requirements.txt
-ENTRYPOINT ./APIFuzzer $@
+ENTRYPOINT /bin/bash -c ./APIFuzzer $@

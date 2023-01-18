@@ -1,4 +1,4 @@
-FROM python:3.11.1-bullseye as build
+FROM python:3.11.1-slim-bullseye as build
 ENV DEBIAN_FRONTEND=noninteractive
 RUN apt update
 RUN apt install -y --no-install-recommends gcc libc6-dev libssl-dev libcurl4-openssl-dev && rm -rf /var/lib/apt/lists/*
@@ -25,3 +25,4 @@ COPY requirements.txt .
 COPY entrypoint.sh .
 RUN pip install -r requirements.txt
 ENTRYPOINT ["./entrypoint.sh"]
+HEALTHCHECK --interval=5s --timeout=5s --retries=3 --start-period=2s CMD pgrep APIFuzzer

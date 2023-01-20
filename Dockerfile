@@ -23,6 +23,6 @@ COPY apifuzzer apifuzzer
 COPY APIFuzzer .
 COPY requirements.txt .
 COPY entrypoint.sh .
-RUN pip install -r requirements.txt
+RUN pip install -r requirements.txt  && rm -rf requirements.txt
 ENTRYPOINT ["./entrypoint.sh"]
 HEALTHCHECK --interval=5s --timeout=5s --retries=3 --start-period=2s CMD pgrep APIFuzzer

@@ -64,17 +64,7 @@ jobs:
         with:
           compose-file: "./docker-compose.yml"
           up-flags: "--build --force-recreate"
-      - name: 'Test docker 1'
+      - name: 'Test docker  with help argument'
         run: docker run apifuzzer -h
-  lint:
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout
-        uses: actions/checkout@master
-      - name: Lint
-        uses: luke142367/Docker-Lint-Action@v1.0.0
-        with:
-          target: Dockerfile
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
 

@@ -51,3 +51,11 @@ upload-test-pip-package:
 
 upload-pip-package:
 	cd .. && python3 -m twine upload --repository pypi dist/* --verbose
+
+docker-build-and-push:
+	cd ..
+	VERSION=`awk -F \= '/__version__/ {gsub("\"","");print $2}' apifuzzer/__init__.py`
+	docker-compose-build
+	docker tag apifuzzer:latest kisspeter/apifuzzer:latest
+	docker tag apifuzzer:latest kisspeter/apifuzzer:$VERSION
+	docker push kisspeter/apifuzzer --all-tags

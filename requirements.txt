@@ -1,5 +1,5 @@
 kittyfuzzer==0.7.4
-pycurl==7.43.0.6
+pycurl==7.45.2
 ruamel.yaml==0.16.12
 junit-xml==1.9
 jsonpath-ng==1.5.2

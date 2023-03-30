@@ -16,7 +16,7 @@ jobs:
     strategy:
       matrix:
         os: [ ubuntu-latest ] # , macos-latest, windows-latest
-        python-version: [ '3.6', '3.7', '3.8', '3.9' ] #, '3.10', 'pypy-3.8' ]
+        python-version: [ '3.7', '3.8', '3.9', '3.10', '3.11' ]
     steps:
       - uses: actions/checkout@v2
       - name: Set up Python
@@ -51,4 +51,20 @@ jobs:
         with:
           name: Pytest-Report-${{ matrix.python-version }}
           path: pytest.html
+  docker:
+    runs-on: ubuntu-latest
+    timeout-minutes: 300
+    steps:
+      - name: 'Checkout Repository'
+        uses: actions/checkout@v3
+      - uses: satackey/action-docker-layer-caching@v0.0.11
+        continue-on-error: true
+      - name: 'Docker Compose'
+        uses: isbang/compose-action@v1.4.1
+        with:
+          compose-file: "./docker-compose.yml"
+          up-flags: "--build --force-recreate"
+      - name: 'Test docker  with help argument'
+        run: docker run apifuzzer -h
+
 

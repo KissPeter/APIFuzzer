@@ -64,8 +64,9 @@ $ docker pull kisspeter/apifuzzer:latest
 ```
 
 ## Quick Start
+
 Check the help (some of them are not implemented yet):
-```
+```shell
 
 $$ usage: APIFuzzer [-h] [-s SRC_FILE] [--src_url SRC_URL] [-r REPORT_DIR] [--level LEVEL] [-u ALTERNATE_URL] [-t TEST_RESULT_DST]
                  [--log {critical,fatal,error,warn,warning,info,debug,notset}] [--basic_output BASIC_OUTPUT] [--headers HEADERS] [-v ,--version]

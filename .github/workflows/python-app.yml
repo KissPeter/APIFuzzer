@@ -66,5 +66,10 @@ jobs:
           up-flags: "--build --force-recreate"
       - name: 'Test docker  with help argument'
         run: docker run apifuzzer -h
+      - name: Upload image
+        uses: ishworkh/docker-image-artifact-upload@v1
+        with:
+          image: "apifuzzer:latest"
+          retention_days: "30"
 
 

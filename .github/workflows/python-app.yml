@@ -18,7 +18,7 @@ jobs:
         os: [ ubuntu-latest ] # , macos-latest, windows-latest
         python-version: [ '3.7', '3.8', '3.9', '3.10', '3.11' ]
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
       - name: Set up Python
         uses: actions/setup-python@v2
         with:
@@ -43,11 +43,11 @@ jobs:
           pytest  -x --hypothesis-show-statistics --cov-report html --cov=apifuzzer  --html=pytest.html --self-contained-html --durations=10 --show-capture=stdout -vv -rP test
           coverage html
           coverage report
-      - uses: actions/upload-artifact@v2
+      - uses: actions/upload-artifact@v3
         with:
           name: Coverage-${{ matrix.python-version }}
           path: ./htmlcov
-      - uses: actions/upload-artifact@v2
+      - uses: actions/upload-artifact@v3
         with:
           name: Pytest-Report-${{ matrix.python-version }}
           path: pytest.html
@@ -67,6 +67,7 @@ jobs:
       - name: 'Test docker  with help argument'
         run: docker run apifuzzer -h
       - name: Upload image
+        if: success()
         uses: ishworkh/docker-image-artifact-upload@v1
         with:
           image: "apifuzzer:latest"

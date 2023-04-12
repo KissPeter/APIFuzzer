@@ -104,6 +104,13 @@ def last_call():
     return _return
 
 
+def get_last_json(req):
+    try:
+        return req.json
+    except Exception:
+        return {}
+
+
 @app.after_request
 def log_the_status_code(response):
     last_request_data.set_data({
@@ -116,7 +123,7 @@ def log_the_status_code(response):
         'req_headers': extract(request.headers),
         'req_form': extract(request.form),
         'req_form2': request.form.to_dict(flat=False),
-        'req_json': request.json,
+        'req_json': get_last_json(req=request),
         'req_data': request.data.decode(encoding='UTF-8')
     })
     return response

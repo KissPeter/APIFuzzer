@@ -44,10 +44,12 @@ jobs:
           coverage html
           coverage report
       - uses: actions/upload-artifact@v3
+        if: always()
         with:
           name: Coverage-${{ matrix.python-version }}
           path: ./htmlcov
       - uses: actions/upload-artifact@v3
+        if: always()
         with:
           name: Pytest-Report-${{ matrix.python-version }}
           path: pytest.html

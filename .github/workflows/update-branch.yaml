@@ -14,8 +14,10 @@ permissions: read-all
 jobs:
   update-branch:
    # https://docs.github.com/en/actions/using-workflows/workflow-syntax-for-github-actions#permissions
-    permissions: write-all
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pull-requests: write
     steps:
       - uses: lcdsmao/update-branch@v3
         with:

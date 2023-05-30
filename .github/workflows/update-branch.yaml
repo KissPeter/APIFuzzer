@@ -5,25 +5,21 @@ on:
     branches:
       - main
   pull_request:
-      - '**'
-  check_suite:
-    types:
-      - completed
 
-  # Allows you to run this workflow manually from the Actions tab
   workflow_dispatch:
+
+
+permissions: read-all
 
 jobs:
   update-branch:
+   # https://docs.github.com/en/actions/using-workflows/workflow-syntax-for-github-actions#permissions
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pull-requests: write
     steps:
       - uses: lcdsmao/update-branch@v3
         with:
-          # Or use personal access token
           token: ${{ secrets.GITHUB_TOKEN }}
-          # Optionally set the maximum amount of pull requests to match against (default: 50)
-          fetchMaxPr: 50
-          # Optionally set the maximum amount of pull request checks to fetch (default: 100)
-          fetchMaxPrChecks: 100
-          # Optionally set the maximum amount of pull request labels to fetch (default: 10)
-          fetchMaxPrLabels: 10
+

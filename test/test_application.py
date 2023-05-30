@@ -104,21 +104,29 @@ def last_call():
     return _return
 
 
+def get_last_json(req):
+    try:
+        return req.json
+    except Exception:
+        return {}
+
+
 @app.after_request
 def log_the_status_code(response):
-    last_request_data.set_data({
-        'resp_body': str(response.get_data()),
-        'resp_headers': extract(response.headers),
-        'resp_status': response.status_code,
-        'req_path': request.path,
-        'req_url': request.url,
-        'req_method': request.method,
-        'req_headers': extract(request.headers),
-        'req_form': extract(request.form),
-        'req_form2': request.form.to_dict(flat=False),
-        'req_json': request.json,
-        'req_data': request.data.decode(encoding='UTF-8')
-    })
+    if response.status_code != 200:
+        last_request_data.set_data({
+            'resp_body': str(response.get_data()),
+            'resp_headers': extract(response.headers),
+            'resp_status': response.status_code,
+            'req_path': request.path,
+            'req_url': request.url,
+            'req_method': request.method,
+            'req_headers': extract(request.headers),
+            'req_form': extract(request.form),
+            'req_form2': request.form.to_dict(flat=False),
+            'req_json': get_last_json(req=request),
+            'req_data': request.data.decode(encoding='UTF-8')
+        })
     return response
 
 

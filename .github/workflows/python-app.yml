@@ -18,9 +18,9 @@ jobs:
         os: [ ubuntu-latest ] # , macos-latest, windows-latest
         python-version: [ '3.7', '3.8', '3.9', '3.10', '3.11' ]
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
       - name: Set up Python
-        uses: actions/setup-python@v2
+        uses: actions/setup-python@v3
         with:
           python-version: ${{ matrix.python-version }}
       - name: Display Python version
@@ -43,11 +43,13 @@ jobs:
           pytest  -x --hypothesis-show-statistics --cov-report html --cov=apifuzzer  --html=pytest.html --self-contained-html --durations=10 --show-capture=stdout -vv -rP test
           coverage html
           coverage report
-      - uses: actions/upload-artifact@v2
+      - uses: actions/upload-artifact@v3
+        if: always()
         with:
           name: Coverage-${{ matrix.python-version }}
           path: ./htmlcov
-      - uses: actions/upload-artifact@v2
+      - uses: actions/upload-artifact@v3
+        if: always()
         with:
           name: Pytest-Report-${{ matrix.python-version }}
           path: pytest.html
@@ -57,7 +59,7 @@ jobs:
     steps:
       - name: 'Checkout Repository'
         uses: actions/checkout@v3
-      - uses: satackey/action-docker-layer-caching@v0.0.11
+      - uses: jpribyl/action-docker-layer-caching@v0.1.0
         continue-on-error: true
       - name: 'Docker Compose'
         uses: isbang/compose-action@v1.4.1
@@ -66,5 +68,11 @@ jobs:
           up-flags: "--build --force-recreate"
       - name: 'Test docker  with help argument'
         run: docker run apifuzzer -h
+      - name: Upload image
+        if: success()
+        uses: ishworkh/docker-image-artifact-upload@v1
+        with:
+          image: "apifuzzer:latest"
+          retention_days: "30"
 
 

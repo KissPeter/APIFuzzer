@@ -52,6 +52,11 @@ jobs:
       - uses: actions/upload-artifact@v3
         if: always()
         with:
+          name: Coverage-${{ matrix.python-version }}.xml
+          path: ./coverage.xml
+      - uses: actions/upload-artifact@v3
+        if: always()
+        with:
           name: Pytest-Report-${{ matrix.python-version }}
           path: pytest.html
   docker:

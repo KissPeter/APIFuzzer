@@ -42,7 +42,7 @@ class FuzzerTarget(FuzzerTargetBase, ServerTarget):
         Called when a test is started
         """
         self.test_number = test_num
-        self.report = Report(self.name)
+        self.report = Report(self.name or str(test_num))
         if self.controller:
             self.controller.pre_test(test_number=self.test_number)
         for monitor in self.monitors:
@@ -157,16 +157,20 @@ class FuzzerTarget(FuzzerTargetBase, ServerTarget):
                 for retries in reversed(range(0, 3)):
                     try:
                         _curl.perform()
+                        self.report.set_status(Report.PASSED)
                         # TODO: Handle this: pycurl.error: (3, 'Illegal characters found in URL')
                     except pycurl.error as e:
                         self.logger.warning(f"Failed to send request because of {e}")
+                        self.report.set_status(Report.ERROR)
+                        self.report.add('exception', e.msg if hasattr(e, 'msg') else str(e))
                     except Exception as e:
-                        if retries:
-                            self.logger.error(
-                                "Retrying... ({}) because {}".format(retries, e)
-                            )
-                        else:
-                            raise e
+                        if not retries:
+                            raise
+                        self.logger.error(
+                            "Retrying... ({}) because {}".format(retries, e)
+                        )
+                        self.report.set_status(Report.ERROR)
+                        self.report.add('exception', e.msg if hasattr(e, 'msg') else str(e))
                 _return = Return()
                 _return.status_code = _curl.getinfo(pycurl.RESPONSE_CODE)
                 _return.headers = self.resp_headers
@@ -177,8 +181,9 @@ class FuzzerTarget(FuzzerTargetBase, ServerTarget):
                 _curl.close()
             except Exception as e:
                 self.logger.exception(e)
-                self.report.set_status(Report.FAILED)
+                self.report.set_status(Report.ERROR)
                 self.logger.error("Request failed, reason: {}".format(e))
+                self.report.add('request_sending_failed', e.msg if hasattr(e, 'msg') else str(e))
                 # self.report.add('request_sending_failed', e.msg if hasattr(e, 'msg') else e)
                 self.report.add("request_method", method)
                 return
@@ -199,8 +204,11 @@ class FuzzerTarget(FuzzerTargetBase, ServerTarget):
             status_code = _return.status_code
             if not status_code:
                 self.logger.warning(f"Failed to parse http response code, continue...")
-                self.report.set_status(Report.PASSED)
+                self.report.set_status(Report.ERROR)
+                self.report.add("details", "Failed to parse http response code")
             elif status_code not in self.accepted_status_codes:
+                if self.report.get_status() != Report.ERROR:
+                    self.report.set_status(Report.FAILED)
                 self.report.add("parsed_status_code", status_code)
                 self.report_add_basic_msg(
                     ("Return code %s is not in the expected list:", status_code)
@@ -219,16 +227,19 @@ class FuzzerTarget(FuzzerTargetBase, ServerTarget):
         if self.report.get("report") is None:
             self.report.add("reason", self.report.get_status())
         super(ServerTarget, self).post_test(test_num)  # pylint: disable=E1003
-        if self.report.get_status() != Report.PASSED:
-            if self.junit_report_path:
-                test_case = TestCase(
-                    name=self.test_number,
-                    status=self.report.get_status(),
-                    timestamp=time(),
-                    elapsed_sec=perf_counter() - self.transmit_start_test
-                )
+        if self.junit_report_path:
+            report_dict = self.report.to_dict()
+            test_case = TestCase(
+                    name=f"{self.test_number}: {report_dict['request_url']}",
+                status=self.report.get_status(),
+                timestamp=time(),
+                elapsed_sec=perf_counter() - self.transmit_start_test
+            )
+            if self.report.get_status() == Report.FAILED:
                 test_case.add_failure_info(message=json.dumps(self.report.to_dict()))
-                self.failed_test.append(test_case)
+            if self.report.get_status() == Report.ERROR:
+                test_case.add_error_info(message=json.dumps(self.report.to_dict()))
+            self.failed_test.append(test_case)
             self.save_report_to_disc()
 
     def save_report_to_disc(self):

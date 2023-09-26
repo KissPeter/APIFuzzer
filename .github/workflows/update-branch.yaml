@@ -3,23 +3,18 @@ name: Update branch
 on:
   push:
     branches:
-      - main
-  pull_request:
-
-  workflow_dispatch:
-
-
-permissions: read-all
-
+      - 'master'
 jobs:
-  update-branch:
-   # https://docs.github.com/en/actions/using-workflows/workflow-syntax-for-github-actions#permissions
+  autoupdate:
     runs-on: ubuntu-latest
-    permissions:
-      contents: read
-      pull-requests: write
     steps:
-      - uses: lcdsmao/update-branch@v3
+      - name: Automatically update PR
+        uses: adRise/update-pr-branch@VERSION_YOU_WANT_TO_USE
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
-
+          base: 'master'
+          required_approval_count: 2
+          require_passed_checks: false
+          sort: 'created'
+          direction: 'desc'
+          require_auto_merge_enabled: true

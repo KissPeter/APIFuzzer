@@ -142,8 +142,8 @@ class FuzzerTarget(FuzzerTargetBase, ServerTarget):
                 elif content_type == "application/json":
                     _json_data = (
                         json.dumps(kwargs.get("data", {}), ensure_ascii=True)
-                            .encode("utf-8")
-                            .decode("utf-8", "ignore")
+                        .encode("utf-8")
+                        .decode("utf-8", "ignore")
                     )
                     _curl.setopt(pycurl.POSTFIELDS, _json_data)
                 else:
@@ -162,7 +162,9 @@ class FuzzerTarget(FuzzerTargetBase, ServerTarget):
                     except pycurl.error as e:
                         self.logger.warning(f"Failed to send request because of {e}")
                         self.report.set_status(Report.ERROR)
-                        self.report.add('exception', e.msg if hasattr(e, 'msg') else str(e))
+                        self.report.add(
+                            "exception", e.msg if hasattr(e, "msg") else str(e)
+                        )
                     except Exception as e:
                         if not retries:
                             raise
@@ -170,7 +172,9 @@ class FuzzerTarget(FuzzerTargetBase, ServerTarget):
                             "Retrying... ({}) because {}".format(retries, e)
                         )
                         self.report.set_status(Report.ERROR)
-                        self.report.add('exception', e.msg if hasattr(e, 'msg') else str(e))
+                        self.report.add(
+                            "exception", e.msg if hasattr(e, "msg") else str(e)
+                        )
                 _return = Return()
                 _return.status_code = _curl.getinfo(pycurl.RESPONSE_CODE)
                 _return.headers = self.resp_headers
@@ -183,7 +187,9 @@ class FuzzerTarget(FuzzerTargetBase, ServerTarget):
                 self.logger.exception(e)
                 self.report.set_status(Report.ERROR)
                 self.logger.error("Request failed, reason: {}".format(e))
-                self.report.add('request_sending_failed', e.msg if hasattr(e, 'msg') else str(e))
+                self.report.add(
+                    "request_sending_failed", e.msg if hasattr(e, "msg") else str(e)
+                )
                 # self.report.add('request_sending_failed', e.msg if hasattr(e, 'msg') else e)
                 self.report.add("request_method", method)
                 return
@@ -230,10 +236,10 @@ class FuzzerTarget(FuzzerTargetBase, ServerTarget):
         if self.junit_report_path:
             report_dict = self.report.to_dict()
             test_case = TestCase(
-                    name=f"{self.test_number}: {report_dict['request_url']}",
+                name=f"{self.test_number}: {report_dict['request_url']}",
                 status=self.report.get_status(),
                 timestamp=time(),
-                elapsed_sec=perf_counter() - self.transmit_start_test
+                elapsed_sec=perf_counter() - self.transmit_start_test,
             )
             if self.report.get_status() == Report.FAILED:
                 test_case.add_failure_info(message=json.dumps(self.report.to_dict()))
@@ -250,11 +256,15 @@ class FuzzerTarget(FuzzerTargetBase, ServerTarget):
                     os.makedirs(os.path.dirname(self.report_dir))
                 except OSError:
                     pass
-            with open(f"{self.report_dir}/{str(self.test_number + 1).zfill(4)}_{int(time())}.json", "w") \
-                as report_dump_file:
+            with open(
+                f"{self.report_dir}/{str(self.test_number + 1).zfill(4)}_{int(time())}.json",
+                "w",
+            ) as report_dump_file:
                 report_dump_file.write(json.dumps(self.report.to_dict()))
         except Exception as e:
-            self.logger.error(f'Failed to save report "{self.report.to_dict()}" to {self.report_dir} because: {e}')
+            self.logger.error(
+                f'Failed to save report "{self.report.to_dict()}" to {self.report_dir} because: {e}'
+            )
 
     def report_add_basic_msg(self, msg):
         self.report.set_status(Report.FAILED)
@@ -271,7 +281,11 @@ class FuzzerTarget(FuzzerTargetBase, ServerTarget):
             with open(self.junit_report_path, "w") as report_file:
                 to_xml_report_file(
                     report_file,
-                    [TestSuite(name="API Fuzzer", test_cases=test_cases, timestamp=time())],
-                    prettyprint=True
+                    [
+                        TestSuite(
+                            name="API Fuzzer", test_cases=test_cases, timestamp=time()
+                        )
+                    ],
+                    prettyprint=True,
                 )
         super(ServerTarget, self).teardown()  # pylint: disable=E1003

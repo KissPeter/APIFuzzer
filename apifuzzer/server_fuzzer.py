@@ -91,7 +91,7 @@ class OpenApiServerFuzzer(ServerFuzzer):
         data_model_report = Report(name="Data Model")
         for k, v in test_info.items():
             new_entries = _flatten_dict_entry(k, v)
-            for (k_, v_) in new_entries:
+            for k_, v_ in new_entries:
                 data_model_report.add(k_, v_)
         report.add(data_model_report.get_name(), data_model_report)
         payload = self._last_payload

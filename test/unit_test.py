@@ -105,3 +105,25 @@ def test_parse_single_header_invalid_format():
         parse_single_header("Authorization Basic abc def")
 
 
+# ── pkg_resources monkeypatch tests ─────────────────────────────────────────
+
+def test_pkg_resources_shim_get_distribution():
+    """The shim (or real pkg_resources) must resolve installed packages."""
+    import apifuzzer  # noqa: F401 – triggers _ensure_pkg_resources
+    from pkg_resources import get_distribution
+
+    dist = get_distribution("kittyfuzzer")
+    assert hasattr(dist, "version")
+    assert isinstance(dist.version, str)
+    assert len(dist.version) > 0
+
+
+def test_pkg_resources_shim_not_found():
+    """get_distribution must raise for non-existent packages."""
+    import apifuzzer  # noqa: F401
+    from pkg_resources import get_distribution, DistributionNotFound
+
+    with pytest.raises((DistributionNotFound, Exception)):
+        get_distribution("this-package-does-not-exist-xyz-42")
+
+

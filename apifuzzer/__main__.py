@@ -19,7 +19,8 @@ def main():
 
     parser = argparse.ArgumentParser(description="APIFuzzer configuration")
     parser.add_argument(
-        "-s", "--src_file",
+        "-s",
+        "--src_file",
         type=str,
         required=False,
         help="API definition file path. JSON and YAML format is supported",
@@ -33,7 +34,8 @@ def main():
         dest="src_url",
     )
     parser.add_argument(
-        "-r", "--report_dir",
+        "-r",
+        "--report_dir",
         type=str,
         required=False,
         help="Directory where error reports will be saved. Default is temporally generated directory",
@@ -49,7 +51,8 @@ def main():
         default=1,
     )
     parser.add_argument(
-        "-u", "--url",
+        "-u",
+        "--url",
         type=str,
         required=False,
         help="Use CLI defined url instead compile the url from the API definition. Useful for testing",
@@ -57,7 +60,8 @@ def main():
         default=None,
     )
     parser.add_argument(
-        "-t", "--test_report",
+        "-t",
+        "--test_report",
         type=str,
         required=False,
         help="JUnit test result xml save path",
@@ -87,7 +91,7 @@ def main():
         required=False,
         help=(
             "Http request headers as JSON object/list. "
-            "Example: '{\"Authorization\": \"Basic abc def\"}'"
+            'Example: \'{"Authorization": "Basic abc def"}\''
         ),
         dest="headers",
         default=None,
@@ -101,7 +105,8 @@ def main():
         dest="header_items",
     )
     parser.add_argument(
-        "-v", "--version",
+        "-v",
+        "--version",
         action="version",
         version=get_version(),
     )
@@ -114,7 +119,9 @@ def main():
         parser.error(str(exc))
 
     if args.src_file is None and args.src_url is None:
-        parser.error("No API definition source provided: use -s/--src_file or --src_url")
+        parser.error(
+            "No API definition source provided: use -s/--src_file or --src_url"
+        )
 
     prog = Fuzzer(
         report_dir=args.report_dir,
@@ -146,4 +153,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-

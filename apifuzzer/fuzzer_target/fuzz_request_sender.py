@@ -240,7 +240,7 @@ class FuzzerTarget(FuzzerTargetBase, ServerTarget):
             if self.report.get_status() == Report.ERROR:
                 test_case.add_error_info(message=json.dumps(self.report.to_dict()))
             self.failed_test.append(test_case)
-            self.save_report_to_disc()
+        self.save_report_to_disc()
 
     def save_report_to_disc(self):
         self.logger.info("Report: {}".format(self.report.to_dict()))

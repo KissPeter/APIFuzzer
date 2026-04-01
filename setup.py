@@ -47,7 +47,11 @@ setup_options = dict(
     author='Peter Kiss',
     author_email='peter.kiss@linuxadm.hu',
     url='https://github.com/KissPeter/APIFuzzer/',
-    scripts=['APIFuzzer'],
+    entry_points={
+        "console_scripts": [
+            "APIFuzzer=apifuzzer.__main__:main",
+        ],
+    },
     packages=find_packages(exclude=["test"]),
     install_requires=get_requirements(),
     license="GNU General Public License v3.0",
@@ -58,13 +62,13 @@ setup_options = dict(
         'Topic :: Software Development :: Testing',
         'Natural Language :: English',
         'License :: OSI Approved :: GNU General Public License v3 (GPLv3)',
-        'Programming Language :: Python :: 3.6',
-        'Programming Language :: Python :: 3.7',
-        'Programming Language :: Python :: 3.8',
-        'Programming Language :: Python :: 3.9',
+        'Programming Language :: Python :: 3.10',
+        'Programming Language :: Python :: 3.11',
+        'Programming Language :: Python :: 3.12',
+        'Programming Language :: Python :: 3.13',
     ],
     keywords='Fuzz test, QA, Software Quality Assurance, Security testing, Swagger, OpenAPI',
-    python_requires='>=3.6, <4',
+    python_requires='>=3.10, <4',
     package_data={"apifuzzer": ['fuzzer_target/*.py']},
     exclude_package_data={"test": ["*"]}
 )

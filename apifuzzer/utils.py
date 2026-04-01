@@ -9,7 +9,7 @@ from io import BytesIO
 from logging import Formatter
 from logging.handlers import SysLogHandler
 from random import SystemRandom
-from typing import Optional
+from typing import Dict, Optional, Tuple
 
 import pycurl
 from bitstring import Bits
@@ -212,8 +212,53 @@ def json_data(arg_string: Optional[str]) -> dict:
         else:
             raise TypeError("not list or dict")
     except (TypeError, json.decoder.JSONDecodeError):
-        msg = "%s is not JSON", arg_string
-        raise argparse.ArgumentTypeError(msg)
+        raise argparse.ArgumentTypeError(
+            f"{arg_string!r} is not valid JSON (expected a dict or list of dicts)"
+        )
+
+
+def parse_headers_json(arg_string: Optional[str]) -> Dict[str, str]:
+    """Parse --headers JSON value (dict or list of dicts) into a flat string dict."""
+    data = json_data(arg_string)
+    if isinstance(data, dict):
+        return {str(key): str(value) for key, value in data.items()}
+    if isinstance(data, list):
+        headers = dict()
+        for item in data:
+            if not isinstance(item, dict):
+                raise argparse.ArgumentTypeError(
+                    "--headers list must contain only objects"
+                )
+            headers.update({str(key): str(value) for key, value in item.items()})
+        return headers
+    raise argparse.ArgumentTypeError(
+        "--headers must be a JSON object or list of objects"
+    )
+
+
+def parse_single_header(raw_header: str) -> Tuple[str, str]:
+    """Parse one --header value in 'Name: Value' format."""
+    if ":" not in raw_header:
+        raise argparse.ArgumentTypeError(
+            f"Invalid --header value {raw_header!r}. Expected 'Name: Value'"
+        )
+    key, value = raw_header.split(":", 1)
+    key = key.strip()
+    value = value.strip()
+    if not key:
+        raise argparse.ArgumentTypeError("Header name cannot be empty")
+    return key, value
+
+
+def merge_cli_headers(headers_json=None, header_items=None) -> Dict[str, str]:
+    """Merge --headers and repeated --header values. --header takes precedence."""
+    merged = dict()
+    if headers_json:
+        merged.update(parse_headers_json(headers_json))
+    for item in header_items or []:
+        key, value = parse_single_header(item)
+        merged[key] = value
+    return merged
 
 
 def str2bool(v):

@@ -14,13 +14,14 @@ jobs:
   build:
     runs-on: ${{ matrix.os }}
     strategy:
+      fail-fast: false
       matrix:
-        os: [ ubuntu-latest ] # , macos-latest, windows-latest
-        python-version: [ '3.8', '3.9', '3.10', '3.11' ]
+        os: [ ubuntu-latest ]
+        python-version: [ '3.10', '3.11', '3.12', '3.13' ]
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
       - name: Set up Python
-        uses: actions/setup-python@v3
+        uses: actions/setup-python@v5
         with:
           python-version: ${{ matrix.python-version }}
       - name: Display Python version
@@ -28,14 +29,15 @@ jobs:
       - name: Install dependencies
         run: |
           sudo apt-get -y install libgnutls28-dev libcurl4-openssl-dev libssl-dev
-          python -m pip install --upgrade pip
+          python -m pip install --upgrade pip setuptools wheel
           pip install black vulture
           if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
           if [ -f test/requirements_for_test.txt ]; then pip install -r test/requirements_for_test.txt; fi
-          ./APIFuzzer -h
+          pip install -e .
+          APIFuzzer -h
       - name: Lint
         run: |
-          black apifuzzer/
+          black --check apifuzzer/
           vulture --min-confidence 100 apifuzzer/
           python3 test/test_application.py&
       - name: Test
@@ -43,12 +45,12 @@ jobs:
           pytest  -x --hypothesis-show-statistics --cov-report html --cov=apifuzzer  --html=pytest.html --self-contained-html --durations=10 --show-capture=stdout -vv -rP test
           coverage html
           coverage report
-      - uses: actions/upload-artifact@v3
+      - uses: actions/upload-artifact@v4
         if: always()
         with:
           name: Coverage-${{ matrix.python-version }}
           path: ./htmlcov
-      - uses: actions/upload-artifact@v3
+      - uses: actions/upload-artifact@v4
         if: always()
         with:
           name: Pytest-Report-${{ matrix.python-version }}
@@ -58,19 +60,14 @@ jobs:
     timeout-minutes: 300
     steps:
       - name: 'Checkout Repository'
-        uses: actions/checkout@v3
-      - uses: jpribyl/action-docker-layer-caching@v0.1.0
-        continue-on-error: true
-      - name: 'Docker Compose'
-        uses: isbang/compose-action@v1.4.1
-        with:
-          compose-file: "./docker-compose.yml"
-          up-flags: "--build --force-recreate"
-      - name: 'Test docker  with help argument'
+        uses: actions/checkout@v4
+      - name: 'Build Docker image'
+        run: docker compose build
+      - name: 'Test docker with help argument'
         run: docker run apifuzzer -h
       - name: Upload image
         if: success()
-        uses: ishworkh/docker-image-artifact-upload@v1
+        uses: ishworkh/docker-image-artifact-upload@v2.1.0
         with:
           image: "apifuzzer:latest"
           retention_days: "30"

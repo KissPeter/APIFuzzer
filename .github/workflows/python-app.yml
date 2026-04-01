@@ -29,11 +29,16 @@ jobs:
       - name: Install dependencies
         run: |
           sudo apt-get -y install libgnutls28-dev libcurl4-openssl-dev libssl-dev
-          python -m pip install --upgrade pip setuptools wheel
+          python -m pip install --upgrade pip
+          pip install --upgrade setuptools wheel
           pip install black vulture
           if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
           if [ -f test/requirements_for_test.txt ]; then pip install -r test/requirements_for_test.txt; fi
           pip install -e .
+      - name: Verify install
+        run: |
+          python -c "from pkg_resources import get_distribution; print('setuptools', get_distribution('setuptools').version)"
+          python -c "import cgi; print('cgi module OK')"
           APIFuzzer -h
       - name: Lint
         run: |

@@ -11,6 +11,7 @@ def _ensure_pkg_resources():
     """
     try:
         import pkg_resources  # noqa: F401 – already available, nothing to do
+
         return
     except ImportError:
         pass
@@ -24,6 +25,7 @@ def _ensure_pkg_resources():
 
     class _Distribution:
         """Tiny stand-in for pkg_resources.Distribution."""
+
         def __init__(self, dist):
             self._dist = dist
 
@@ -55,4 +57,3 @@ def _ensure_pkg_resources():
 
 
 _ensure_pkg_resources()
-

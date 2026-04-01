@@ -14,7 +14,7 @@ from apifuzzer.version import get_version
 
 
 def main():
-    def signal_handler(sig, frame):
+    def signal_handler(_sig, _frame):
         sys.exit(0)
 
     parser = argparse.ArgumentParser(description="APIFuzzer configuration")

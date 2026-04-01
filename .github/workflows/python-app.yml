@@ -10,6 +10,9 @@ on:
   pull_request:
     branches: [ main ]
 
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+
 jobs:
   build:
     runs-on: ${{ matrix.os }}
@@ -69,9 +72,12 @@ jobs:
         run: docker run apifuzzer -h
       - name: Upload image
         if: success()
-        uses: ishworkh/docker-image-artifact-upload@v2.0.1
+        run: docker save apifuzzer:latest -o /tmp/apifuzzer-image.tar
+      - uses: actions/upload-artifact@v4
+        if: success()
         with:
-          image: "apifuzzer:latest"
-          retention_days: "30"
+          name: apifuzzer-docker-image
+          path: /tmp/apifuzzer-image.tar
+          retention-days: 30
 
 

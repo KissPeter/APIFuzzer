@@ -36,10 +36,7 @@ jobs:
           if [ -f test/requirements_for_test.txt ]; then pip install -r test/requirements_for_test.txt; fi
           pip install -e .
       - name: Verify install
-        run: |
-          python -c "from pkg_resources import get_distribution; print('setuptools', get_distribution('setuptools').version)"
-          python -c "import cgi; print('cgi module OK')"
-          APIFuzzer -h
+        run: APIFuzzer -h
       - name: Lint
         run: |
           black --check apifuzzer/

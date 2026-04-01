@@ -11,13 +11,13 @@ here = os.path.abspath(os.path.dirname(__file__))
 
 __version__ = re.search(
     r'__version__\s*=\s*[\'"]([^\'"]*)[\'"]',
-    open("apifuzzer/__init__.py").read(),
+    open("apifuzzer/__init__.py", encoding="utf-8").read(),
 ).group(1)
 
 
 def get_readme():
     readme = list()
-    with open(os.path.join(here, "README.md"), "r") as f:
+    with open(os.path.join(here, "README.md"), "r", encoding="utf-8") as f:
         skip_lines = True
         for line in f.read().splitlines():
             if line.startswith('# APIFuzzer — HTTP API Testing Framework'):
@@ -31,11 +31,12 @@ def get_readme():
 
 def get_requirements():
     requirements = list()
-    with open(os.path.join(here, "requirements.txt"), "r") as f:
+    with open(os.path.join(here, "requirements.txt"), "r", encoding="utf-8") as f:
         for line in f.read().splitlines():
-            if not line.startswith("#") and not line.startswith("--"):
+            line = line.strip()
+            if line and not line.startswith("#") and not line.startswith("--"):
                 requirements.append(line)
-    return '\n'.join(requirements)
+    return requirements
 
 
 setup_options = dict(
@@ -69,7 +70,6 @@ setup_options = dict(
     ],
     keywords='Fuzz test, QA, Software Quality Assurance, Security testing, Swagger, OpenAPI',
     python_requires='>=3.10, <4',
-    package_data={"apifuzzer": ['fuzzer_target/*.py']},
     exclude_package_data={"test": ["*"]}
 )
 
